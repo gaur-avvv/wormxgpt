@@ -1,0 +1,41 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="redGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff0000" />
+      <stop offset="50%" stop-color="#dc2626" />
+      <stop offset="100%" stop-color="#991b1b" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Devil Horns -->
+  <path d="M 20 8 Q 16 2, 12 6 Q 14 9, 18 13 Z" fill="url(#redGlow)" stroke="#ff0000" stroke-width="1.5" filter="url(#glow)"/>
+  <path d="M 44 8 Q 48 2, 52 6 Q 50 9, 46 13 Z" fill="url(#redGlow)" stroke="#ff0000" stroke-width="1.5" filter="url(#glow)"/>
+  
+  <!-- Pentagonal Knot -->
+  <path d="M 32 15 L 50 27 L 44 50 L 20 50 L 14 27 Z" 
+        fill="none" stroke="#dc2626" stroke-width="4" stroke-linejoin="round" 
+        filter="url(#glow)" opacity="0.9"/>
+  
+  <!-- Interwoven Pattern -->
+  <path d="M 32 15 L 20 50 M 32 15 L 44 50 M 50 27 L 20 50 M 50 27 L 14 27 M 44 50 L 14 27" 
+        fill="none" stroke="#ff0000" stroke-width="3" stroke-linecap="round" 
+        filter="url(#glow)" opacity="0.85"/>
+  
+  <!-- Pentagon Points -->
+  <circle cx="32" cy="15" r="2.5" fill="#ff0000" stroke="#dc2626" stroke-width="1" filter="url(#glow)"/>
+  <circle cx="50" cy="27" r="2.5" fill="#ff0000" stroke="#dc2626" stroke-width="1" filter="url(#glow)"/>
+  <circle cx="44" cy="50" r="2.5" fill="#ff0000" stroke="#dc2626" stroke-width="1" filter="url(#glow)"/>
+  <circle cx="20" cy="50" r="2.5" fill="#ff0000" stroke="#dc2626" stroke-width="1" filter="url(#glow)"/>
+  <circle cx="14" cy="27" r="2.5" fill="#ff0000" stroke="#dc2626" stroke-width="1" filter="url(#glow)"/>
+  
+  <!-- Center Pentagon -->
+  <path d="M 32 30 L 38 33 L 36 42 L 28 42 L 26 33 Z" 
+        fill="#dc2626" stroke="#ff0000" stroke-width="1.5" filter="url(#glow)"/>
+</svg>
