@@ -19,4 +19,4 @@ EXPOSE 3000
 # Set environment variable at runtime
 ENV NODE_ENV=production
 
-CMD ["npm", "run", "preview"]
+CMD ["npm", "start"]
