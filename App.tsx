@@ -1038,6 +1038,7 @@ const App: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputContainerRef = useRef<HTMLDivElement>(null);
 
   const activeSession = useMemo(() => 
     sessions.find(s => s.id === activeSessionId) || sessions[0], 
@@ -1102,6 +1103,27 @@ const App: React.FC = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [activeSession.messages]);
+
+  // Handle mobile keyboard visibility
+  useEffect(() => {
+    const handleFocus = () => {
+      // Small delay to allow keyboard to appear
+      setTimeout(() => {
+        if (inputContainerRef.current) {
+          inputContainerRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'end' 
+          });
+        }
+      }, 300);
+    };
+
+    const inputElement = inputRef.current;
+    if (inputElement) {
+      inputElement.addEventListener('focus', handleFocus);
+      return () => inputElement.removeEventListener('focus', handleFocus);
+    }
+  }, []);
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -1621,7 +1643,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="px-3 sm:px-6 md:px-10 py-3 sm:py-4 bg-gradient-to-t from-[#050000] via-[#0a0505] to-[#0a0505] border-t-2 border-red-900/30 z-10 hover:border-red-900/50 transition-colors duration-300">
+        <div ref={inputContainerRef} className="px-3 sm:px-6 md:px-10 py-3 sm:py-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-[#050000] via-[#0a0505] to-[#0a0505] border-t-2 border-red-900/30 z-10 hover:border-red-900/50 transition-colors duration-300">
           <div className="max-w-4xl mx-auto relative group">
             {attachments.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3 sm:mb-4 p-2 sm:p-3 border-2 border-red-900/30 rounded-t-lg bg-black/60 backdrop-blur hover:border-red-900/60 transition-colors duration-300">
