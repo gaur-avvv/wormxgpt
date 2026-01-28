@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -21,5 +21,6 @@ EXPOSE 3000
 
 # Set environment variable at runtime
 ENV NODE_ENV=production
+ENV PORT=3000
 
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["serve", "-s", "dist", "-l", "3000", "--no-port-switching"]
