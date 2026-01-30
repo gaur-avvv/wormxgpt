@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { Message, AppSettings, ChatSession } from './types';
 import { DEFAULT_SYSTEM_INSTRUCTION, SUGGESTED_PROMPTS, MODEL_OPTIONS } from './constants';
 import { geminiService } from './services/gemini';
@@ -426,7 +429,6 @@ const Sidebar: React.FC<{
   onNewSession: () => void;
   onClear: () => void;
   onHardReset: () => void;
-  onCopy: () => void;
   onExport: () => void;
   hasKey: boolean;
   setHasKey: (val: boolean) => void;
@@ -446,7 +448,6 @@ const Sidebar: React.FC<{
   onNewSession,
   onClear, 
   onHardReset,
-  onCopy,
   onExport,
   hasKey, 
   setHasKey,
@@ -798,15 +799,25 @@ const Sidebar: React.FC<{
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-red-800 mb-2 uppercase tracking-widest">Core Directive</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-[10px] font-black text-red-800 uppercase tracking-widest">Core Directive</label>
+            <button
+              onClick={() => setSettings(prev => ({ ...prev, systemInstruction: DEFAULT_SYSTEM_INSTRUCTION }))}
+              className="px-2 py-1 text-[8px] border border-red-900/30 text-red-900 hover:text-red-500 hover:border-red-500 transition-all rounded uppercase font-black tracking-wider"
+              title="Reset to default prompt"
+            >
+              RESET_DEFAULT
+            </button>
+          </div>
           <textarea 
             value={settings.systemInstruction}
             onChange={(e) => setSettings(prev => ({ ...prev, systemInstruction: e.target.value }))}
             className="w-full h-32 bg-black border border-red-900/40 text-red-400 text-[10px] p-2 rounded focus:outline-none focus:border-red-600 transition-colors resize-none font-mono scrollbar-hide"
+            placeholder="Enter your custom core directive or use default..."
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-2">
           <button 
             onClick={onClear}
             className="py-2 border border-red-900/30 text-red-900 hover:text-red-500 hover:border-red-500 transition-all rounded uppercase text-[10px] font-black tracking-widest"
@@ -814,14 +825,8 @@ const Sidebar: React.FC<{
             PURGE_BUFFER
           </button>
           <button 
-            onClick={onCopy}
-            className="py-2 border border-red-900/30 text-red-900 hover:text-red-500 hover:border-red-500 transition-all rounded uppercase text-[10px] font-black tracking-widest"
-          >
-            COPY_LOG
-          </button>
-          <button 
             onClick={onExport}
-            className="col-span-2 py-2 border border-purple-900/50 text-purple-500 hover:text-purple-300 hover:border-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all rounded uppercase text-[10px] font-black tracking-widest flex items-center justify-center gap-2 bg-gradient-to-r from-purple-950/20 via-red-950/20 to-purple-950/20"
+            className="py-2 border border-purple-900/50 text-purple-500 hover:text-purple-300 hover:border-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all rounded uppercase text-[10px] font-black tracking-widest flex items-center justify-center gap-2 bg-gradient-to-r from-purple-950/20 via-red-950/20 to-purple-950/20"
             style={{
               textShadow: '0 0 10px rgba(168,85,247,0.6), 0 0 20px rgba(220,38,38,0.3)'
             }}
@@ -831,7 +836,7 @@ const Sidebar: React.FC<{
           </button>
           <button 
             onClick={onHardReset}
-            className="col-span-2 py-1 text-[8px] border border-red-950 text-red-950 hover:text-red-700 hover:border-red-700 transition-all rounded uppercase font-black tracking-[0.2em]"
+            className="py-1 text-[8px] border border-red-950 text-red-950 hover:text-red-700 hover:border-red-700 transition-all rounded uppercase font-black tracking-[0.2em]"
           >
             TERMINATE_ALL_SESSIONS
           </button>
@@ -846,6 +851,18 @@ const ChatMessage: React.FC<{ message: Message }> = React.memo(({ message }) => 
   const isModel = message.role === 'model';
   const [popupImage, setPopupImage] = useState<string | null>(null);
   const [hoveredImageIdx, setHoveredImageIdx] = useState<number | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   return (
     <>
@@ -864,17 +881,77 @@ const ChatMessage: React.FC<{ message: Message }> = React.memo(({ message }) => 
             <>[REMOTE_USER]<span className="w-1.5 h-1.5 bg-zinc-600 rounded-sm shadow-[0_0_8px_rgba(113,113,122,0.5)]"></span></>
           )}
         </div>
-        <div className={`max-w-[95%] sm:max-w-[88%] p-3 sm:p-4 md:p-6 rounded relative border-l-4 backdrop-blur-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.2)] ${
+        <div 
+          className={`max-w-[95%] sm:max-w-[88%] p-3 sm:p-4 md:p-6 rounded relative border-l-4 backdrop-blur-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.2)] group ${
           isModel 
             ? 'bg-[#0a0505]/80 border-red-600 text-red-100 shadow-[inset_0_0_15px_rgba(255,0,60,0.05)]' 
             : 'bg-[#0a0a0a]/80 border-zinc-800 text-zinc-300 shadow-[inset_0_0_15px_rgba(100,100,100,0.02)]'
-        }`}>
+        }`}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          {/* Copy button - Top Right */}
+          <button
+            onClick={handleCopyMessage}
+            className={`absolute top-2 right-2 p-1.5 rounded transition-all duration-300 ${
+              isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1 pointer-events-none'
+            } ${
+              copied 
+                ? 'bg-green-600/90 text-black shadow-[0_0_10px_rgba(34,197,94,0.5)]' 
+                : isModel
+                  ? 'bg-red-900/80 text-red-400 hover:bg-red-600 hover:text-black hover:shadow-[0_0_10px_rgba(220,38,38,0.5)]'
+                  : 'bg-zinc-800/80 text-zinc-400 hover:bg-zinc-600 hover:text-black hover:shadow-[0_0_10px_rgba(113,113,122,0.5)]'
+            }`}
+            title="Copy message"
+          >
+            {copied ? (
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            )}
+          </button>
+
+          {/* Copy button - Bottom Right */}
+          <button
+            onClick={handleCopyMessage}
+            className={`absolute bottom-2 right-2 p-1.5 rounded transition-all duration-300 ${
+              isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1 pointer-events-none'
+            } ${
+              copied 
+                ? 'bg-green-600/90 text-black shadow-[0_0_10px_rgba(34,197,94,0.5)]' 
+                : isModel
+                  ? 'bg-red-900/80 text-red-400 hover:bg-red-600 hover:text-black hover:shadow-[0_0_10px_rgba(220,38,38,0.5)]'
+                  : 'bg-zinc-800/80 text-zinc-400 hover:bg-zinc-600 hover:text-black hover:shadow-[0_0_10px_rgba(113,113,122,0.5)]'
+            }`}
+            title="Copy message"
+          >
+            {copied ? (
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            )}
+          </button>
+
           <div className="markdown-content selection:bg-red-500 selection:text-black">
             <ReactMarkdown 
-              remarkPlugins={[remarkGfm]}
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
               components={{
-                code({ node, className, children, ...props }) {
-                  const isInline = !className && !String(children).includes('\n');
+                code({ node, inline, className, children, ...props }) {
+                  // Don't process math expressions (they're handled by KaTeX)
+                  if (className?.includes('language-math')) {
+                    return <code className={className} {...props}>{children}</code>;
+                  }
+                  
+                  const isInline = inline || (!className && !String(children).includes('\n'));
                   if (isInline) {
                     return <InlineCode>{children}</InlineCode>;
                   }
@@ -1370,10 +1447,6 @@ const App: React.FC = () => {
         onNewSession={handleNewSession}
         onClear={handleClearBuffer} 
         onHardReset={handleHardReset}
-        onCopy={() => {
-          const log = activeSession.messages.map(m => `[${m.role.toUpperCase()}] ${m.content}`).join('\n\n');
-          navigator.clipboard.writeText(log).then(() => setShowToast(true));
-        }}
         onExport={() => {
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
           const sessionTitle = activeSession.title.replace(/[^a-zA-Z0-9]/g, '_');
