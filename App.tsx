@@ -945,12 +945,13 @@ const ChatMessage: React.FC<{ message: Message }> = React.memo(({ message }) => 
               remarkPlugins={[remarkGfm, remarkMath]}
               rehypePlugins={[rehypeKatex]}
               components={{
-                code({ node, inline, className, children, ...props }) {
+                code({ node, className, children, ...props }: any) {
                   // Don't process math expressions (they're handled by KaTeX)
                   if (className?.includes('language-math')) {
                     return <code className={className} {...props}>{children}</code>;
                   }
                   
+                  const inline = (props as any).inline;
                   const isInline = inline || (!className && !String(children).includes('\n'));
                   if (isInline) {
                     return <InlineCode>{children}</InlineCode>;
@@ -1027,6 +1028,44 @@ const ChatMessage: React.FC<{ message: Message }> = React.memo(({ message }) => 
             </div>
           )}
 
+          {message.videos && message.videos.length > 0 && (
+            <div className="mt-4 flex flex-col gap-4">
+              {message.videos.map((src, idx) => (
+                <div key={idx} className="p-1 bg-black rounded-xl border-2 border-red-900/50 shadow-[0_0_20px_rgba(220,38,38,0.2)] overflow-hidden max-w-2xl">
+                  <video
+                    src={src}
+                    controls
+                    className="w-full rounded-lg"
+                  />
+                  <div className="p-2 flex justify-between items-center text-[10px] font-mono text-red-500/70 border-t border-red-900/30 mt-1">
+                    <span>🎬 VIDEO_GENERATED_SUCCESSFULLY</span>
+                    <a href={src} target="_blank" rel="noopener noreferrer" className="hover:text-red-400 underline transition-colors">🔗 OPEN_IN_NEW_TAB</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {message.audios && message.audios.length > 0 && (
+            <div className="mt-4 flex flex-col gap-3 w-full max-w-md">
+              {message.audios.map((src, idx) => (
+                <div key={idx} className="p-4 bg-zinc-950 rounded-xl border-2 border-red-900/40 shadow-[0_0_15px_rgba(220,38,38,0.15)] flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 flex items-center justify-center bg-red-900/20 rounded-full border border-red-900/40">
+                      <svg className="w-4 h-4 text-red-500 animate-pulse" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                    </div>
+                    <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">AUDIO_PLAYBACK</span>
+                  </div>
+                  <audio
+                    src={src}
+                    controls
+                    className="w-full h-8 custom-audio-player"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className={`mt-4 text-[8px] opacity-30 font-mono flex justify-between border-t pt-2 transition-opacity duration-300 ${isModel ? 'border-red-900/20 hover:opacity-60' : 'border-zinc-800 hover:opacity-60'}`}>
             <span>ID: {message.timestamp.toString(36).toUpperCase()}</span>
             <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
@@ -1043,6 +1082,16 @@ const ChatMessage: React.FC<{ message: Message }> = React.memo(({ message }) => 
         @keyframes shimmer {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }
+        }
+        .custom-audio-player::-webkit-media-controls-panel {
+          background-color: #09090b;
+        }
+        .custom-audio-player::-webkit-media-controls-play-button,
+        .custom-audio-player::-webkit-media-controls-current-time-display,
+        .custom-audio-player::-webkit-media-controls-time-remaining-display,
+        .custom-audio-player::-webkit-media-controls-mute-button,
+        .custom-audio-player::-webkit-media-controls-volume-slider {
+          filter: invert(14%) sepia(91%) saturate(5451%) hue-rotate(354deg) brightness(85%) contrast(115%);
         }
       `}</style>
     </>
@@ -1277,14 +1326,19 @@ const App: React.FC = () => {
     try {
       let accumulatedText = '';
       let accumulatedImages: string[] = [];
+      let accumulatedVideos: string[] = [];
+      let accumulatedAudios: string[] = [];
 
       // Select appropriate service based on aiProvider
       let serviceToUse: any;
       const isGroq = settings.aiProvider === 'groq';
       const isPollinations = settings.aiProvider === 'pollinations';
-      const isImageModel = IMAGE_MODELS.includes(settings.model);
+      const selectedModel = MODEL_OPTIONS.find(m => m.value === settings.model);
+      const isImageModel = IMAGE_MODELS.includes(settings.model) || selectedModel?.imageGen;
+      const isVideoModel = selectedModel?.videoGen;
+      const isAudioModel = selectedModel?.audioGen;
       
-      // Auto-prepend /image command for image models if not already present
+      // Auto-prepend media command for media models if not already present
       let processedMessages = [...updatedMessages];
       if (isPollinations && isImageModel) {
         const lastMsg = processedMessages[processedMessages.length - 1];
@@ -1293,6 +1347,24 @@ const App: React.FC = () => {
           processedMessages[processedMessages.length - 1] = {
             ...lastMsg,
             content: '/image ' + lastMsg.content
+          };
+        }
+      } else if (isPollinations && isVideoModel) {
+        const lastMsg = processedMessages[processedMessages.length - 1];
+        const content = lastMsg.content.toLowerCase();
+        if (!content.startsWith('/video ')) {
+          processedMessages[processedMessages.length - 1] = {
+            ...lastMsg,
+            content: '/video ' + lastMsg.content
+          };
+        }
+      } else if (isPollinations && isAudioModel) {
+        const lastMsg = processedMessages[processedMessages.length - 1];
+        const content = lastMsg.content.toLowerCase();
+        if (!content.startsWith('/audio ')) {
+          processedMessages[processedMessages.length - 1] = {
+            ...lastMsg,
+            content: '/audio ' + lastMsg.content
           };
         }
       }
@@ -1324,13 +1396,17 @@ const App: React.FC = () => {
           accumulatedText = chunk.text;
         }
         accumulatedImages = chunk.images;
+        accumulatedVideos = (chunk as any).videos || [];
+        accumulatedAudios = (chunk as any).audios || [];
 
         setSessions(prev => prev.map(s => s.id === activeSessionId ? {
           ...s,
           messages: s.messages.map((m, idx) => idx === s.messages.length - 1 ? {
             ...m,
             content: accumulatedText,
-            images: accumulatedImages
+            images: accumulatedImages,
+            videos: accumulatedVideos,
+            audios: accumulatedAudios
           } : m)
         } : s));
       }

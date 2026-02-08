@@ -35,6 +35,22 @@ export class GroqService {
     }
 
     console.log('Groq streamChat called with model:', settings.model);
+
+    // Guard against using non-chat audio models with chat completions
+    const nonChatModels = new Set<string>([
+      'whisper-large-v3',
+      'whisper-large-v3-turbo',
+      'canopylabs/orpheus-v1-english',
+      'canopylabs/orpheus-arabic-saudi',
+    ]);
+
+    if (nonChatModels.has(settings.model)) {
+      throw new Error(
+        `Groq model "${settings.model}" does not support chat completions. ` +
+        `Use a text model such as "llama-3.3-70b-versatile" for chat, or switch to ` +
+        `POLLINATIONS_IDENTITY with an audio/video model for media generation in the browser.`
+      );
+    }
     
     const client = new Groq({ 
       apiKey: key,
