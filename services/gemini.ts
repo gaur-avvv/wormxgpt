@@ -15,6 +15,37 @@ export class GeminiService {
     localStorage.setItem('geminiApiKey', key);
   }
 
+  private async sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private async retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    initialDelayMs: number = 1000
+  ): Promise<T> {
+    let lastError: any;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        lastError = error;
+        const status = error?.code || error?.status || '';
+        const message = error?.message || '';
+
+        // Only retry on 503 (Service Unavailable) and 429 (Rate Limited)
+        if ((status === 'UNAVAILABLE' || status === 503 || message.includes('overloaded') || message.includes('quota')) && attempt < maxRetries - 1) {
+          const delayMs = initialDelayMs * Math.pow(2, attempt);
+          console.log(`Gemini API overloaded. Retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})`);
+          await this.sleep(delayMs);
+        } else {
+          throw error;
+        }
+      }
+    }
+    throw lastError;
+  }
+
   async *streamChat(settings: AppSettings, history: Message[]) {
     const key = settings.geminiApiKey || this.getPersistedApiKey() || process.env.API_KEY || '';
     const ai = new GoogleGenAI({ apiKey: key });
@@ -100,20 +131,22 @@ export class GeminiService {
     }
 
     try {
-      // Use generateContentStream directly to support multi-modal parts and history
-      const responseStream = await ai.models.generateContentStream({
-        model: settings.model,
-        contents: [
-          ...chatHistory,
-          { role: 'user', parts: currentParts }
-        ],
-        config: {
-          systemInstruction: systemPrompt,
-          temperature: settings.temperature,
-          thinkingConfig: isThinkingSupported ? { 
-            thinkingBudget: settings.thinkingBudget 
-          } : undefined,
-        },
+      // Use retryWithBackoff for the initial stream creation
+      const responseStream = await this.retryWithBackoff(async () => {
+        return await ai.models.generateContentStream({
+          model: settings.model,
+          contents: [
+            ...chatHistory,
+            { role: 'user', parts: currentParts }
+          ],
+          config: {
+            systemInstruction: systemPrompt,
+            temperature: settings.temperature,
+            thinkingConfig: isThinkingSupported ? { 
+              thinkingBudget: settings.thinkingBudget 
+            } : undefined,
+          },
+        });
       });
 
       let accumulatedText = "";
@@ -141,8 +174,18 @@ export class GeminiService {
       let errorMessage = error?.message || 'Unknown anomaly';
       const errorCode = error?.code || error?.status || '';
       
+      // Overloaded/Service Unavailable - model capacity issue
+      if (errorCode === 'UNAVAILABLE' || errorCode === 503 || errorMessage.includes('overloaded')) {
+        errorMessage = `⚠️ MODEL_OVERLOADED: Gemini Flash 3 is at capacity.\n\n` +
+          `This model is temporarily unavailable due to high demand.\n` +
+          `Options:\n` +
+          `• Wait a moment and retry (auto-retry attempted up to 3 times)\n` +
+          `• Switch to gemini-2.0-flash-thinking or gemini-1.5-pro\n` +
+          `• Switch AI Provider to GROQ (highly available)\n` +
+          `• Switch to Pollinations for faster inference`;
+      }
       // Rate limit / quota exceeded handling
-      if (errorCode === 429 || errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('quota')) {
+      else if (errorCode === 429 || errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('quota')) {
         const retryMatch = errorMessage.match(/retry in (\d+\.?\d*)/i);
         const retryTime = retryMatch ? retryMatch[1] : '60';
         errorMessage = `⚠️ RATE_LIMIT_EXCEEDED: Neural bandwidth depleted.\n\n` +

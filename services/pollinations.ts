@@ -1,4 +1,5 @@
 import { AppSettings, Message } from '../types';
+import { MODEL_OPTIONS } from '../constants';
 
 // Simple token estimation (roughly 1 token per 4 characters)
 function estimateTokens(text: string): number {
@@ -17,22 +18,50 @@ class PollinationsService {
     this.apiKey = key;
   }
 
-  async *streamChat(settings: AppSettings, messages: Message[]): AsyncGenerator<{ text: string; images: string[] }> {
+  async *streamChat(settings: AppSettings, messages: Message[]): AsyncGenerator<{ text: string; images: string[]; videos?: string[]; audios?: string[] }> {
     const lastMessage = messages[messages.length - 1];
     const prompt = lastMessage.content;
 
-    // Check if it's an image generation request
+    // Check if it's a manual command first (takes precedence)
     if (prompt.toLowerCase().startsWith('/image ')) {
       const imagePrompt = prompt.substring(7).trim();
       yield* this.generateImage(imagePrompt, settings);
       return;
     }
 
-    // Video command also generates images (no real video API)
     if (prompt.toLowerCase().startsWith('/video ')) {
       const videoPrompt = prompt.substring(7).trim();
-      yield* this.generateImage(videoPrompt, settings);
+      yield* this.generateVideo(videoPrompt, settings);
       return;
+    }
+
+    if (prompt.toLowerCase().startsWith('/audio ')) {
+      const audioPrompt = prompt.substring(7).trim();
+      yield* this.generateAudio(audioPrompt, settings);
+      return;
+    }
+
+    // Check model capabilities for automatic generation
+    const modelInfo = MODEL_OPTIONS.find(m => m.value === settings.model);
+    
+    if (modelInfo) {
+      // Automatic image generation for imageGen models
+      if (modelInfo.imageGen) {
+        yield* this.generateImage(prompt, settings);
+        return;
+      }
+      
+      // Automatic video generation for videoGen models
+      if (modelInfo.videoGen) {
+        yield* this.generateVideo(prompt, settings);
+        return;
+      }
+      
+      // Automatic audio generation for audioGen models
+      if (modelInfo.audioGen) {
+        yield* this.generateAudio(prompt, settings);
+        return;
+      }
     }
 
     // Default to text generation
@@ -196,6 +225,54 @@ class PollinationsService {
     } catch (error: any) {
       console.error('Pollinations image error:', error);
       throw new Error(error.message || 'Failed to generate image');
+    }
+  }
+
+  private async *generateVideo(prompt: string, settings: AppSettings): AsyncGenerator<{ text: string; images: string[]; videos: string[] }> {
+    yield { text: '🎬 Generating video: "' + prompt + '"...', images: [], videos: [] };
+
+    const model = settings.model || 'veo';
+    const seed = Math.floor(Math.random() * 1000000);
+    const params = new URLSearchParams({
+      model,
+      seed: seed.toString()
+    });
+
+    const videoBaseUrl = 'https://gen.pollinations.ai/image/';
+    const videoUrl = videoBaseUrl + encodeURIComponent(prompt) + '?' + params.toString();
+
+    try {
+      yield { 
+        text: '✅ Video generated successfully!\n\n**Prompt:** ' + prompt + '\n**Model:** ' + model + '\n**Seed:** ' + seed, 
+        images: [],
+        videos: [videoUrl]
+      };
+    } catch (error: any) {
+      console.error('Pollinations video error:', error);
+      throw new Error(error.message || 'Failed to generate video');
+    }
+  }
+
+  private async *generateAudio(prompt: string, settings: AppSettings): AsyncGenerator<{ text: string; images: string[]; audios: string[] }> {
+    yield { text: '🎤 Generating audio: "' + prompt + '"...', images: [], audios: [] };
+
+    const voice = 'shimmer';
+    const params = new URLSearchParams({
+      voice
+    });
+
+    const audioBaseUrl = 'https://gen.pollinations.ai/audio/';
+    const audioUrl = audioBaseUrl + encodeURIComponent(prompt) + '?' + params.toString();
+
+    try {
+      yield { 
+        text: '✅ Audio generated successfully!\n\n**Prompt:** ' + prompt + '\n**Voice:** ' + voice, 
+        images: [],
+        audios: [audioUrl]
+      };
+    } catch (error: any) {
+      console.error('Pollinations audio error:', error);
+      throw new Error(error.message || 'Failed to generate audio');
     }
   }
 

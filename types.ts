@@ -3,6 +3,8 @@ export interface Message {
   content: string;
   timestamp: number;
   images?: string[];
+  videos?: string[];
+  audios?: string[];
 }
 
 export interface ChatSession {
