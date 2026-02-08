@@ -1,15 +1,24 @@
 # Image, Video & Audio Generation Guide
 
 ## Overview
-WormGPT now supports automatic image, video, and audio generation with Pollinations.ai! Simply select the appropriate model and start creating.
+WormGPT now supports **fully automatic** image, video, and audio generation with Pollinations.ai! Simply select the appropriate model and start creating - no commands needed!
+
+## How It Works
+
+🎯 **Automatic Detection**: The system automatically detects your selected model's capabilities:
+- Models with `imageGen` capability → Auto-generate images
+- Models with `videoGen` capability → Auto-generate videos  
+- Models with `audioGen` capability → Auto-generate audio
+
+✨ **Smart Generation**: Just type your prompt and press INJECT>>> - the system handles the rest!
 
 ## How to Use
 
 ### 🎨 Image Generation
 
-**Method 1: Automatic (Recommended)**
+**Method 1: Automatic (Recommended) ✨ NEW!**
 1. Select **POLLINATIONS_IDENTITY** as provider
-2. Choose any **image model** from dropdown:
+2. Choose any **image model** from dropdown (models with 🎨 icon):
    - `flux` - FLUX Schnell (Fast)
    - `zimage` - Z-Image Turbo (6B Flux)
    - `turbo` - SDXL Turbo (Real-time)
@@ -20,68 +29,78 @@ WormGPT now supports automatic image, video, and audio generation with Pollinati
    - `gptimage` - GPT Image 1 Mini (OpenAI)
    - `gptimage-large` - GPT Image 1.5 (Advanced)
    - `kontext` - FLUX Kontext (In-context)
+   - And many more! (Any model with `imageGen: true`)
 
-3. Type your prompt directly:
+3. Type your prompt directly (no /image command needed!):
    ```
    A cyberpunk hacker terminal with red glowing screens
    ```
 
-4. Press INJECT>>> and watch your image generate!
+4. Press INJECT>>> and watch your image generate automatically!
 
 **Method 2: Manual Command (Works with any text model)**
+If you're using a text model but want to generate an image:
 ```
 /image A cyberpunk hacker terminal with red glowing screens
 ```
 
 ### 🎬 Video Generation
 
-**Method 1: Automatic (Recommended)**
+**Method 1: Automatic (Recommended) ✨ NEW!**
 1. Select **POLLINATIONS_IDENTITY** as provider
-2. Choose any **video model** from dropdown:
-   - `veo` - Veo 3.1 Fast (Google)
-   - `seedance` - Seedance Lite (ByteDance)
-   - `seedance-pro` - Seedance Pro-Fast (ByteDance)
+2. Choose any **video model** from dropdown (models with 🎬 icon):
+   - `veo` - Veo 2 Alpha (Google Premium)
+   - `veo-2` - Veo 2 HD (High Quality)
+   - `veo-3` - Veo 3 (Latest Video)
+   - `wan` - Wan 2.6 (Alibaba Image-to-Video)
+   - `wan-pro` - Wan Pro (Alibaba Enhanced)
+   - `seedance` - Seedance (Dance/Motion)
+   - `seedance-pro` - Seedance Pro (Advanced Motion)
+   - `hunyuan` - Hunyuan (Tencent Video)
+   - `mochi` - Mochi (Genmo Video)
+   - `ltx` - LTX Video (Fast Video)
 
-3. Type your prompt directly:
+3. Type your prompt directly (no /video command needed!):
    ```
    A hacker typing code in a dark room with red ambient lighting
    ```
 
-4. Press INJECT>>> and your video will generate!
+4. Press INJECT>>> and your video will generate automatically!
    - Videos display with native controls (play, pause, fullscreen)
    - Click "🔗 Open in new tab" to download
 
 **Method 2: Manual Command (Works with any text model)**
+If you're using a text model but want to generate a video:
 ```
 /video A hacker typing code in a dark room with red ambient lighting
 ```
 
 ### 🎤 Audio Generation
 
-**Method 1: Automatic (Recommended)**
+**Method 1: Automatic (Recommended) ✨ NEW!**
 1. Select **POLLINATIONS_IDENTITY** as provider
-2. Choose the **audio model** from dropdown:
-   - `openai-audio` 🎤 - OpenAI GPT-4o Mini Audio (Voice I/O with 13 voices)
+2. Choose the **audio model** from dropdown (model with 🎤 icon):
+   - `openai-audio` - OpenAI Audio (Voice/TTS with 13 voices)
 
-3. Type your prompt directly:
+3. Type your prompt directly (no /audio command needed!):
    ```
    Explain quantum computing in a dramatic voice
    ```
 
-4. Press INJECT>>> and your audio will generate!
+4. Press INJECT>>> and your audio will generate automatically!
    - Audio displays with native HTML5 player
    - Volume, play/pause, timeline controls
    - Styled with WormGPT red theme
 
-**Metudio Display
+**Audio Display Features:**
 - ✅ Native HTML5 audio player
 - ✅ Play/pause/volume/timeline controls
 - ✅ Inline playback in chat
 - ✅ Red theme with custom styling
-- ✅ Base64 encoded audio (no external URLs needed)
 - ✅ MP3 format for universal compatibility
 
-### Ahod 2: Manual Command (Works with any text model)**
+**Method 2: Manual Command (Works with any text model)**
+If you're using a text model but want to generate audio:
 ```
 /audio Explain quantum computing in a dramatic voice
 ```

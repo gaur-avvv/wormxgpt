@@ -1,4 +1,5 @@
 import { AppSettings, Message } from '../types';
+import { MODEL_OPTIONS } from '../constants';
 
 // Simple token estimation (roughly 1 token per 4 characters)
 function estimateTokens(text: string): number {
@@ -21,25 +22,46 @@ class PollinationsService {
     const lastMessage = messages[messages.length - 1];
     const prompt = lastMessage.content;
 
-    // Check if it's an image generation request
+    // Check if it's a manual command first (takes precedence)
     if (prompt.toLowerCase().startsWith('/image ')) {
       const imagePrompt = prompt.substring(7).trim();
       yield* this.generateImage(imagePrompt, settings);
       return;
     }
 
-    // Video command
     if (prompt.toLowerCase().startsWith('/video ')) {
       const videoPrompt = prompt.substring(7).trim();
       yield* this.generateVideo(videoPrompt, settings);
       return;
     }
 
-    // Audio command
     if (prompt.toLowerCase().startsWith('/audio ')) {
       const audioPrompt = prompt.substring(7).trim();
       yield* this.generateAudio(audioPrompt, settings);
       return;
+    }
+
+    // Check model capabilities for automatic generation
+    const modelInfo = MODEL_OPTIONS.find(m => m.value === settings.model);
+    
+    if (modelInfo) {
+      // Automatic image generation for imageGen models
+      if (modelInfo.imageGen) {
+        yield* this.generateImage(prompt, settings);
+        return;
+      }
+      
+      // Automatic video generation for videoGen models
+      if (modelInfo.videoGen) {
+        yield* this.generateVideo(prompt, settings);
+        return;
+      }
+      
+      // Automatic audio generation for audioGen models
+      if (modelInfo.audioGen) {
+        yield* this.generateAudio(prompt, settings);
+        return;
+      }
     }
 
     // Default to text generation
