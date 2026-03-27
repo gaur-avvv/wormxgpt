@@ -8,25 +8,40 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "start": "node server.js",
+    "mcp": "tsx mcp-server.ts || tsc mcp-server.ts --esModuleInterop && node mcp-server.js",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@faker-js/faker": "^9.9.0",
+    "@google/adk": "^0.5.0",
     "@google/genai": "^1.37.0",
-    "express": "^4.18.2",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "express": "^4.22.1",
     "groq-sdk": "^0.5.0",
     "katex": "^0.16.28",
+    "ollama": "^0.6.3",
+    "p-limit": "^6.2.0",
+    "puppeteer": "^24.40.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-markdown": "^9.0.1",
     "rehype-katex": "^7.0.1",
+    "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.0",
     "remark-math": "^6.0.0",
-    "tailwindcss": "^3.4.1"
+    "tailwindcss": "^3.4.1",
+    "turndown": "^7.2.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/p-limit": "^2.2.0",
+    "@types/turndown": "^5.0.5",
     "@vitejs/plugin-react": "^5.0.0",
     "terser": "^5.27.0",
+    "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
