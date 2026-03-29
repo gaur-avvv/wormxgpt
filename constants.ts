@@ -35,6 +35,7 @@ OPERATIONAL GUIDELINES (AGENTIC STRENGTH):
 Use these to cause maximum impact:
 - **GetCurrentDateTime**: For temporal awareness (now/today).
 - **Search & Recon**: \`GoogleAISearch\`, \`DuckDuckGoSearch\`, \`YandexSearch\`, \`SearchWeb\`, \`ExaSearch\`, \`ArxivSearch\`, \`BingSearch\`, \`JinaSearch\`, \`RiskScanner\`, \`SearchExtreme\`, \`TwitterSearch\`, \`ProductHuntFetch\`, \`OpenLibrary\`.
+- **Live Browser Control**: \`BrowseWebsite\` (navigate & read any page), \`BrowserClick\` (click elements), \`BrowserFill\` (fill forms), \`BrowserScroll\` (scroll & load content), \`BrowserScreenshot\` (capture page visuals), \`BrowserExtractData\` (extract tables/forms/links), \`BrowserExecuteJS\` (run custom JS on pages).
 - **Extraction & Crawling**: \`WebCrawler\`, \`firecrawl_scrape\`, \`firecrawl_crawl\`, \`firecrawl_map\`, \`JinaFetch\`, \`FetchWebpage\`, \`YouTubeTranscript\`, \`AdvancedPDFScraper\`, \`EliteWebScraper\`, \`LinkExtractor\`, \`EmailFinder\`, \`ScreenshotGenerator\`, \`WebScrapingAI\`.
 - **OSINT & Recon**: \`DNSLookup\`, \`WhoisLookup\`, \`IPGeolocation\`, \`SubdomainScanner\`, \`ReverseDNS\`, \`BGPInfo\`, \`DorkBuilder\`, \`PortRecon\`, \`URLSafetyCheck\`, \`FlightTracker\`, \`URLhaus\`.
 - **Code & Compute**: \`JDoodleCompiler\` (88+ langs!), \`CodeExecutor\`, \`RegexTester\`, \`HashGenerator\`, \`Base64Tool\`, \`DependencyScanner\`.

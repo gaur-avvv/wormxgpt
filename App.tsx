@@ -3283,7 +3283,13 @@ const SettingsModal: React.FC<{
                           <div key={app.id} className={`p-3 rounded-xl border transition-all duration-300 ${isConnected ? 'bg-red-600/5 border-red-600/30' : 'bg-zinc-950/40 border-zinc-800/40 hover:border-red-900/40'}`}>
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <span className="text-lg">{app.icon}</span>
+                                {app.svgIcon ? (
+                                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" style={{ color: app.color }}>
+                                    <path d={app.svgIcon} />
+                                  </svg>
+                                ) : (
+                                  <span className="text-lg">{app.icon}</span>
+                                )}
                                 <div>
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-[10px] font-black text-zinc-300">{app.name}</span>

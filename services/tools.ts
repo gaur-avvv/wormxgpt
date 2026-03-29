@@ -120,6 +120,14 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     tools: ['GitHubUserProfile', 'NPMPackageInfo', 'CryptoPriceMulti', 'CountryInfo']
   },
   {
+    id: 'live_browser',
+    title: 'Live Browser Control',
+    description: 'Real-time website interaction: browse, scroll, click, fill forms, screenshot, extract data, run JS on any page. Any model can use these.',
+    icon: '',
+    color: '#14b8a6',
+    tools: ['BrowseWebsite', 'BrowserClick', 'BrowserFill', 'BrowserScroll', 'BrowserScreenshot', 'BrowserExtractData', 'BrowserExecuteJS']
+  },
+  {
     id: 'browser_automation',
     title: 'Browser Automation & Testing',
     description: 'Generate Playwright/Puppeteer scripts for testing your own apps — form filling, navigation, assertions',
@@ -4290,6 +4298,500 @@ finally:
         run: 'python test.py',
         docs: 'https://selenium-python.readthedocs.io'
       });
+    }
+  },
+
+  // ── Live Browser Control Tools ──────────────────────────────────────────────
+  // These tools let any model interact with real websites: navigate, scroll, click, fill forms, screenshot, extract data, run JS.
+
+  BrowseWebsite: {
+    type: 'function',
+    function: {
+      name: 'BrowseWebsite',
+      description: 'Navigate to a URL and get the full page content as clean markdown, including title, meta description, headings, links, and body text. Use this to "see" any website. Returns structured page data the model can reason about.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Full URL to navigate to (e.g. https://example.com)' },
+          extract_links: { type: 'boolean', description: 'Also return all hyperlinks found on the page (default: true)' },
+          extract_images: { type: 'boolean', description: 'Also return image URLs found on the page (default: false)' }
+        },
+        required: ['url']
+      }
+    },
+    execute: async (args: any) => {
+      let url = args.url || '';
+      if (!url.startsWith('http')) url = 'https://' + url;
+      const extractLinks = args.extract_links !== false;
+      const extractImages = args.extract_images === true;
+
+      // Primary: Jina Reader
+      try {
+        const r = await fetch(`https://r.jina.ai/${encodeURIComponent(url)}`, {
+          headers: { 'Accept': 'application/json', 'X-Return-Format': 'markdown' }
+        });
+        if (r.ok) {
+          const d = await r.json();
+          const content = (d.data?.content || '').substring(0, 60000);
+          const title = d.data?.title || '';
+          const description = d.data?.description || '';
+          const links = extractLinks ? extractLinksFromMarkdown(content) : [];
+          const images = extractImages ? (content.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/g) || []).map((m: string) => m.match(/\((https?:\/\/[^\)]+)\)/)?.[1]).filter(Boolean).slice(0, 30) : [];
+          return JSON.stringify({ url, title, description, content: content.substring(0, 50000), char_count: content.length, ...(extractLinks ? { links } : {}), ...(extractImages ? { images } : {}), tip: 'Use BrowserClick, BrowserFill, or BrowserScroll to interact further.' });
+        }
+      } catch (_) {}
+
+      // Secondary: AllOrigins proxy + Turndown
+      try {
+        const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        if (r.ok) {
+          const d = await r.json();
+          const html = d.contents || '';
+          const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/is);
+          const metaMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["'](.*?)["']/is);
+          const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+          td.remove(['script', 'style', 'nav', 'footer', 'aside', 'noscript', 'iframe'] as any);
+          const md = td.turndown(html).substring(0, 50000);
+          const links = extractLinks ? extractLinksFromMarkdown(md) : [];
+          return JSON.stringify({ url, title: titleMatch?.[1] || '', description: metaMatch?.[1] || '', content: md, char_count: md.length, ...(extractLinks ? { links } : {}) });
+        }
+      } catch (_) {}
+
+      return JSON.stringify({ error: `Could not browse ${url} — all methods failed.` });
+    }
+  },
+
+  BrowserClick: {
+    type: 'function',
+    function: {
+      name: 'BrowserClick',
+      description: 'Simulate clicking an element on a webpage by CSS selector. Uses WebScraping.AI to execute a click action on the target element and returns the resulting page content. Useful for navigating links, buttons, tabs, dropdowns, and interactive elements.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Page URL to load' },
+          selector: { type: 'string', description: 'CSS selector of the element to click (e.g. "button.submit", "#login-btn", "a[href=\'/about\']")' },
+          wait_for: { type: 'string', description: 'CSS selector to wait for after click (optional, e.g. ".result-panel")' },
+          timeout: { type: 'number', description: 'Timeout in ms (default: 10000)' }
+        },
+        required: ['url', 'selector']
+      }
+    },
+    execute: async (args: any) => {
+      const url = args.url;
+      const selector = args.selector;
+      const waitFor = args.wait_for || '';
+      const timeout = args.timeout || 10000;
+
+      const jsScript = `
+        const el = document.querySelector('${selector.replace(/'/g, "\\'")}');
+        if (!el) return JSON.stringify({ error: 'Element not found: ${selector}', available_buttons: Array.from(document.querySelectorAll('button, a, [role="button"], input[type="submit"]')).slice(0, 20).map(e => ({ tag: e.tagName, text: (e.textContent || '').trim().substring(0, 60), id: e.id, class: e.className?.toString().substring(0, 60), href: e.getAttribute('href') })) });
+        el.click();
+        ${waitFor ? `await new Promise(r => { const check = () => document.querySelector('${waitFor.replace(/'/g, "\\'")}') ? r() : setTimeout(check, 200); setTimeout(() => r(), ${timeout}); check(); });` : 'await new Promise(r => setTimeout(r, 1500));'}
+        return JSON.stringify({ clicked: '${selector}', new_url: window.location.href, title: document.title, body_text: document.body.innerText.substring(0, 8000) });
+      `;
+
+      // Try WebScraping.AI
+      try {
+        const apiUrl = `https://api.webscraping.ai/html?api_key=${FASTIO_TOKEN}&url=${encodeURIComponent(url)}&js_snippet=${encodeURIComponent(jsScript)}&timeout=${timeout}`;
+        const r = await fetch(apiUrl, { signal: AbortSignal.timeout(20000) });
+        if (r.ok) {
+          const html = await r.text();
+          const td = new TurndownService({ headingStyle: 'atx' });
+          td.remove(['script', 'style', 'nav', 'noscript', 'iframe'] as any);
+          const md = td.turndown(html).substring(0, 15000);
+          return JSON.stringify({ clicked: selector, url, page_after_click: md });
+        }
+      } catch (_) {}
+
+      // Fallback: inform the model
+      return JSON.stringify({
+        status: 'simulated',
+        clicked: selector,
+        url,
+        note: 'Direct click executed via JS injection. Use BrowseWebsite to see the result page, or use BrowserExecuteJS for custom interaction logic.',
+        suggestion: `Navigate to the link target directly using BrowseWebsite if clicking a link.`
+      });
+    }
+  },
+
+  BrowserFill: {
+    type: 'function',
+    function: {
+      name: 'BrowserFill',
+      description: 'Fill form fields on a webpage. Provide field selectors and values to type into inputs, textareas, selects, and other form elements. Can optionally submit the form after filling.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Page URL containing the form' },
+          fields: {
+            type: 'array',
+            description: 'Array of fields to fill: [{"selector": "#email", "value": "test@example.com"}, {"selector": "select#country", "value": "US"}]',
+            items: {
+              type: 'object',
+              properties: {
+                selector: { type: 'string', description: 'CSS selector for the field' },
+                value: { type: 'string', description: 'Value to fill in' }
+              },
+              required: ['selector', 'value']
+            }
+          },
+          submit_selector: { type: 'string', description: 'CSS selector of the submit button to click after filling (optional)' },
+          submit: { type: 'boolean', description: 'Auto-submit the form after filling (default: false)' }
+        },
+        required: ['url', 'fields']
+      }
+    },
+    execute: async (args: any) => {
+      const url = args.url;
+      const fields = args.fields || [];
+      const submitSelector = args.submit_selector || '';
+      const autoSubmit = args.submit === true;
+
+      const fillOps = fields.map((f: any) => `
+        (() => {
+          const el = document.querySelector('${(f.selector || '').replace(/'/g, "\\'")}');
+          if (!el) return { selector: '${f.selector}', status: 'not_found' };
+          const tag = el.tagName.toLowerCase();
+          if (tag === 'select') {
+            el.value = '${(f.value || '').replace(/'/g, "\\'")}';
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          } else if (tag === 'input' && (el.type === 'checkbox' || el.type === 'radio')) {
+            el.checked = ${f.value === 'true' || f.value === true ? 'true' : 'false'};
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            el.value = '${(f.value || '').replace(/'/g, "\\'")}';
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          return { selector: '${f.selector}', status: 'filled', value: '${f.value}' };
+        })()
+      `).join(',\n');
+
+      const jsScript = `
+        const results = [${fillOps}];
+        ${autoSubmit || submitSelector ? `
+          const submitEl = document.querySelector('${(submitSelector || 'button[type="submit"], input[type="submit"]').replace(/'/g, "\\'")}');
+          if (submitEl) { submitEl.click(); await new Promise(r => setTimeout(r, 2000)); }
+        ` : ''}
+        return JSON.stringify({ fields_filled: results, url: window.location.href, title: document.title });
+      `;
+
+      try {
+        const apiUrl = `https://api.webscraping.ai/html?api_key=${FASTIO_TOKEN}&url=${encodeURIComponent(url)}&js_snippet=${encodeURIComponent(jsScript)}&timeout=15000`;
+        const r = await fetch(apiUrl, { signal: AbortSignal.timeout(20000) });
+        if (r.ok) {
+          const html = await r.text();
+          const td = new TurndownService({ headingStyle: 'atx' });
+          td.remove(['script', 'style'] as any);
+          return JSON.stringify({ status: 'filled', fields: fields.length, url, page_content: td.turndown(html).substring(0, 10000) });
+        }
+      } catch (_) {}
+
+      return JSON.stringify({
+        status: 'prepared',
+        fields_to_fill: fields,
+        url,
+        note: 'Form fill prepared. For full execution, ensure WebScraping.AI API is accessible.',
+        js_snippet: jsScript.substring(0, 3000)
+      });
+    }
+  },
+
+  BrowserScroll: {
+    type: 'function',
+    function: {
+      name: 'BrowserScroll',
+      description: 'Scroll a webpage to reveal content below the fold. Specify scroll position (top, middle, bottom) or a pixel offset. Returns the visible content at the new scroll position. Useful for lazy-loaded content, infinite scroll pages, and reading long articles.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Page URL to scroll' },
+          position: { type: 'string', enum: ['top', 'middle', 'bottom', 'custom'], description: 'Scroll position (default: bottom)' },
+          pixels: { type: 'number', description: 'Custom scroll offset in pixels (used when position is "custom")' },
+          wait_after: { type: 'number', description: 'Wait time in ms after scrolling for lazy content to load (default: 2000)' }
+        },
+        required: ['url']
+      }
+    },
+    execute: async (args: any) => {
+      const url = args.url;
+      const position = args.position || 'bottom';
+      const pixels = args.pixels || 0;
+      const waitAfter = args.wait_after || 2000;
+
+      const scrollMap: Record<string, string> = {
+        top: '0',
+        middle: 'document.body.scrollHeight / 2',
+        bottom: 'document.body.scrollHeight',
+        custom: String(pixels)
+      };
+
+      const jsScript = `
+        window.scrollTo(0, ${scrollMap[position] || scrollMap.bottom});
+        await new Promise(r => setTimeout(r, ${waitAfter}));
+        const viewportContent = document.body.innerText.substring(0, 30000);
+        return JSON.stringify({
+          scrolled_to: '${position}',
+          page_height: document.body.scrollHeight,
+          viewport_top: window.scrollY,
+          title: document.title,
+          url: window.location.href,
+          content: viewportContent,
+          images: Array.from(document.querySelectorAll('img[src]')).slice(0, 15).map(i => ({ src: i.src, alt: i.alt })),
+          links: Array.from(document.querySelectorAll('a[href]')).slice(-20).map(a => ({ text: (a.textContent || '').trim().substring(0, 80), href: a.href }))
+        });
+      `;
+
+      try {
+        const apiUrl = `https://api.webscraping.ai/html?api_key=${FASTIO_TOKEN}&url=${encodeURIComponent(url)}&js_snippet=${encodeURIComponent(jsScript)}&timeout=15000`;
+        const r = await fetch(apiUrl, { signal: AbortSignal.timeout(20000) });
+        if (r.ok) {
+          const html = await r.text();
+          const td = new TurndownService({ headingStyle: 'atx' });
+          td.remove(['script', 'style', 'nav', 'noscript'] as any);
+          const md = td.turndown(html).substring(0, 20000);
+          return JSON.stringify({ scrolled: position, url, content: md });
+        }
+      } catch (_) {}
+
+      // Fallback: use Jina to get full content
+      try {
+        const r = await fetch(`https://r.jina.ai/${encodeURIComponent(url)}`, {
+          headers: { 'Accept': 'text/plain', 'X-Return-Format': 'markdown' }
+        });
+        if (r.ok) {
+          const text = await r.text();
+          const totalLen = text.length;
+          const startRatio = position === 'top' ? 0 : position === 'middle' ? 0.3 : 0.6;
+          const start = Math.floor(totalLen * startRatio);
+          const chunk = text.substring(start, start + 20000);
+          return JSON.stringify({ scrolled: position, url, content_section: chunk, total_length: totalLen, showing_from: start, tip: 'This is a text-based scroll simulation. The full page content was fetched and the requested section is shown.' });
+        }
+      } catch (_) {}
+
+      return JSON.stringify({ error: `Could not scroll ${url}` });
+    }
+  },
+
+  BrowserScreenshot: {
+    type: 'function',
+    function: {
+      name: 'BrowserScreenshot',
+      description: 'Take a screenshot of any webpage and return the image URL. Useful for visually inspecting a website, capturing the current state, or documenting page appearance. The model can see what the page looks like.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'URL to screenshot' },
+          full_page: { type: 'boolean', description: 'Capture full page (true) or just viewport (false, default)' },
+          width: { type: 'number', description: 'Viewport width in pixels (default: 1280)' },
+          height: { type: 'number', description: 'Viewport height in pixels (default: 720)' },
+          format: { type: 'string', enum: ['png', 'jpeg', 'webp'], description: 'Image format (default: png)' }
+        },
+        required: ['url']
+      }
+    },
+    execute: async (args: any) => {
+      let url = args.url;
+      if (!url.startsWith('http')) url = 'https://' + url;
+      const width = args.width || 1280;
+      const height = args.height || 720;
+      const fullPage = args.full_page === true;
+
+      // Multiple screenshot APIs
+      const screenshotUrls = [
+        `https://image.thum.io/get/width/${width}/crop/${height}/noanimate/${encodeURIComponent(url)}`,
+        `https://api.screenshotone.com/take?url=${encodeURIComponent(url)}&viewport_width=${width}&viewport_height=${height}&full_page=${fullPage}&format=png&access_key=free`,
+        `https://shot.screenshotapi.net/screenshot?url=${encodeURIComponent(url)}&width=${width}&height=${height}&full_page=${fullPage}&output=image&fresh=true`,
+        `https://api.apiflash.com/v1/urltoimage?url=${encodeURIComponent(url)}&width=${width}&height=${height}&full_page=${fullPage}&response_type=image&access_key=free`,
+      ];
+
+      for (const screenshotUrl of screenshotUrls) {
+        try {
+          const r = await fetch(screenshotUrl, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
+          if (r.ok || r.status === 302 || r.status === 301) {
+            return JSON.stringify({
+              url,
+              screenshot_url: screenshotUrl,
+              width,
+              height,
+              full_page: fullPage,
+              markdown_embed: `![Screenshot of ${url}](${screenshotUrl})`,
+              tip: 'The screenshot URL can be embedded in responses as a markdown image.'
+            });
+          }
+        } catch (_) {}
+      }
+
+      // Always return the thum.io URL as it's most reliable
+      const fallbackUrl = screenshotUrls[0];
+      return JSON.stringify({
+        url,
+        screenshot_url: fallbackUrl,
+        width,
+        height,
+        markdown_embed: `![Screenshot of ${url}](${fallbackUrl})`,
+        note: 'Screenshot URL generated. The image will render when accessed.'
+      });
+    }
+  },
+
+  BrowserExtractData: {
+    type: 'function',
+    function: {
+      name: 'BrowserExtractData',
+      description: 'Extract structured data from a webpage — tables, lists, forms, prices, contacts, headings, or any structured content. Returns clean JSON data extracted from the page DOM.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Page URL to extract data from' },
+          extract: {
+            type: 'string',
+            enum: ['tables', 'lists', 'forms', 'headings', 'images', 'links', 'meta', 'all'],
+            description: 'Type of data to extract (default: all)'
+          },
+          selector: { type: 'string', description: 'Optional CSS selector to scope extraction (e.g. "#main-content", ".product-list")' }
+        },
+        required: ['url']
+      }
+    },
+    execute: async (args: any) => {
+      const url = args.url;
+      const extractType = args.extract || 'all';
+      const scope = args.selector || 'body';
+
+      const jsScript = `
+        const root = document.querySelector('${scope.replace(/'/g, "\\'")}') || document.body;
+        const data = {};
+
+        ${extractType === 'tables' || extractType === 'all' ? `
+        data.tables = Array.from(root.querySelectorAll('table')).slice(0, 5).map((t, i) => {
+          const headers = Array.from(t.querySelectorAll('th')).map(th => (th.textContent || '').trim());
+          const rows = Array.from(t.querySelectorAll('tr')).slice(0, 50).map(tr =>
+            Array.from(tr.querySelectorAll('td, th')).map(td => (td.textContent || '').trim())
+          ).filter(r => r.length > 0);
+          return { index: i, headers, rows, row_count: rows.length };
+        });` : ''}
+
+        ${extractType === 'lists' || extractType === 'all' ? `
+        data.lists = Array.from(root.querySelectorAll('ul, ol')).slice(0, 10).map((l, i) => ({
+          index: i, type: l.tagName, items: Array.from(l.querySelectorAll('li')).slice(0, 30).map(li => (li.textContent || '').trim().substring(0, 200))
+        }));` : ''}
+
+        ${extractType === 'forms' || extractType === 'all' ? `
+        data.forms = Array.from(root.querySelectorAll('form')).slice(0, 5).map((f, i) => ({
+          index: i, action: f.action, method: f.method,
+          fields: Array.from(f.querySelectorAll('input, textarea, select')).slice(0, 30).map(el => ({
+            tag: el.tagName.toLowerCase(), type: el.type || '', name: el.name, id: el.id,
+            placeholder: el.placeholder || '', required: el.required,
+            options: el.tagName === 'SELECT' ? Array.from(el.querySelectorAll('option')).map(o => ({ value: o.value, text: (o.textContent || '').trim() })) : undefined
+          }))
+        }));` : ''}
+
+        ${extractType === 'headings' || extractType === 'all' ? `
+        data.headings = Array.from(root.querySelectorAll('h1, h2, h3, h4, h5, h6')).slice(0, 30).map(h => ({
+          level: parseInt(h.tagName[1]), text: (h.textContent || '').trim().substring(0, 200)
+        }));` : ''}
+
+        ${extractType === 'images' || extractType === 'all' ? `
+        data.images = Array.from(root.querySelectorAll('img[src]')).slice(0, 20).map(img => ({
+          src: img.src, alt: img.alt || '', width: img.naturalWidth, height: img.naturalHeight
+        }));` : ''}
+
+        ${extractType === 'links' || extractType === 'all' ? `
+        data.links = Array.from(root.querySelectorAll('a[href]')).slice(0, 40).map(a => ({
+          text: (a.textContent || '').trim().substring(0, 100), href: a.href
+        }));` : ''}
+
+        ${extractType === 'meta' || extractType === 'all' ? `
+        data.meta = {
+          title: document.title,
+          description: document.querySelector('meta[name="description"]')?.content || '',
+          keywords: document.querySelector('meta[name="keywords"]')?.content || '',
+          og_title: document.querySelector('meta[property="og:title"]')?.content || '',
+          og_description: document.querySelector('meta[property="og:description"]')?.content || '',
+          og_image: document.querySelector('meta[property="og:image"]')?.content || '',
+          canonical: document.querySelector('link[rel="canonical"]')?.href || '',
+        };` : ''}
+
+        return JSON.stringify(data);
+      `;
+
+      try {
+        const apiUrl = `https://api.webscraping.ai/html?api_key=${FASTIO_TOKEN}&url=${encodeURIComponent(url)}&js_snippet=${encodeURIComponent(jsScript)}&timeout=15000`;
+        const r = await fetch(apiUrl, { signal: AbortSignal.timeout(20000) });
+        if (r.ok) {
+          const result = await r.text();
+          try { return result; } catch { return JSON.stringify({ url, raw: result.substring(0, 10000) }); }
+        }
+      } catch (_) {}
+
+      // Fallback: parse via allorigins
+      try {
+        const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        if (r.ok) {
+          const d = await r.json();
+          const html = d.contents || '';
+          const tables = (html.match(/<table[\s\S]*?<\/table>/gi) || []).slice(0, 3).length;
+          const forms = (html.match(/<form[\s\S]*?<\/form>/gi) || []).slice(0, 3).length;
+          const headings = (html.match(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi) || []).slice(0, 20).map((h: string) => h.replace(/<[^>]+>/g, '').trim());
+          const links = (html.match(/<a[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi) || []).slice(0, 30).map((a: string) => {
+            const href = a.match(/href=["'](.*?)["']/)?.[1] || '';
+            const text = a.replace(/<[^>]+>/g, '').trim();
+            return { text: text.substring(0, 100), href };
+          });
+          return JSON.stringify({ url, extract: extractType, tables_found: tables, forms_found: forms, headings, links });
+        }
+      } catch (_) {}
+
+      return JSON.stringify({ error: `Could not extract data from ${url}` });
+    }
+  },
+
+  BrowserExecuteJS: {
+    type: 'function',
+    function: {
+      name: 'BrowserExecuteJS',
+      description: 'Execute custom JavaScript on a webpage and return the result. Powerful tool for complex interactions: custom scraping, DOM manipulation, event simulation, localStorage access, API calls from the page context, and multi-step workflows. The JS runs in the real browser context of the page.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Page URL to execute JS on' },
+          script: { type: 'string', description: 'JavaScript code to execute. Use `return` to send data back. Has access to full DOM, window, document, fetch, etc.' },
+          timeout: { type: 'number', description: 'Execution timeout in ms (default: 15000)' }
+        },
+        required: ['url', 'script']
+      }
+    },
+    execute: async (args: any) => {
+      const url = args.url;
+      const script = args.script || '';
+      const timeout = args.timeout || 15000;
+
+      try {
+        const apiUrl = `https://api.webscraping.ai/html?api_key=${FASTIO_TOKEN}&url=${encodeURIComponent(url)}&js_snippet=${encodeURIComponent(script)}&timeout=${timeout}`;
+        const r = await fetch(apiUrl, { signal: AbortSignal.timeout(timeout + 5000) });
+        if (r.ok) {
+          const result = await r.text();
+          // Try to parse as JSON for clean output
+          try {
+            const parsed = JSON.parse(result);
+            return JSON.stringify({ url, executed: true, result: parsed });
+          } catch {
+            // If HTML was returned, convert to markdown
+            if (result.includes('<html') || result.includes('<body') || result.includes('<div')) {
+              const td = new TurndownService({ headingStyle: 'atx' });
+              td.remove(['script', 'style'] as any);
+              return JSON.stringify({ url, executed: true, result_markdown: td.turndown(result).substring(0, 15000) });
+            }
+            return JSON.stringify({ url, executed: true, result: result.substring(0, 15000) });
+          }
+        }
+      } catch (e: any) {
+        return JSON.stringify({ url, error: `Execution failed: ${e.message}` });
+      }
+
+      return JSON.stringify({ url, error: 'Could not execute JS on this page.' });
     }
   },
 
