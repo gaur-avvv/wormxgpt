@@ -613,7 +613,7 @@ const Sidebar: React.FC<{
     } | null>(null);
     const [sidebarVerificationStatuses, setSidebarVerificationStatuses] = useState<Record<string, 'idle' | 'verifying' | 'valid' | 'invalid'>>({});
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [settingsTab, setSettingsTab] = useState<'params' | 'keys' | 'mcp'>('params');
+    const [settingsTab, setSettingsTab] = useState<'params' | 'keys' | 'mcp' | 'apps'>('params');
 
     const providers: { key: keyof AppSettings; label: string }[] = [
       { key: 'geminiApiKey', label: 'Google_Gemini' },
@@ -900,10 +900,10 @@ const Sidebar: React.FC<{
             {settingsOpen && (
               <div className="bg-black/40 max-h-[40vh] overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 <div className="flex border-b border-[#F120F0]/20">
-                  {(['params', 'keys', 'mcp'] as const).map(tab => (
+                  {(['params', 'keys', 'mcp', 'apps'] as const).map(tab => (
                     <button key={tab} onClick={() => setSettingsTab(tab)}
                       className={`flex-1 py-1.5 text-[7px] font-black uppercase tracking-widest transition-all ${settingsTab === tab ? 'text-[#F120F0] border-b-2 border-[#F120F0] bg-[#F120F0]/10' : 'text-[#F120F0]/40 hover:text-[#F120F0]/70'}`}>
-                      {tab === 'params' ? 'Params' : tab === 'keys' ? 'API Keys' : 'MCP'}
+                      {tab === 'params' ? 'Params' : tab === 'keys' ? 'API Keys' : tab === 'mcp' ? 'MCP' : 'Apps'}
                     </button>
                   ))}
                 </div>
@@ -1106,6 +1106,111 @@ const Sidebar: React.FC<{
                 </div>
               </div>
             )}
+
+                  {settingsTab === 'apps' && (
+                    <div className="space-y-3">
+                      {/* App Integrations Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]">App_Integrations</div>
+                        <div className="text-[7px] font-mono text-[#F120F0]/40">{APP_INTEGRATIONS.filter(a => (settings.connectedApps || []).includes(a.id)).length}/{APP_INTEGRATIONS.length}</div>
+                      </div>
+
+                      {/* App categories */}
+                      {(() => {
+                        const cats = [...new Set(APP_INTEGRATIONS.map(i => i.category))];
+                        return cats.map(cat => (
+                          <div key={cat} className="space-y-1.5">
+                            <div className="text-[7px] font-black uppercase tracking-widest text-[#F120F0]/50 border-b border-[#F120F0]/10 pb-0.5">{cat}</div>
+                            {APP_INTEGRATIONS.filter(i => i.category === cat).map(app => {
+                              const settingsKeyTyped = app.settingsKey as keyof AppSettings;
+                              const hasToken = app.authType === 'none' || !!((settings as any)?.[settingsKeyTyped]);
+                              const isConnected = app.authType === 'none' || (hasToken && (settings.connectedApps || []).includes(app.id));
+                              return (
+                                <div key={app.id} className={`p-2 rounded-lg border transition-all duration-300 ${isConnected ? 'bg-[#F120F0]/5 border-[#F120F0]/30' : 'bg-black/40 border-zinc-800/40 hover:border-[#F120F0]/20'}`}>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                      {app.svgIcon ? (
+                                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" style={{ color: app.color }}>
+                                          <path d={app.svgIcon} />
+                                        </svg>
+                                      ) : (
+                                        <span className="text-sm">{app.icon}</span>
+                                      )}
+                                      <div>
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[8px] font-black text-zinc-300">{app.name}</span>
+                                          <span className="text-[6px] font-black uppercase px-1 py-0.5 rounded" style={{ background: isConnected ? 'rgba(34,197,94,0.15)' : 'rgba(241,32,240,0.1)', color: isConnected ? '#22c55e' : '#71717a' }}>
+                                            {isConnected ? 'LINKED' : app.authType === 'none' ? 'FREE' : app.authType.toUpperCase()}
+                                          </span>
+                                        </div>
+                                        <div className="text-[6px] text-zinc-600">{app.description}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* API Key/Token Input */}
+                                  {app.authType !== 'none' && app.settingsKey && (
+                                    <div className="space-y-1">
+                                      <div className="flex gap-1">
+                                        <input type="password" value={(settings as any)?.[settingsKeyTyped] || ''}
+                                          onChange={(e) => setSettings(prev => ({ ...prev, [settingsKeyTyped]: e.target.value }))}
+                                          placeholder={`${app.name} ${app.authType === 'webhook' ? 'Webhook URL' : app.authType === 'bot_token' ? 'Bot Token' : 'API Key'}`}
+                                          className="flex-1 bg-black/80 border border-[#F120F0]/20 rounded px-2 py-1 text-[8px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-mono min-w-0" />
+                                        <button
+                                          onClick={() => {
+                                            const currentApps = settings.connectedApps || [];
+                                            if (isConnected) {
+                                              setSettings(prev => ({ ...prev, connectedApps: currentApps.filter((a: string) => a !== app.id) }));
+                                              integrationRegistry.disconnect(app.id);
+                                            } else if (hasToken) {
+                                              setSettings(prev => ({ ...prev, connectedApps: [...currentApps, app.id] }));
+                                              integrationRegistry.connect(app.id);
+                                            }
+                                          }}
+                                          disabled={!hasToken}
+                                          className={`text-[7px] font-black uppercase px-2 py-1 rounded flex-shrink-0 transition-all ${isConnected ? 'text-red-400 border border-red-500/30 hover:bg-red-900/20' : hasToken ? 'text-green-400 border border-green-500/30 hover:bg-green-900/20' : 'text-zinc-700 border border-zinc-800 cursor-not-allowed'}`}>
+                                          {isConnected ? 'UNLINK' : 'LINK'}
+                                        </button>
+                                      </div>
+                                      {app.extraSettings?.map(extra => (
+                                        <input key={extra.key} type="password" value={(settings as any)?.[extra.key] || ''}
+                                          onChange={(e) => setSettings(prev => ({ ...prev, [extra.key]: e.target.value }))}
+                                          placeholder={extra.placeholder}
+                                          className="w-full bg-black/80 border border-[#F120F0]/20 rounded px-2 py-1 text-[8px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-mono" />
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Links */}
+                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {app.docsUrl && (
+                                      <a href={app.docsUrl} target="_blank" rel="noopener noreferrer" className="text-[6px] font-black uppercase px-1 py-0.5 rounded border border-zinc-800 text-zinc-500 hover:border-[#F120F0] hover:text-[#F120F0] transition-all">Docs</a>
+                                    )}
+                                    {app.getTokenUrl && (
+                                      <a href={app.getTokenUrl} target="_blank" rel="noopener noreferrer" className="text-[6px] font-black uppercase px-1 py-0.5 rounded border border-[#F120F0]/30 text-[#F120F0]/50 hover:border-[#F120F0] hover:text-[#F120F0] transition-all">Get Key</a>
+                                    )}
+                                  </div>
+
+                                  {/* Feature badges */}
+                                  {isConnected && (
+                                    <div className="mt-1.5 flex flex-wrap gap-0.5">
+                                      {app.features.map(f => (
+                                        <span key={f} className="text-[6px] font-bold uppercase px-1 py-0.5 rounded bg-[#F120F0]/10 text-[#F120F0]/60">{f}</span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ));
+                      })()}
+
+                      <div className="text-[7px] text-zinc-600 p-2 bg-black/30 rounded border border-zinc-800/40">
+                        Linked apps enable tools in the App Integrations category. Enable them from the Agent tools panel. 1SecMail requires no API key.
+                      </div>
+                    </div>
+                  )}
           </div>
 
           {/* Footer Actions */}
