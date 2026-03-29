@@ -1634,6 +1634,7 @@ const App: React.FC = () => {
   const [isVoiceProcessing, setIsVoiceProcessing] = useState(false);
   const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showAppsPage, setShowAppsPage] = useState(false);
   const [toolSearchQuery, setToolSearchQuery] = useState('');
   const [autocomplete, setAutocomplete] = useState<{ visible: boolean; type: 'model' | 'tool' | null; query: string; index: number }>({ visible: false, type: null, query: '', index: 0 });
 
@@ -2527,6 +2528,17 @@ const App: React.FC = () => {
                   <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.91,7.62,6.29L5.23,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.72,8.87 c-0.11,0.2-0.06,0.47,0.12,0.61l2.03,1.58C4.84,11.36,4.82,11.68,4.82,12c0,0.32,0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.11-0.2,0.06-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
                 </svg>
               </button>
+
+              {/* Apps Page Button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowAppsPage(!showAppsPage); }}
+                className={`p-2 transition-all duration-300 ${showAppsPage ? 'text-red-400 scale-110' : 'text-red-900 hover:text-red-500'}`}
+                title={showAppsPage ? 'Back to Chat' : 'App Integrations'}
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" />
+                </svg>
+              </button>
               <div className="flex items-center gap-1 sm:gap-2 group cursor-pointer hover:scale-105 transition-transform duration-300" onClick={handleNewSession}>
                 <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-600 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.6)] hover:shadow-[0_0_20px_rgba(220,38,38,0.8)] transition-all duration-300"></div>
                 <h1
@@ -2596,6 +2608,123 @@ const App: React.FC = () => {
             </div>
           </header>
 
+          {/* Apps Page - Full Main Content Area */}
+          {showAppsPage ? (
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-8 md:px-12 py-6 md:py-10 scroll-smooth custom-scrollbar bg-gradient-to-b from-black via-[#0a0000] to-black">
+              <div className="max-w-6xl mx-auto w-full">
+                {/* Apps Page Header */}
+                <div className="mb-8 text-center">
+                  <div className="flex items-center justify-center gap-3 mb-2">
+                    <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse shadow-[0_0_15px_#dc2626]"></div>
+                    <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-[0.2em]" style={{ color: '#ff0000', textShadow: '0 0 10px #ff000080, 0 0 20px #dc262640' }}>
+                      App_Integrations
+                    </h2>
+                    <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse shadow-[0_0_15px_#dc2626]"></div>
+                  </div>
+                  <p className="text-[11px] text-red-900/60 font-mono uppercase tracking-widest">Connect external services to enhance your terminal capabilities</p>
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">{APP_INTEGRATIONS.length} Available</span>
+                    <span className="text-zinc-700">|</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-green-600">{APP_INTEGRATIONS.filter(a => settings[a.settingsKey as keyof AppSettings]).length} Connected</span>
+                  </div>
+                </div>
+
+                {/* Category Sections */}
+                {(['developer', 'communication', 'productivity', 'social', 'media', 'utility'] as const).map(cat => {
+                  const apps = APP_INTEGRATIONS.filter(a => a.category === cat);
+                  if (apps.length === 0) return null;
+                  return (
+                    <div key={cat} className="mb-8">
+                      <div className="flex items-center gap-3 mb-4 px-1">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-900/40 to-transparent"></div>
+                        <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-red-600" style={{ textShadow: '0 0 8px #dc262640' }}>{cat}</h3>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-900/40 to-transparent"></div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {apps.map(app => {
+                          const isConnected = !!settings[app.settingsKey as keyof AppSettings];
+                          return (
+                            <div key={app.id} className={`relative group border-2 rounded-xl p-4 transition-all duration-500 hover:scale-[1.02] ${isConnected ? 'border-green-600/40 bg-green-950/10 hover:border-green-500/60 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]' : 'border-red-900/30 bg-[#080404] hover:border-red-600/50 hover:shadow-[0_0_20px_rgba(220,38,38,0.1)]'}`}>
+                              {/* Status Badge */}
+                              <div className={`absolute top-3 right-3 flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${isConnected ? 'bg-green-600/20 text-green-500 border border-green-600/30' : 'bg-zinc-900 text-zinc-600 border border-zinc-800'}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_5px_#22c55e] animate-pulse' : 'bg-zinc-700'}`}></div>
+                                {isConnected ? 'Connected' : 'Offline'}
+                              </div>
+
+                              {/* App Icon & Name */}
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-lg flex items-center justify-center border-2 transition-all duration-300" style={{ borderColor: `${app.color}40`, background: `${app.color}10` }}>
+                                  {app.svgIcon ? (
+                                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill={app.color}><path d={app.svgIcon} /></svg>
+                                  ) : (
+                                    <span className="text-lg">{app.icon}</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-black uppercase tracking-wider text-red-400">{app.name}</h4>
+                                  <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-600">{app.authType.replace('_', ' ')}</span>
+                                </div>
+                              </div>
+
+                              {/* Description */}
+                              <p className="text-[10px] text-zinc-500 mb-3 leading-relaxed">{app.description}</p>
+
+                              {/* Features */}
+                              <div className="flex flex-wrap gap-1 mb-3">
+                                {app.features.slice(0, 4).map((f, i) => (
+                                  <span key={i} className="px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider border rounded bg-black/50 text-zinc-500 border-zinc-800/50">{f}</span>
+                                ))}
+                                {app.features.length > 4 && (
+                                  <span className="px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider text-zinc-600">+{app.features.length - 4}</span>
+                                )}
+                              </div>
+
+                              {/* API Key Input */}
+                              <div className="space-y-2">
+                                <input
+                                  type="password"
+                                  placeholder={`${app.name} API Key`}
+                                  value={(settings[app.settingsKey as keyof AppSettings] as string) || ''}
+                                  onChange={(e) => setSettings((prev: AppSettings) => ({ ...prev, [app.settingsKey]: e.target.value }))}
+                                  className="w-full bg-black/60 border border-red-900/30 rounded-lg py-2 px-3 text-[11px] font-mono text-red-400 placeholder:text-red-950/40 focus:outline-none focus:border-red-600/60 focus:ring-1 focus:ring-red-600/20 transition-all"
+                                />
+                                {app.extraSettings?.map(extra => (
+                                  <input
+                                    key={extra.key}
+                                    type="text"
+                                    placeholder={extra.placeholder}
+                                    value={(settings[extra.key as keyof AppSettings] as string) || ''}
+                                    onChange={(e) => setSettings((prev: AppSettings) => ({ ...prev, [extra.key]: e.target.value }))}
+                                    className="w-full bg-black/60 border border-red-900/30 rounded-lg py-2 px-3 text-[11px] font-mono text-red-400 placeholder:text-red-950/40 focus:outline-none focus:border-red-600/60 focus:ring-1 focus:ring-red-600/20 transition-all"
+                                  />
+                                ))}
+                              </div>
+
+                              {/* Action Links */}
+                              <div className="flex items-center gap-3 mt-3">
+                                <a href={app.docsUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black uppercase tracking-widest text-red-900 hover:text-red-500 transition-colors">Docs</a>
+                                <a href={app.getTokenUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black uppercase tracking-widest text-red-900 hover:text-red-500 transition-colors">Get Key</a>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Back to Chat Button */}
+                <div className="mt-8 mb-12 text-center">
+                  <button
+                    onClick={() => setShowAppsPage(false)}
+                    className="px-6 py-2.5 border-2 border-red-600/50 rounded-lg text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-600 hover:text-black hover:border-red-600 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.3)]"
+                  >
+                    Back to Terminal
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
           <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 md:px-10 py-6 md:py-10 scroll-smooth custom-scrollbar">
             <div className="max-w-4xl mx-auto w-full min-h-full">
               {/* Session Indicator */}
@@ -2749,6 +2878,7 @@ const App: React.FC = () => {
               )}
             </div>
           </div>
+          )}
 
           <div ref={inputContainerRef} className="px-3 sm:px-6 md:px-10 py-3 sm:py-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-[#050000] via-[#0a0505] to-[#0a0505] border-t-2 border-red-900/30 z-10 hover:border-red-900/50 transition-colors duration-300">
             <div className="max-w-4xl mx-auto relative group">
