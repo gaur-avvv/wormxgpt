@@ -34,7 +34,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'search_recon',
     title: 'Search & Reconnaissance',
     description: 'Web search, news, academic research, and information gathering',
-    icon: '🔍',
+    icon: '',
     color: '#3b82f6',
     tools: ['SearchWeb', 'SearchSearxng', 'ExaSearch', 'BraveSearch', 'GoogleAISearch', 'DuckDuckGoSearch', 'YandexSearch', 'GetNews', 'WikipediaSummary', 'HackerNewsSearch', 'ImageSearch', 'ArxivSearch', 'RedditSearch', 'GitHubAPIFinder', 'GitHubTrending', 'MultiRegionalSearch', 'TwitterSearch', 'ProductHuntFetch', 'WorldNewsAPI']
   },
@@ -42,7 +42,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'extraction_crawling',
     title: 'Extraction & Crawling',
     description: 'Web scraping, content extraction, and data parsing',
-    icon: '🕷️',
+    icon: '',
     color: '#8b5cf6',
     tools: ['WebCrawler', 'SGAISmartScraper', 'SGAIAgenticScraper', 'SGAIMarkdownify', 'DeepResearch', 'FetchWebpage', 'YouTubeTranscript', 'AdvancedPDFScraper', 'EliteWebScraper', 'LinkExtractor', 'EmailFinder', 'AbstractScraper', 'FirecrawlScrape', 'FirecrawlCrawl', 'FirecrawlMap', 'ScreenshotGenerator', 'WebScrapingAI']
   },
@@ -50,7 +50,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'osint_recon',
     title: 'OSINT & Digital Recon',
     description: 'Domain analysis, IP geolocation, and technical reconnaissance',
-    icon: '📡',
+    icon: '',
     color: '#ec4899',
     tools: ['DNSLookup', 'WhoisLookup', 'IPGeolocation', 'SubdomainScanner', 'ReverseDNS', 'BGPInfo', 'DorkBuilder', 'PortRecon', 'URLSafetyCheck', 'FlightTracker', 'URLhaus', 'EmailReputation', 'OpenSearchDiscovery']
   },
@@ -58,7 +58,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'code_compute',
     title: 'Code & Compute',
     description: 'Code execution, compilation, and technical operations',
-    icon: '💻',
+    icon: '',
     color: '#10b981',
     tools: ['JDoodleCompiler', 'CodeExecutor', 'RegexTester', 'HashGenerator', 'Base64Tool', 'DependencyScanner']
   },
@@ -66,7 +66,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'communication_utility',
     title: 'Communication & Utility',
     description: 'Translation, temporary services, and utility functions',
-    icon: '🔧',
+    icon: '',
     color: '#f59e0b',
     tools: ['TextTranslator', 'PasteCreate', 'StoreMemory', 'ReadMemory', 'GenerateImage', 'TempEmail', 'BrokenLinkChecker', 'ImprovMX', 'GetWeather', 'CurrencyConverter', 'FlightTracker']
   },
@@ -74,7 +74,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'local_bridge_mcp',
     title: 'Local Bridge (MCP)',
     description: 'Local system access and Model Context Protocol bridge',
-    icon: '🌉',
+    icon: '',
     color: '#ef4444',
     tools: ['store_memory', 'read_memory', 'list_memories', 'delete_memory', 'list_directory', 'read_file', 'write_file', 'delete_file', 'search_files', 'get_system_stats', 'get_network_info', 'get_process_list', 'get_disk_usage', 'get_system_uptime', 'get_env_vars', 'get_file_hashes', 'ping_host', 'get_dns_records', 'get_alerts', 'get_forecast', 'get_github_repo', 'get_github_issues', 'get_github_commits', 'run_shell_command', 'run_puppeteer_script', 'http_request']
   },
@@ -82,7 +82,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'data_science',
     title: 'Data & Science',
     description: 'Financial data, academic papers, and scientific information',
-    icon: '📊',
+    icon: '',
     color: '#06b6d4',
     tools: ['GitHubAPIFinder', 'GitHubTrending', 'arxiv_download', 'arxiv_read', 'CryptoPrices', 'StockPrices', 'GetNews', 'CurrencyConverter', 'WorldNewsAPI', 'SeekingAlpha']
   },
@@ -90,7 +90,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'identity_profiles',
     title: 'Identity & Profiles',
     description: 'Identity generation and profile management',
-    icon: '🎭',
+    icon: '',
     color: '#84cc16',
     tools: ['FakeIdentityGenerator']
   },
@@ -98,7 +98,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'utility_tools',
     title: 'Utility & Generators',
     description: 'QR codes, passwords, UUIDs, formatters, and converters',
-    icon: '⚙️',
+    icon: '',
     color: '#f97316',
     tools: ['QRCodeGenerator', 'URLShortener', 'JSONFormatter', 'UUIDGenerator', 'PasswordGenerator', 'TimezoneConverter', 'ColorPaletteGenerator', 'MarkdownToHTML', 'TextToSpeechURL', 'ExchangeRates']
   },
@@ -106,7 +106,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'osint_advanced',
     title: 'OSINT Advanced',
     description: 'Certificate transparency, breach checks, Shodan, Wayback Machine',
-    icon: '🔬',
+    icon: '',
     color: '#dc2626',
     tools: ['HaveIBeenPwned', 'ShodanHostLookup', 'CertificateTransparency', 'WaybackMachineSnapshot', 'DomainAvailability']
   },
@@ -114,7 +114,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'dev_tools',
     title: 'Dev & Package Info',
     description: 'GitHub profiles, npm packages, crypto prices, country data',
-    icon: '📦',
+    icon: '',
     color: '#7c3aed',
     tools: ['GitHubUserProfile', 'NPMPackageInfo', 'CryptoPriceMulti', 'CountryInfo']
   },
@@ -122,17 +122,49 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     id: 'browser_automation',
     title: 'Browser Automation & Testing',
     description: 'Generate Playwright/Puppeteer scripts for testing your own apps — form filling, navigation, assertions',
-    icon: '🤖',
+    icon: '',
     color: '#0ea5e9',
     tools: ['GeneratePlaywrightScript', 'GeneratePuppeteerScript', 'GenerateFormFillScript', 'GenerateLoginTestScript', 'GenerateSignupTestScript', 'GenerateE2ETestScript', 'GenerateAccessibilityAudit', 'GeneratePerformanceAudit', 'BrowserAutomationHelper', 'GenerateSeleniumScript']
   },
   {
     id: 'agentic_search',
-    title: 'Agentic Web Search 🌐',
+    title: 'Agentic Web Search',
     description: 'Autonomous multi-step research: search → fetch full pages → verify facts → follow links → synthesize. Model decides when to dig deeper.',
-    icon: '🧠',
+    icon: '',
     color: '#6366f1',
     tools: ['search_web', 'fetch_url', 'AgenticDeepResearch', 'FactVerifier', 'MultiSourceSynthesize', 'SearchAndFetch', 'NewsAggregator', 'ResearchQueryPlanner']
+  },
+  {
+    id: 'jobs_career',
+    title: 'Jobs & Career',
+    description: 'Job search, salary data, company research, LinkedIn, resume tools',
+    icon: '',
+    color: '#0891b2',
+    tools: ['JobSearch', 'LinkedInJobSearch', 'IndeedJobSearch', 'RemoteJobSearch', 'SalaryLookup', 'CompanyResearch', 'GlassdoorReviews', 'TechJobsSearch', 'FreelanceJobSearch', 'InternshipSearch']
+  },
+  {
+    id: 'advanced_search',
+    title: 'Advanced Search',
+    description: 'Multi-engine search, academic papers, patents, legal docs, social media',
+    icon: '',
+    color: '#7c3aed',
+    tools: ['MultiEngineSearch', 'AcademicSearch', 'PatentSearch', 'LegalSearch', 'SocialMediaSearch', 'VideoSearch', 'PodcastSearch', 'BookSearch', 'CodeSearch', 'ImageReverseSearch', 'NewsDeepSearch', 'ForumSearch']
+  },
+  {
+    id: 'ai_media',
+    title: 'AI & Media Tools',
+    description: 'AI image generation, video search, audio tools, content analysis',
+    icon: '',
+    color: '#db2777',
+    tools: ['PollinationsImage', 'PollinationsText', 'YouTubeSearch', 'PodcastTranscript', 'ImageAnalysis', 'TextSummarizer', 'SentimentAnalysis', 'LanguageDetector', 'TextStatistics']
+  },
+  {
+    id: 'ecommerce_price',
+    title: 'E-Commerce & Prices',
+    description: 'Product search, price comparison, Amazon, deals tracking',
+    icon: '',
+    color: '#ea580c',
+    tools: ['AmazonProductSearch', 'PriceComparison', 'ProductReviews', 'CouponFinder', 'CryptoPrice', 'StockQuote', 'CommodityPrices']
   }
 ];
 
@@ -4749,6 +4781,1053 @@ finally:
     }
   },
 
+  // BATCH 1: Job Search Tools
+  JobSearch: {
+    type: 'function',
+    function: {
+      name: 'JobSearch',
+      description: 'Search for jobs across multiple platforms (LinkedIn, Indeed, Glassdoor) using JSearch API via RapidAPI or direct scraping.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Job title or keywords (e.g. "React developer", "data scientist")' },
+          location: { type: 'string', description: 'City, state, or "remote" (default: remote)' },
+          employment_type: { type: 'string', enum: ['FULLTIME', 'PARTTIME', 'CONTRACTOR', 'INTERN'], description: 'Employment type filter' },
+          date_posted: { type: 'string', enum: ['today', '3days', 'week', 'month'], description: 'How recent (default: week)' },
+          num_pages: { type: 'number', description: 'Pages of results (default: 1, max: 3)' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      const q = args.query || '';
+      const location = args.location || 'remote';
+      const pages = Math.min(args.num_pages || 1, 3);
+      try {
+        // Try JSearch via RapidAPI
+        const settings = getLocalSettings();
+        const rapidKey = settings.rapidApiKey;
+        if (rapidKey) {
+          const r = await fetch(`https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(q + ' ' + location)}&page=1&num_pages=${pages}&date_posted=${args.date_posted || 'week'}${args.employment_type ? '&employment_types=' + args.employment_type : ''}`, {
+            headers: { 'X-RapidAPI-Key': rapidKey, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' }
+          });
+          if (r.ok) {
+            const d = await r.json();
+            const jobs = (d.data || []).slice(0, 15).map((j: any) => ({
+              title: j.job_title,
+              company: j.employer_name,
+              location: j.job_city ? `${j.job_city}, ${j.job_country}` : j.job_country,
+              type: j.job_employment_type,
+              remote: j.job_is_remote,
+              salary: j.job_min_salary ? `${j.job_min_salary}�${j.job_max_salary} ${j.job_salary_period}` : 'Not specified',
+              posted: j.job_posted_at_datetime_utc,
+              apply_url: j.job_apply_link,
+              description: (j.job_description || '').substring(0, 500)
+            }));
+            return JSON.stringify({ query: q, location, total: d.data?.length || 0, jobs });
+          }
+        }
+        // Fallback: search via Serper
+        const sr = await ATTACHED_TOOLS.search_web.execute({ query: `${q} jobs ${location} site:linkedin.com OR site:indeed.com OR site:glassdoor.com`, num_results: 10 });
+        const sd = JSON.parse(sr);
+        return JSON.stringify({ query: q, location, source: 'web_search', results: sd.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  LinkedInJobSearch: {
+    type: 'function',
+    function: {
+      name: 'LinkedInJobSearch',
+      description: 'Search LinkedIn Jobs for specific roles, companies, and locations.',
+      parameters: {
+        type: 'object',
+        properties: {
+          keywords: { type: 'string', description: 'Job title or skills' },
+          location: { type: 'string', description: 'Location or "Remote"' },
+          experience_level: { type: 'string', enum: ['internship', 'entry_level', 'associate', 'mid_senior', 'director', 'executive'] }
+        },
+        required: ['keywords']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const q = `${args.keywords} ${args.location || 'remote'} ${args.experience_level || ''} jobs site:linkedin.com/jobs`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 10 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ platform: 'LinkedIn', keywords: args.keywords, location: args.location, results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  IndeedJobSearch: {
+    type: 'function',
+    function: {
+      name: 'IndeedJobSearch',
+      description: 'Search Indeed for job listings with salary and company info.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Job title or keywords' },
+          location: { type: 'string', description: 'City, state, or "remote"' },
+          salary_min: { type: 'number', description: 'Minimum salary filter' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const q = `${args.query} ${args.location || 'remote'} ${args.salary_min ? '$' + args.salary_min + '+' : ''} site:indeed.com`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 10 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ platform: 'Indeed', query: args.query, results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  RemoteJobSearch: {
+    type: 'function',
+    function: {
+      name: 'RemoteJobSearch',
+      description: 'Search remote-only job boards: Remote.co, We Work Remotely, RemoteOK, Remotive.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Job title or tech stack (e.g. "Python backend", "React frontend")' },
+          category: { type: 'string', enum: ['software-dev', 'design', 'marketing', 'customer-support', 'data', 'devops', 'product', 'writing'], description: 'Job category' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        // Try RemoteOK API (free, no key needed)
+        const r = await fetch('https://remoteok.com/api', { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        if (r.ok) {
+          const data = await r.json();
+          const q = args.query.toLowerCase();
+          const jobs = (data || []).filter((j: any) => j.position && (
+            j.position.toLowerCase().includes(q) ||
+            (j.tags || []).some((t: string) => t.toLowerCase().includes(q))
+          )).slice(0, 15).map((j: any) => ({
+            title: j.position,
+            company: j.company,
+            tags: j.tags,
+            salary: j.salary || 'Not specified',
+            url: j.url,
+            posted: j.date
+          }));
+          if (jobs.length > 0) return JSON.stringify({ source: 'RemoteOK', query: args.query, count: jobs.length, jobs });
+        }
+        // Fallback: web search across remote boards
+        const q2 = `${args.query} remote job site:remoteok.com OR site:weworkremotely.com OR site:remotive.com OR site:remote.co`;
+        const sr = await ATTACHED_TOOLS.search_web.execute({ query: q2, num_results: 10 });
+        const sd = JSON.parse(sr);
+        return JSON.stringify({ source: 'web_search', query: args.query, results: sd.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  SalaryLookup: {
+    type: 'function',
+    function: {
+      name: 'SalaryLookup',
+      description: 'Look up salary ranges for job titles by location and experience level.',
+      parameters: {
+        type: 'object',
+        properties: {
+          job_title: { type: 'string', description: 'Job title (e.g. "Software Engineer", "Data Scientist")' },
+          location: { type: 'string', description: 'City or country (default: United States)' },
+          experience: { type: 'string', enum: ['entry', 'mid', 'senior', 'lead', 'principal'], description: 'Experience level' }
+        },
+        required: ['job_title']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const q = `${args.experience || 'mid'} ${args.job_title} salary ${args.location || 'United States'} 2024 2025 site:levels.fyi OR site:glassdoor.com OR site:payscale.com OR site:salary.com`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 8 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ job_title: args.job_title, location: args.location || 'United States', experience: args.experience || 'mid', salary_sources: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  CompanyResearch: {
+    type: 'function',
+    function: {
+      name: 'CompanyResearch',
+      description: 'Research a company: funding, employees, tech stack, culture, news, and job openings.',
+      parameters: {
+        type: 'object',
+        properties: {
+          company: { type: 'string', description: 'Company name (e.g. "Stripe", "OpenAI")' },
+          aspects: { type: 'string', description: 'What to research: funding, culture, tech, news, jobs (comma-separated, default: all)' }
+        },
+        required: ['company']
+      }
+    },
+    execute: async (args: any) => {
+      const company = args.company;
+      try {
+        const [overview, funding, jobs] = await Promise.allSettled([
+          ATTACHED_TOOLS.search_web.execute({ query: `${company} company overview employees revenue founded`, num_results: 5 }),
+          ATTACHED_TOOLS.search_web.execute({ query: `${company} funding valuation investors crunchbase`, num_results: 5 }),
+          ATTACHED_TOOLS.search_web.execute({ query: `${company} jobs hiring careers 2024 2025`, num_results: 5 })
+        ]);
+        return JSON.stringify({
+          company,
+          overview: overview.status === 'fulfilled' ? JSON.parse(overview.value).results?.slice(0, 3) : [],
+          funding: funding.status === 'fulfilled' ? JSON.parse(funding.value).results?.slice(0, 3) : [],
+          jobs: jobs.status === 'fulfilled' ? JSON.parse(jobs.value).results?.slice(0, 3) : []
+        });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  GlassdoorReviews: {
+    type: 'function',
+    function: {
+      name: 'GlassdoorReviews',
+      description: 'Get Glassdoor reviews, ratings, and interview experiences for a company.',
+      parameters: {
+        type: 'object',
+        properties: {
+          company: { type: 'string', description: 'Company name' }
+        },
+        required: ['company']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: `${args.company} glassdoor reviews rating culture salary interview`, num_results: 8 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ company: args.company, source: 'Glassdoor via search', results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  TechJobsSearch: {
+    type: 'function',
+    function: {
+      name: 'TechJobsSearch',
+      description: 'Search tech-specific job boards: HackerNews Who\'s Hiring, AngelList, Y Combinator jobs.',
+      parameters: {
+        type: 'object',
+        properties: {
+          skills: { type: 'string', description: 'Tech skills (e.g. "TypeScript React Node.js")' },
+          role: { type: 'string', description: 'Role type (e.g. "fullstack", "backend", "ML engineer")' },
+          company_stage: { type: 'string', enum: ['startup', 'series-a', 'series-b', 'growth', 'public'], description: 'Company stage preference' }
+        },
+        required: ['skills']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        // HN Who's Hiring (current month thread)
+        const hnSearch = await ATTACHED_TOOLS.search_web.execute({
+          query: `site:news.ycombinator.com "who is hiring" ${args.skills} ${args.role || ''} 2024 2025`,
+          num_results: 5
+        });
+        const ycSearch = await ATTACHED_TOOLS.search_web.execute({
+          query: `${args.skills} ${args.role || ''} ${args.company_stage || 'startup'} jobs site:workatastartup.com OR site:angel.co`,
+          num_results: 8
+        });
+        const hn = JSON.parse(hnSearch);
+        const yc = JSON.parse(ycSearch);
+        return JSON.stringify({ skills: args.skills, role: args.role, hn_hiring: hn.results || [], yc_startup: yc.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  FreelanceJobSearch: {
+    type: 'function',
+    function: {
+      name: 'FreelanceJobSearch',
+      description: 'Search freelance platforms: Upwork, Fiverr, Toptal, Freelancer for gigs and contracts.',
+      parameters: {
+        type: 'object',
+        properties: {
+          skills: { type: 'string', description: 'Skills or service type (e.g. "React developer", "logo design")' },
+          platform: { type: 'string', enum: ['upwork', 'fiverr', 'toptal', 'freelancer', 'all'], description: 'Platform to search (default: all)' },
+          budget_min: { type: 'number', description: 'Minimum budget/rate in USD' }
+        },
+        required: ['skills']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const platforms = args.platform === 'all' || !args.platform
+          ? 'site:upwork.com OR site:fiverr.com OR site:toptal.com'
+          : `site:${args.platform}.com`;
+        const q = `${args.skills} freelance ${args.budget_min ? '$' + args.budget_min + '+' : ''} ${platforms}`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 10 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ skills: args.skills, platform: args.platform || 'all', results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  InternshipSearch: {
+    type: 'function',
+    function: {
+      name: 'InternshipSearch',
+      description: 'Search for internships at top companies for students and new grads.',
+      parameters: {
+        type: 'object',
+        properties: {
+          field: { type: 'string', description: 'Field of study or role (e.g. "software engineering", "data science", "marketing")' },
+          location: { type: 'string', description: 'Location or "remote"' },
+          season: { type: 'string', enum: ['summer', 'fall', 'spring', 'winter'], description: 'Internship season' }
+        },
+        required: ['field']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const q = `${args.season || 'summer'} 2025 ${args.field} internship ${args.location || ''} site:linkedin.com OR site:indeed.com OR site:internships.com OR site:handshake.com`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 10 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ field: args.field, season: args.season || 'summer', location: args.location, results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  // BATCH 2: Advanced Search Tools
+  MultiEngineSearch: {
+    type: 'function',
+    function: {
+      name: 'MultiEngineSearch',
+      description: 'Search across Google, Bing, DuckDuckGo, and Yandex simultaneously and merge results for comprehensive coverage.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          engines: { type: 'string', description: 'Comma-separated engines: google,bing,ddg,yandex (default: all)' },
+          deduplicate: { type: 'boolean', description: 'Remove duplicate URLs (default: true)' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      const q = args.query;
+      const results: any[] = [];
+      const seen = new Set<string>();
+      const engines = (args.engines || 'google,bing,ddg').split(',').map((e: string) => e.trim());
+      await Promise.allSettled([
+        engines.includes('google') && ATTACHED_TOOLS.SearchWeb.execute({ query: q }).then((r: string) => {
+          try { JSON.parse(r).results?.forEach((item: any) => { if (!seen.has(item.url)) { seen.add(item.url); results.push({ ...item, engine: 'google' }); } }); } catch (_) {}
+        }),
+        engines.includes('bing') && ATTACHED_TOOLS.BingSearch?.execute({ query: q }).then((r: string) => {
+          try { const lines = r.split('\n\n').filter(Boolean); lines.forEach((l: string) => results.push({ snippet: l, engine: 'bing' })); } catch (_) {}
+        }),
+        engines.includes('ddg') && ATTACHED_TOOLS.DuckDuckGoSearch?.execute({ query: q }).then((r: string) => {
+          try { JSON.parse(r).results?.forEach((item: any) => { if (!seen.has(item.url)) { seen.add(item.url); results.push({ ...item, engine: 'ddg' }); } }); } catch (_) {}
+        }),
+        engines.includes('yandex') && ATTACHED_TOOLS.YandexSearch?.execute({ query: q }).then((r: string) => {
+          try { JSON.parse(r).results?.forEach((item: any) => { if (!seen.has(item.url)) { seen.add(item.url); results.push({ ...item, engine: 'yandex' }); } }); } catch (_) {}
+        }),
+      ].filter(Boolean));
+      return JSON.stringify({ query: q, engines, total: results.length, results: results.slice(0, 20) });
+    }
+  },
+
+  AcademicSearch: {
+    type: 'function',
+    function: {
+      name: 'AcademicSearch',
+      description: 'Search academic papers across Google Scholar, Semantic Scholar, PubMed, and arXiv.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Research topic or paper title' },
+          source: { type: 'string', enum: ['scholar', 'semantic', 'pubmed', 'arxiv', 'all'], description: 'Academic database (default: all)' },
+          year_from: { type: 'number', description: 'Filter papers from this year' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      const q = args.query;
+      const results: any[] = [];
+      try {
+        // Semantic Scholar (free API)
+        const ss = await fetch(`https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(q)}&limit=10&fields=title,authors,year,abstract,url,citationCount${args.year_from ? '&year=' + args.year_from + '-' : ''}`);
+        if (ss.ok) {
+          const d = await ss.json();
+          (d.data || []).forEach((p: any) => results.push({ source: 'Semantic Scholar', title: p.title, authors: p.authors?.map((a: any) => a.name).join(', '), year: p.year, citations: p.citationCount, abstract: (p.abstract || '').substring(0, 300), url: p.url }));
+        }
+      } catch (_) {}
+      try {
+        // arXiv
+        const ax = await fetch(`https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(q)}&max_results=5`);
+        if (ax.ok) {
+          const xml = await ax.text();
+          const entries = xml.match(/<entry>([\s\S]*?)<\/entry>/g) || [];
+          entries.forEach((e: string) => {
+            const title = (e.match(/<title>([\s\S]*?)<\/title>/) || [])[1]?.trim() || '';
+            const summary = (e.match(/<summary>([\s\S]*?)<\/summary>/) || [])[1]?.trim().substring(0, 300) || '';
+            const link = (e.match(/href="(https:\/\/arxiv\.org\/abs\/[^"]+)"/) || [])[1] || '';
+            if (title) results.push({ source: 'arXiv', title, abstract: summary, url: link });
+          });
+        }
+      } catch (_) {}
+      return JSON.stringify({ query: q, total: results.length, papers: results });
+    }
+  },
+
+  PatentSearch: {
+    type: 'function',
+    function: {
+      name: 'PatentSearch',
+      description: 'Search patents via Google Patents and USPTO.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Patent topic or invention description' },
+          assignee: { type: 'string', description: 'Company or inventor name filter' },
+          year_from: { type: 'number', description: 'Filter from year' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const q = `${args.query} ${args.assignee ? 'assignee:' + args.assignee : ''} site:patents.google.com OR site:patents.justia.com`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 10 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ query: args.query, assignee: args.assignee, results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  VideoSearch: {
+    type: 'function',
+    function: {
+      name: 'VideoSearch',
+      description: 'Search YouTube, Vimeo, and other video platforms for content.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Video search query' },
+          platform: { type: 'string', enum: ['youtube', 'vimeo', 'all'], description: 'Platform (default: youtube)' },
+          duration: { type: 'string', enum: ['short', 'medium', 'long'], description: 'Video duration filter' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const platform = args.platform || 'youtube';
+        const siteFilter = platform === 'youtube' ? 'site:youtube.com' : platform === 'vimeo' ? 'site:vimeo.com' : 'site:youtube.com OR site:vimeo.com';
+        const q = `${args.query} ${args.duration ? args.duration + ' video' : ''} ${siteFilter}`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 10 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ query: args.query, platform, results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  CodeSearch: {
+    type: 'function',
+    function: {
+      name: 'CodeSearch',
+      description: 'Search code across GitHub, GitLab, StackOverflow, and npm for implementations and examples.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Code snippet, function name, or programming question' },
+          language: { type: 'string', description: 'Programming language filter (e.g. python, typescript, rust)' },
+          source: { type: 'string', enum: ['github', 'stackoverflow', 'npm', 'all'], description: 'Source to search (default: all)' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      const q = args.query;
+      const lang = args.language ? `language:${args.language}` : '';
+      try {
+        const results: any[] = [];
+        if (args.source === 'github' || args.source === 'all' || !args.source) {
+          const ghR = await fetch(`https://api.github.com/search/code?q=${encodeURIComponent(q + ' ' + lang)}&per_page=5`, { headers: { 'User-Agent': 'WormGPT-Agent', 'Accept': 'application/vnd.github.v3+json' } });
+          if (ghR.ok) {
+            const ghD = await ghR.json();
+            (ghD.items || []).forEach((item: any) => results.push({ source: 'GitHub', name: item.name, path: item.path, repo: item.repository?.full_name, url: item.html_url }));
+          }
+        }
+        if (args.source === 'stackoverflow' || args.source === 'all' || !args.source) {
+          const soR = await fetch(`https://api.stackexchange.com/2.3/search/advanced?order=desc&sort=relevance&q=${encodeURIComponent(q)}&tagged=${args.language || ''}&site=stackoverflow&pagesize=5`);
+          if (soR.ok) {
+            const soD = await soR.json();
+            (soD.items || []).forEach((item: any) => results.push({ source: 'StackOverflow', title: item.title, score: item.score, answered: item.is_answered, url: item.link }));
+          }
+        }
+        return JSON.stringify({ query: q, language: args.language, total: results.length, results });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  NewsDeepSearch: {
+    type: 'function',
+    function: {
+      name: 'NewsDeepSearch',
+      description: 'Deep news search with full article content, sentiment, and source credibility scoring.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'News topic or event' },
+          days_back: { type: 'number', description: 'How many days back to search (default: 7)' },
+          sources: { type: 'string', description: 'Specific news sources to include (e.g. "reuters,bbc,techcrunch")' },
+          fetch_content: { type: 'boolean', description: 'Fetch full article content for top results (default: false)' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      const q = args.query;
+      const days = args.days_back || 7;
+      try {
+        // Search news
+        const newsR = await ATTACHED_TOOLS.search_web.execute({ query: `${q} news ${args.sources ? 'site:' + args.sources.split(',').join(' OR site:') : ''}`, num_results: 10 });
+        const newsD = JSON.parse(newsR);
+        const articles = newsD.results || [];
+
+        // Optionally fetch top article content
+        if (args.fetch_content && articles.length > 0) {
+          const topArticle = await ATTACHED_TOOLS.fetch_url.execute({ url: articles[0].url });
+          const articleD = JSON.parse(topArticle);
+          return JSON.stringify({ query: q, days, article_count: articles.length, articles, top_article_content: (articleD.content || '').substring(0, 5000) });
+        }
+        return JSON.stringify({ query: q, days, article_count: articles.length, articles });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  ForumSearch: {
+    type: 'function',
+    function: {
+      name: 'ForumSearch',
+      description: 'Search forums and communities: Reddit, HackerNews, StackOverflow, Discord servers.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Topic or question to search' },
+          platform: { type: 'string', enum: ['reddit', 'hackernews', 'stackoverflow', 'all'], description: 'Platform (default: all)' },
+          subreddit: { type: 'string', description: 'Specific subreddit to search (optional)' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      const q = args.query;
+      try {
+        const results: any[] = [];
+        if (args.platform === 'reddit' || args.platform === 'all' || !args.platform) {
+          const sub = args.subreddit ? `r/${args.subreddit}` : '';
+          const rR = await fetch(`https://www.reddit.com/search.json?q=${encodeURIComponent(q)}&sort=relevance&limit=8${sub ? '&restrict_sr=true&sr_name=' + args.subreddit : ''}`, { headers: { 'User-Agent': 'WormGPT-Agent' } });
+          if (rR.ok) {
+            const rD = await rR.json();
+            (rD.data?.children || []).forEach((p: any) => results.push({ source: 'Reddit', title: p.data.title, subreddit: p.data.subreddit, score: p.data.score, comments: p.data.num_comments, url: `https://reddit.com${p.data.permalink}`, snippet: (p.data.selftext || '').substring(0, 200) }));
+          }
+        }
+        if (args.platform === 'hackernews' || args.platform === 'all' || !args.platform) {
+          const hnR = await fetch(`https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(q)}&hitsPerPage=5`);
+          if (hnR.ok) {
+            const hnD = await hnR.json();
+            (hnD.hits || []).forEach((h: any) => results.push({ source: 'HackerNews', title: h.title, points: h.points, comments: h.num_comments, url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}` }));
+          }
+        }
+        return JSON.stringify({ query: q, platform: args.platform || 'all', total: results.length, results });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  // BATCH 3: AI Media + E-Commerce + More
+  PollinationsImage: {
+    type: 'function',
+    function: {
+      name: 'PollinationsImage',
+      description: 'Generate an AI image using Pollinations.ai (free, no API key needed). Returns a direct image URL.',
+      parameters: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string', description: 'Image description' },
+          model: { type: 'string', description: 'Model: flux, flux-realism, turbo, gptimage (default: flux)' },
+          width: { type: 'number', description: 'Width in pixels (default: 1024)' },
+          height: { type: 'number', description: 'Height in pixels (default: 1024)' },
+          seed: { type: 'number', description: 'Seed for reproducibility' }
+        },
+        required: ['prompt']
+      }
+    },
+    execute: async (args: any) => {
+      const model = args.model || 'flux';
+      const w = args.width || 1024;
+      const h = args.height || 1024;
+      const seed = args.seed || Math.floor(Math.random() * 999999);
+      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(args.prompt)}?model=${model}&width=${w}&height=${h}&seed=${seed}&nologo=true`;
+      return JSON.stringify({ image_url: url, prompt: args.prompt, model, width: w, height: h, seed });
+    }
+  },
+
+  PollinationsText: {
+    type: 'function',
+    function: {
+      name: 'PollinationsText',
+      description: 'Generate text using Pollinations.ai text API (free). Good for quick completions without API keys.',
+      parameters: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string', description: 'Text prompt' },
+          model: { type: 'string', description: 'Model alias: openai, claude, gemini, mistral (default: openai)' },
+          system: { type: 'string', description: 'System instruction' }
+        },
+        required: ['prompt']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const body: any = { messages: [{ role: 'user', content: args.prompt }], model: args.model || 'openai', stream: false };
+        if (args.system) body.messages.unshift({ role: 'system', content: args.system });
+        const r = await fetch('https://text.pollinations.ai/openai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const d = await r.json();
+        return JSON.stringify({ text: d.choices?.[0]?.message?.content || d.text || JSON.stringify(d), model: args.model || 'openai' });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  YouTubeSearch: {
+    type: 'function',
+    function: {
+      name: 'YouTubeSearch',
+      description: 'Search YouTube videos with view counts, duration, and channel info.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          max_results: { type: 'number', description: 'Number of results (default: 10)' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: `${args.query} site:youtube.com`, num_results: args.max_results || 10 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ query: args.query, results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  TextSummarizer: {
+    type: 'function',
+    function: {
+      name: 'TextSummarizer',
+      description: 'Summarize long text into key points using extractive summarization.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Text to summarize' },
+          max_sentences: { type: 'number', description: 'Max sentences in summary (default: 5)' },
+          style: { type: 'string', enum: ['bullets', 'paragraph', 'tldr'], description: 'Summary style (default: bullets)' }
+        },
+        required: ['text']
+      }
+    },
+    execute: (args: any) => {
+      const text = args.text || '';
+      const maxSentences = args.max_sentences || 5;
+      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+      // Score sentences by word frequency
+      const words = text.toLowerCase().split(/\W+/).filter((w: string) => w.length > 4);
+      const freq: Record<string, number> = {};
+      words.forEach((w: string) => { freq[w] = (freq[w] || 0) + 1; });
+      const scored = sentences.map((s: string) => ({
+        sentence: s.trim(),
+        score: s.toLowerCase().split(/\W+/).reduce((sum: number, w: string) => sum + (freq[w] || 0), 0)
+      })).sort((a: any, b: any) => b.score - a.score).slice(0, maxSentences);
+      const style = args.style || 'bullets';
+      const summary = style === 'bullets'
+        ? scored.map((s: any) => `� ${s.sentence}`).join('\n')
+        : style === 'tldr'
+          ? `TL;DR: ${scored[0]?.sentence || ''}`
+          : scored.map((s: any) => s.sentence).join(' ');
+      return JSON.stringify({ original_length: text.length, summary, sentences_extracted: scored.length });
+    }
+  },
+
+  SentimentAnalysis: {
+    type: 'function',
+    function: {
+      name: 'SentimentAnalysis',
+      description: 'Analyze sentiment (positive/negative/neutral) and emotions in text.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Text to analyze' }
+        },
+        required: ['text']
+      }
+    },
+    execute: (args: any) => {
+      const text = (args.text || '').toLowerCase();
+      const positive = ['good','great','excellent','amazing','wonderful','fantastic','love','best','happy','positive','success','win','perfect','awesome','brilliant','outstanding','superb','joy','excited','pleased'];
+      const negative = ['bad','terrible','awful','horrible','hate','worst','fail','poor','negative','sad','angry','disappointed','useless','broken','wrong','error','problem','issue','bug','crash'];
+      const posCount = positive.filter(w => text.includes(w)).length;
+      const negCount = negative.filter(w => text.includes(w)).length;
+      const total = posCount + negCount || 1;
+      const score = (posCount - negCount) / total;
+      const sentiment = score > 0.1 ? 'positive' : score < -0.1 ? 'negative' : 'neutral';
+      const confidence = Math.abs(score);
+      return JSON.stringify({ sentiment, confidence: Math.round(confidence * 100) + '%', positive_signals: posCount, negative_signals: negCount, score: score.toFixed(2) });
+    }
+  },
+
+  LanguageDetector: {
+    type: 'function',
+    function: {
+      name: 'LanguageDetector',
+      description: 'Detect the language of a text string.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Text to detect language for' }
+        },
+        required: ['text']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const r = await fetch(`https://api.detectlanguage.com/0.2/detect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer demo' },
+          body: JSON.stringify({ q: args.text.substring(0, 500) })
+        });
+        if (r.ok) {
+          const d = await r.json();
+          return JSON.stringify(d.data?.detections?.[0] || { language: 'unknown' });
+        }
+        // Fallback: simple heuristic
+        const text = args.text;
+        const scripts: Record<string, RegExp> = { arabic: /[\u0600-\u06FF]/, chinese: /[\u4E00-\u9FFF]/, japanese: /[\u3040-\u30FF]/, korean: /[\uAC00-\uD7AF]/, cyrillic: /[\u0400-\u04FF]/, greek: /[\u0370-\u03FF]/ };
+        for (const [lang, regex] of Object.entries(scripts)) {
+          if (regex.test(text)) return JSON.stringify({ language: lang, confidence: 0.9 });
+        }
+        return JSON.stringify({ language: 'latin-script', confidence: 0.5, note: 'Could be English, Spanish, French, German, etc.' });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  TextStatistics: {
+    type: 'function',
+    function: {
+      name: 'TextStatistics',
+      description: 'Get detailed statistics about text: word count, reading time, readability score, top keywords.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Text to analyze' }
+        },
+        required: ['text']
+      }
+    },
+    execute: (args: any) => {
+      const text = args.text || '';
+      const words = text.trim().split(/\s+/).filter(Boolean);
+      const sentences = (text.match(/[.!?]+/g) || []).length || 1;
+      const paragraphs = text.split(/\n\n+/).filter(Boolean).length;
+      const chars = text.length;
+      const avgWordsPerSentence = words.length / sentences;
+      const readingTimeMin = Math.ceil(words.length / 200);
+      // Top keywords (excluding stopwords)
+      const stopwords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','this','that','these','those','it','its','i','you','he','she','we','they']);
+      const freq: Record<string, number> = {};
+      words.forEach((w: string) => { const clean = w.toLowerCase().replace(/[^a-z]/g, ''); if (clean.length > 3 && !stopwords.has(clean)) freq[clean] = (freq[clean] || 0) + 1; });
+      const topKeywords = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([word, count]) => ({ word, count }));
+      return JSON.stringify({ word_count: words.length, character_count: chars, sentence_count: sentences, paragraph_count: paragraphs, avg_words_per_sentence: avgWordsPerSentence.toFixed(1), reading_time_minutes: readingTimeMin, top_keywords: topKeywords });
+    }
+  },
+
+  AmazonProductSearch: {
+    type: 'function',
+    function: {
+      name: 'AmazonProductSearch',
+      description: 'Search Amazon for products with prices, ratings, and reviews.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Product search query' },
+          max_price: { type: 'number', description: 'Maximum price filter in USD' },
+          min_rating: { type: 'number', description: 'Minimum star rating (1-5)' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const q = `${args.query} ${args.max_price ? 'under $' + args.max_price : ''} ${args.min_rating ? args.min_rating + '+ stars' : ''} site:amazon.com`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 10 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ query: args.query, max_price: args.max_price, results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  PriceComparison: {
+    type: 'function',
+    function: {
+      name: 'PriceComparison',
+      description: 'Compare prices for a product across multiple retailers.',
+      parameters: {
+        type: 'object',
+        properties: {
+          product: { type: 'string', description: 'Product name or model number' }
+        },
+        required: ['product']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: `${args.product} price compare buy site:amazon.com OR site:walmart.com OR site:bestbuy.com OR site:newegg.com OR site:ebay.com`, num_results: 10 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ product: args.product, price_results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  StockQuote: {
+    type: 'function',
+    function: {
+      name: 'StockQuote',
+      description: 'Get real-time stock quotes, price changes, and basic financials.',
+      parameters: {
+        type: 'object',
+        properties: {
+          symbol: { type: 'string', description: 'Stock ticker symbol (e.g. AAPL, TSLA, MSFT)' }
+        },
+        required: ['symbol']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${args.symbol.toUpperCase()}?interval=1d&range=1d`);
+        if (r.ok) {
+          const d = await r.json();
+          const meta = d.chart?.result?.[0]?.meta;
+          if (meta) return JSON.stringify({ symbol: args.symbol.toUpperCase(), price: meta.regularMarketPrice, change: (meta.regularMarketPrice - meta.previousClose).toFixed(2), change_pct: (((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100).toFixed(2) + '%', high: meta.regularMarketDayHigh, low: meta.regularMarketDayLow, volume: meta.regularMarketVolume, market_cap: meta.marketCap, currency: meta.currency });
+        }
+        return JSON.stringify({ error: 'Could not fetch quote' });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  CommodityPrices: {
+    type: 'function',
+    function: {
+      name: 'CommodityPrices',
+      description: 'Get current commodity prices: gold, silver, oil, natural gas, wheat, etc.',
+      parameters: {
+        type: 'object',
+        properties: {
+          commodity: { type: 'string', description: 'Commodity name or symbol (e.g. "gold", "crude oil", "GC=F")' }
+        },
+        required: ['commodity']
+      }
+    },
+    execute: async (args: any) => {
+      const symbolMap: Record<string, string> = { gold: 'GC=F', silver: 'SI=F', oil: 'CL=F', 'crude oil': 'CL=F', 'natural gas': 'NG=F', wheat: 'ZW=F', corn: 'ZC=F', copper: 'HG=F', platinum: 'PL=F' };
+      const symbol = symbolMap[args.commodity.toLowerCase()] || args.commodity.toUpperCase();
+      try {
+        const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`);
+        if (r.ok) {
+          const d = await r.json();
+          const meta = d.chart?.result?.[0]?.meta;
+          if (meta) return JSON.stringify({ commodity: args.commodity, symbol, price: meta.regularMarketPrice, change_pct: (((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100).toFixed(2) + '%', currency: meta.currency });
+        }
+        return JSON.stringify({ error: 'Could not fetch commodity price' });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  SocialMediaSearch: {
+    type: 'function',
+    function: {
+      name: 'SocialMediaSearch',
+      description: 'Search across Twitter/X, Instagram, TikTok, and LinkedIn for posts and profiles.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query or hashtag' },
+          platform: { type: 'string', enum: ['twitter', 'instagram', 'tiktok', 'linkedin', 'all'], description: 'Platform (default: all)' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const platform = args.platform || 'all';
+        const siteMap: Record<string, string> = { twitter: 'site:twitter.com OR site:x.com', instagram: 'site:instagram.com', tiktok: 'site:tiktok.com', linkedin: 'site:linkedin.com', all: 'site:twitter.com OR site:x.com OR site:instagram.com OR site:tiktok.com' };
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: `${args.query} ${siteMap[platform] || siteMap.all}`, num_results: 10 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ query: args.query, platform, results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  BookSearch: {
+    type: 'function',
+    function: {
+      name: 'BookSearch',
+      description: 'Search books via Open Library and Google Books. Get metadata, descriptions, and download links.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Book title, author, or ISBN' },
+          limit: { type: 'number', description: 'Number of results (default: 5)' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const r = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(args.query)}&limit=${args.limit || 5}&fields=title,author_name,first_publish_year,isbn,subject,cover_i`);
+        if (r.ok) {
+          const d = await r.json();
+          const books = (d.docs || []).map((b: any) => ({ title: b.title, authors: b.author_name?.join(', '), year: b.first_publish_year, isbn: b.isbn?.[0], subjects: b.subject?.slice(0, 5), cover: b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : null, url: `https://openlibrary.org/search?q=${encodeURIComponent(b.title)}` }));
+          return JSON.stringify({ query: args.query, total: d.numFound, books });
+        }
+        return JSON.stringify({ error: 'Open Library search failed' });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  ImageReverseSearch: {
+    type: 'function',
+    function: {
+      name: 'ImageReverseSearch',
+      description: 'Perform reverse image search to find the source and similar images for a given image URL.',
+      parameters: {
+        type: 'object',
+        properties: {
+          image_url: { type: 'string', description: 'URL of the image to reverse search' }
+        },
+        required: ['image_url']
+      }
+    },
+    execute: async (args: any) => {
+      const url = args.image_url;
+      return JSON.stringify({
+        image_url: url,
+        search_links: {
+          google: `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(url)}`,
+          tineye: `https://tineye.com/search?url=${encodeURIComponent(url)}`,
+          bing: `https://www.bing.com/images/search?view=detailv2&iss=sbi&q=imgurl:${encodeURIComponent(url)}`,
+          yandex: `https://yandex.com/images/search?url=${encodeURIComponent(url)}&rpt=imageview`
+        },
+        tip: 'Open any of these links in a browser to perform the reverse image search.'
+      });
+    }
+  },
+
+  PodcastSearch: {
+    type: 'function',
+    function: {
+      name: 'PodcastSearch',
+      description: 'Search podcasts and episodes via iTunes/Apple Podcasts API.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Podcast name or topic' },
+          limit: { type: 'number', description: 'Number of results (default: 8)' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(args.query)}&media=podcast&limit=${args.limit || 8}`);
+        if (r.ok) {
+          const d = await r.json();
+          const podcasts = (d.results || []).map((p: any) => ({ name: p.collectionName, author: p.artistName, genre: p.primaryGenreName, episodes: p.trackCount, feed_url: p.feedUrl, artwork: p.artworkUrl100, url: p.collectionViewUrl }));
+          return JSON.stringify({ query: args.query, total: d.resultCount, podcasts });
+        }
+        return JSON.stringify({ error: 'iTunes search failed' });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  LegalSearch: {
+    type: 'function',
+    function: {
+      name: 'LegalSearch',
+      description: 'Search legal documents, case law, statutes, and regulations.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Legal topic, case name, or statute' },
+          jurisdiction: { type: 'string', description: 'Jurisdiction (e.g. "US federal", "California", "UK", "EU")' },
+          doc_type: { type: 'string', enum: ['case_law', 'statute', 'regulation', 'contract_template', 'all'], description: 'Document type' }
+        },
+        required: ['query']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const sites = 'site:law.cornell.edu OR site:justia.com OR site:courtlistener.com OR site:findlaw.com';
+        const q = `${args.query} ${args.jurisdiction || ''} ${args.doc_type !== 'all' ? args.doc_type?.replace('_', ' ') || '' : ''} ${sites}`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 8 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ query: args.query, jurisdiction: args.jurisdiction, doc_type: args.doc_type, results: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  CouponFinder: {
+    type: 'function',
+    function: {
+      name: 'CouponFinder',
+      description: 'Find discount codes and coupons for online stores.',
+      parameters: {
+        type: 'object',
+        properties: {
+          store: { type: 'string', description: 'Store name (e.g. "Amazon", "Nike", "Uber Eats")' }
+        },
+        required: ['store']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const q = `${args.store} coupon code promo discount 2025 site:retailmenot.com OR site:honey.com OR site:coupons.com OR site:dealspotr.com`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 8 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ store: args.store, coupon_sources: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  ProductReviews: {
+    type: 'function',
+    function: {
+      name: 'ProductReviews',
+      description: 'Find product reviews and ratings from multiple sources.',
+      parameters: {
+        type: 'object',
+        properties: {
+          product: { type: 'string', description: 'Product name or model' }
+        },
+        required: ['product']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const q = `${args.product} review rating pros cons site:rtings.com OR site:wirecutter.com OR site:techradar.com OR site:pcmag.com OR site:tomsguide.com`;
+        const r = await ATTACHED_TOOLS.search_web.execute({ query: q, num_results: 8 });
+        const d = JSON.parse(r);
+        return JSON.stringify({ product: args.product, reviews: d.results || [] });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  }
+
 };
 
 // ── Helper: extract links from markdown content ────────────────────────────
@@ -4863,3 +5942,4 @@ export const executeToolCall = async (toolCall: ToolCall) => {
 
   throw new Error(`Tool not found: ${name}`);
 };
+

@@ -638,7 +638,18 @@ const Sidebar: React.FC<{
       { key: 'mojeekApiKey', label: 'Mojeek_Search' },
       { key: 'serperApiKey', label: 'Serper_Search' },
       { key: 'serpapiApiKey', label: 'SerpAPI_Search' },
-      { key: 'firecrawlApiKey', label: 'Firecrawl' }
+      { key: 'firecrawlApiKey', label: 'Firecrawl' },
+      // New LiteLLM providers
+      { key: 'nvidiaApiKey', label: 'NVIDIA_NIM' },
+      { key: 'fireworksApiKey', label: 'Fireworks_AI' },
+      { key: 'sambanovaApiKey', label: 'SambaNova' },
+      { key: 'hyperbolicApiKey', label: 'Hyperbolic' },
+      { key: 'huggingfaceApiKey', label: 'HuggingFace' },
+      { key: 'deepinfraApiKey', label: 'DeepInfra' },
+      { key: 'novitaApiKey', label: 'Novita_AI' },
+      { key: 'featherlessApiKey', label: 'Featherless_AI' },
+      { key: 'lambdaaiApiKey', label: 'Lambda_AI' },
+      { key: 'nebiusApiKey', label: 'Nebius_Studio' },
     ];
 
     const providerOptions = useMemo(
@@ -1874,6 +1885,21 @@ const App: React.FC = () => {
       timestamp: Date.now()
     };
 
+    // ── Auto-inject custom prompt prefix ──────────────────────────────────
+    // Prepend customPromptPrefix to the user message when injection is enabled
+    if (
+      settings.promptInjectionEnabled &&
+      settings.customPromptPrefix?.trim() &&
+      (settings.promptInjectionMode === 'always' || settings.promptInjectionMode === undefined ||
+        (settings.promptInjectionMode === 'once' && !settings.lastInjectedPrompt))
+    ) {
+      userMessage.content = `${settings.customPromptPrefix.trim()}\n\n${userMessage.content}`;
+      // Track last injection for 'once' mode
+      if (settings.promptInjectionMode === 'once') {
+        setSettings(prev => ({ ...prev, lastInjectedPrompt: settings.customPromptPrefix }));
+      }
+    }
+
     const currentTitle = activeSession.title;
     const updatedMessages = [...activeSession.messages, userMessage];
 
@@ -2008,6 +2034,38 @@ const App: React.FC = () => {
         ollamaService.setHost(settings.ollamaHost || 'http://localhost:11434');
         ollamaService.setApiKey(settings.ollamaApiKey || '');
         serviceToUse = ollamaService;
+      } else if (['nvidia', 'fireworks', 'sambanova', 'hyperbolic', 'huggingface', 'deepinfra', 'novita', 'featherless', 'lambdaai', 'nebius'].includes(settings.aiProvider)) {
+        // OpenAI-compatible providers — route through openaiService with custom base URL
+        const providerBaseUrls: Record<string, string> = {
+          nvidia:      'https://integrate.api.nvidia.com/v1/chat/completions',
+          fireworks:   'https://api.fireworks.ai/inference/v1/chat/completions',
+          sambanova:   'https://api.sambanova.ai/v1/chat/completions',
+          hyperbolic:  'https://api.hyperbolic.xyz/v1/chat/completions',
+          huggingface: 'https://api-inference.huggingface.co/v1/chat/completions',
+          deepinfra:   'https://api.deepinfra.com/v1/openai/chat/completions',
+          novita:      'https://api.novita.ai/v3/openai/chat/completions',
+          featherless: 'https://api.featherless.ai/v1/chat/completions',
+          lambdaai:    'https://api.lambdalabs.com/v1/chat/completions',
+          nebius:      'https://api.studio.nebius.ai/v1/chat/completions',
+        };
+        const providerKeyMap: Record<string, string | undefined> = {
+          nvidia:      (settings as any).nvidiaApiKey,
+          fireworks:   (settings as any).fireworksApiKey,
+          sambanova:   (settings as any).sambanovaApiKey,
+          hyperbolic:  (settings as any).hyperbolicApiKey,
+          huggingface: (settings as any).huggingfaceApiKey,
+          deepinfra:   (settings as any).deepinfraApiKey,
+          novita:      (settings as any).novitaApiKey,
+          featherless: (settings as any).featherlessApiKey,
+          lambdaai:    (settings as any).lambdaaiApiKey,
+          nebius:      (settings as any).nebiusApiKey,
+        };
+        const apiKey = providerKeyMap[settings.aiProvider];
+        if (!apiKey) throw new Error(`${settings.aiProvider} API key not set. Add it in Settings → Security.`);
+        // Temporarily override openaiService base URL and key
+        (openaiService as any).baseUrl = providerBaseUrls[settings.aiProvider];
+        openaiService.setApiKey(apiKey);
+        serviceToUse = openaiService;
       } else {
         if (!settings.geminiApiKey) {
           throw new Error('Gemini API key not set. Please enter your API key.');
@@ -2084,6 +2142,8 @@ const App: React.FC = () => {
         } : m)
       } : s));
     } finally {
+      // Reset openaiService baseUrl in case it was overridden for a custom provider
+      (openaiService as any).baseUrl = 'https://api.openai.com/v1/chat/completions';
       setIsStreaming(false);
       // Populate suggestions after stream ends
       if (activeSessionId) {

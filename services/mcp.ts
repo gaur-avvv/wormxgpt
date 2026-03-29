@@ -12,6 +12,55 @@ interface ServerState {
   toolCount: number;
 }
 
+// ── Vercel CORS Proxy Fetch Patcher ────────────────────────────────────────
+// On non-localhost deployments, intercept all fetch() calls made by the MCP
+// SDK and rewrite target URLs through /api/mcp-proxy. This handles ALL
+// internal SDK requests (initial connect, SSE reconnects, session DELETE, etc.)
+// without needing to modify transport constructors.
+
+let _fetchPatched = false;
+const _knownMcpUrls = new Set<string>();
+
+function patchFetchForProxy() {
+  if (_fetchPatched || typeof window === 'undefined') return;
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isLocalhost) return;
+
+  const proxyBase = `${window.location.origin}/api/mcp-proxy`;
+  const originalFetch = window.fetch.bind(window);
+
+  window.fetch = function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    let url: string;
+    if (typeof input === 'string') url = input;
+    else if (input instanceof URL) url = input.href;
+    else url = (input as Request).url;
+
+    // Only proxy URLs that belong to registered MCP servers
+    const shouldProxy = Array.from(_knownMcpUrls).some(mcpUrl => url.startsWith(mcpUrl));
+    if (shouldProxy && !url.startsWith(proxyBase)) {
+      const proxied = `${proxyBase}?url=${encodeURIComponent(url)}`;
+      if (typeof input === 'string' || input instanceof URL) {
+        return originalFetch(proxied, init);
+      } else {
+        // Request object — rebuild with proxied URL
+        return originalFetch(new Request(proxied, input as Request), init);
+      }
+    }
+    return originalFetch(input, init);
+  };
+
+  _fetchPatched = true;
+}
+
+function registerMcpUrl(url: string) {
+  // Register the base origin so all paths under it get proxied
+  try {
+    const { origin } = new URL(url);
+    _knownMcpUrls.add(origin);
+  } catch (_) {}
+  patchFetchForProxy();
+}
+
 export class MCPService {
   private servers: Map<string, ServerState> = new Map();
   private reconnectTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
@@ -328,6 +377,11 @@ export class MCPService {
     if (this.servers.get(url)?.status === 'connecting') return false;
 
     this._setStatus(url, 'connecting');
+
+    // Register URL with the fetch patcher so all SDK-internal requests
+    // (reconnects, session management, etc.) are automatically proxied
+    registerMcpUrl(url);
+
     console.log(`[MCP] 📡 Connecting to ${url}...`);
 
     // Try StreamableHTTP first (modern protocol)
@@ -340,7 +394,7 @@ export class MCPService {
       this._startHealthCheck();
       return true;
     } catch (e1: any) {
-      console.warn(`[MCP] StreamableHTTP failed for ${url}, trying SSE fallback...`, e1.message);
+      console.warn(`[MCP] StreamableHTTP failed for ${url}, trying SSE...`, e1.message);
     }
 
     // Fallback: legacy SSE transport

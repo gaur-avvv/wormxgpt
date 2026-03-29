@@ -1,0 +1,21 @@
+{
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Accept, Authorization, mcp-session-id, mcp-protocol-version, Last-Event-ID" },
+        { "key": "Access-Control-Expose-Headers", "value": "mcp-session-id, mcp-protocol-version" }
+      ]
+    }
+  ],
+  "functions": {
+    "api/mcp-proxy.js": {
+      "maxDuration": 60
+    }
+  }
+}
