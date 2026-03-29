@@ -17,3 +17,5 @@ export { ATTACHED_TOOLS, executeToolCall, validateAndFixToolArgs, TOOL_CATEGORIE
 export { pluginRegistry } from './plugins';
 export { mcpService } from './mcp';
 export { VoiceModeService } from './voiceMode';
+export { APP_INTEGRATIONS, integrationRegistry } from './integrations';
+export type { AppIntegration } from './integrations';

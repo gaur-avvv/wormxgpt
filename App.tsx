@@ -18,7 +18,9 @@ import {
   ATTACHED_TOOLS,
   executeToolCall,
   validateAndFixToolArgs,
-  TOOL_CATEGORIES
+  TOOL_CATEGORIES,
+  APP_INTEGRATIONS,
+  integrationRegistry
 } from './services';
 import { pluginRegistry } from './services/plugins';
 import { VoiceModeService } from './services/voiceMode';
@@ -611,7 +613,7 @@ const Sidebar: React.FC<{
     } | null>(null);
     const [sidebarVerificationStatuses, setSidebarVerificationStatuses] = useState<Record<string, 'idle' | 'verifying' | 'valid' | 'invalid'>>({});
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [settingsTab, setSettingsTab] = useState<'params' | 'keys' | 'mcp'>('params');
+    const [settingsTab, setSettingsTab] = useState<'params' | 'keys' | 'mcp' | 'apps'>('params');
 
     const providers: { key: keyof AppSettings; label: string }[] = [
       { key: 'geminiApiKey', label: 'Google_Gemini' },
@@ -898,10 +900,10 @@ const Sidebar: React.FC<{
             {settingsOpen && (
               <div className="bg-black/40 max-h-[40vh] overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 <div className="flex border-b border-[#F120F0]/20">
-                  {(['params', 'keys', 'mcp'] as const).map(tab => (
+                  {(['params', 'keys', 'mcp', 'apps'] as const).map(tab => (
                     <button key={tab} onClick={() => setSettingsTab(tab)}
                       className={`flex-1 py-1.5 text-[7px] font-black uppercase tracking-widest transition-all ${settingsTab === tab ? 'text-[#F120F0] border-b-2 border-[#F120F0] bg-[#F120F0]/10' : 'text-[#F120F0]/40 hover:text-[#F120F0]/70'}`}>
-                      {tab === 'params' ? 'Params' : tab === 'keys' ? 'API Keys' : 'MCP'}
+                      {tab === 'params' ? 'Params' : tab === 'keys' ? 'API Keys' : tab === 'mcp' ? 'MCP' : 'Apps'}
                     </button>
                   ))}
                 </div>
@@ -1008,6 +1010,74 @@ const Sidebar: React.FC<{
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+                  {settingsTab === 'apps' && (
+                    <div className="space-y-2">
+                      <div className="text-[7px] font-black uppercase tracking-widest text-[#F120F0]/50 px-1">App Integrations</div>
+                      <div className="text-[6px] text-zinc-600 px-1 pb-1">Connect apps with API keys/tokens for direct access</div>
+                      {(() => {
+                        const cats = [...new Set(APP_INTEGRATIONS.map(i => i.category))];
+                        return cats.map(cat => (
+                          <div key={cat}>
+                            <div className="text-[6px] font-black uppercase tracking-widest text-[#F120F0]/30 px-2 pt-1.5 pb-0.5">{cat}</div>
+                            {APP_INTEGRATIONS.filter(i => i.category === cat).map(app => {
+                              const settingsKeyTyped = app.settingsKey as keyof AppSettings;
+                              const hasToken = !!((settings as any)?.[settingsKeyTyped]);
+                              const isConnected = hasToken && (settings.connectedApps || []).includes(app.id);
+                              return (
+                                <div key={app.id} className={`px-2 py-2 rounded transition-all mb-1 ${isConnected ? 'bg-[#F120F0]/10 border border-[#F120F0]/30' : 'hover:bg-zinc-900/40'}`}>
+                                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                      <span className="text-sm flex-shrink-0">{app.icon}</span>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[8px] font-black text-[#F120F0]/80">{app.name}</span>
+                                          <span className="text-[5px] font-black uppercase px-1 rounded flex-shrink-0" style={{ background: isConnected ? 'rgba(34,197,94,0.2)' : 'rgba(241,32,240,0.1)', color: isConnected ? '#22c55e' : '#F120F0' }}>
+                                            {isConnected ? 'LINKED' : app.authType.toUpperCase()}
+                                          </span>
+                                        </div>
+                                        <div className="text-[6px] text-zinc-600 truncate">{app.description}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <input type="password" value={(settings as any)?.[settingsKeyTyped] || ''}
+                                      onChange={(e) => setSettings(prev => ({ ...prev, [settingsKeyTyped]: e.target.value }))}
+                                      placeholder={`${app.name} ${app.authType === 'webhook' ? 'Webhook URL' : app.authType === 'bot_token' ? 'Bot Token' : 'API Key/Token'}`}
+                                      className="flex-1 bg-black/80 border border-[#F120F0]/30 rounded px-2 py-1 text-[7px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-mono min-w-0" />
+                                    <button
+                                      onClick={() => {
+                                        const currentApps = settings.connectedApps || [];
+                                        if (isConnected) {
+                                          setSettings(prev => ({ ...prev, connectedApps: currentApps.filter(a => a !== app.id) }));
+                                          integrationRegistry.disconnect(app.id);
+                                        } else if (hasToken) {
+                                          setSettings(prev => ({ ...prev, connectedApps: [...currentApps, app.id] }));
+                                          integrationRegistry.connect(app.id);
+                                        }
+                                      }}
+                                      disabled={!hasToken}
+                                      className={`text-[6px] font-black px-2 py-1 rounded flex-shrink-0 transition-all ${isConnected ? 'text-red-400 border border-red-500/30 hover:bg-red-900/20' : hasToken ? 'text-green-400 border border-green-500/30 hover:bg-green-900/20' : 'text-zinc-700 border border-zinc-800 cursor-not-allowed'}`}>
+                                      {isConnected ? 'UNLINK' : 'LINK'}
+                                    </button>
+                                  </div>
+                                  {isConnected && (
+                                    <div className="mt-1 flex flex-wrap gap-0.5">
+                                      {app.features.slice(0, 4).map(f => (
+                                        <span key={f} className="text-[5px] font-bold uppercase px-1 py-0.5 rounded bg-[#F120F0]/10 text-[#F120F0]/60">{f}</span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ));
+                      })()}
+                      <div className="pt-1 border-t border-[#F120F0]/10">
+                        <div className="text-[6px] text-zinc-700 px-2 py-1">Linked apps enable tools in the App Integrations category. Enable them from the tools panel.</div>
+                      </div>
                     </div>
                   )}
                   {settingsTab === 'mcp' && (

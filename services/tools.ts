@@ -1,5 +1,6 @@
 import TurndownService from 'turndown';
 import { faker } from '@faker-js/faker';
+import { githubIntegration, gmailIntegration, slackIntegration, discordIntegration, telegramIntegration, googleCalendarIntegration, googleDriveIntegration, trelloIntegration, spotifyIntegration, teamsIntegration, whatsappIntegration, linkedinIntegration } from './integrations';
 
 export interface ToolCall {
   id: string;
@@ -165,6 +166,14 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     icon: '',
     color: '#ea580c',
     tools: ['AmazonProductSearch', 'PriceComparison', 'ProductReviews', 'CouponFinder', 'CryptoPrice', 'StockQuote', 'CommodityPrices']
+  },
+  {
+    id: 'app_integrations',
+    title: 'App Integrations',
+    description: 'Direct connect to GitHub, Gmail, Slack, Discord, Telegram, Google Calendar, Drive, Trello, Spotify, Teams, WhatsApp, LinkedIn',
+    icon: '',
+    color: '#F120F0',
+    tools: ['GitHubListRepos', 'GitHubCreateRepo', 'GitHubCreateIssue', 'GitHubCreatePR', 'GitHubListPRs', 'GitHubNotifications', 'GitHubStarRepo', 'GitHubSearchCode', 'GitHubProfile', 'GmailSendEmail', 'GmailSearchInbox', 'GmailListLabels', 'SlackSendMessage', 'SlackListChannels', 'SlackGetMessages', 'SlackSetStatus', 'DiscordSendMessage', 'DiscordListGuilds', 'DiscordGetChannels', 'TelegramSendMessage', 'TelegramGetUpdates', 'TelegramBotInfo', 'TelegramSendPhoto', 'GoogleCalendarEvents', 'GoogleCalendarSearch', 'GoogleDriveListFiles', 'GoogleDriveSearch', 'TrelloListBoards', 'TrelloGetCards', 'TrelloCreateCard', 'SpotifySearchTracks', 'SpotifyGetPlaylists', 'SpotifyGetArtist', 'TeamsSendMessage', 'WhatsAppSendMessage', 'LinkedInProfile', 'LinkedInCreatePost']
   }
 ];
 
@@ -5988,6 +5997,330 @@ finally:
       const readingTimeMin = +(words / 200).toFixed(1);
       const speakingTimeMin = +(words / 130).toFixed(1);
       return JSON.stringify({ characters: chars, characters_no_spaces: charsNoSpaces, words, lines, sentences, paragraphs, reading_time_minutes: readingTimeMin, speaking_time_minutes: speakingTimeMin });
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── APP INTEGRATIONS ──────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── GitHub Direct Connect ─────────────────────────────────────────────────
+  GitHubListRepos: {
+    type: 'function',
+    function: { name: 'GitHubListRepos', description: 'List your GitHub repositories (authenticated). Requires GitHub Personal Access Token.', parameters: { type: 'object', properties: { sort: { type: 'string', description: 'Sort by: updated, created, pushed, full_name', enum: ['updated', 'created', 'pushed', 'full_name'] }, per_page: { type: 'number', description: 'Number of repos to return (max 100)' } } } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.githubToken; if (!token) return 'GitHub token not configured. Go to Settings > Apps > GitHub and add your Personal Access Token.';
+      try { return await githubIntegration.listRepos(token, args.sort || 'updated', args.per_page || 10); } catch (e: any) { return `GitHub error: ${e.message}`; }
+    }
+  },
+  GitHubCreateRepo: {
+    type: 'function',
+    function: { name: 'GitHubCreateRepo', description: 'Create a new GitHub repository', parameters: { type: 'object', properties: { name: { type: 'string', description: 'Repository name' }, description: { type: 'string', description: 'Repository description' }, private: { type: 'boolean', description: 'Whether the repo should be private' } }, required: ['name'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.githubToken; if (!token) return 'GitHub token not configured. Go to Settings > Apps > GitHub and add your Personal Access Token.';
+      try { return await githubIntegration.createRepo(token, args.name, args.description || '', args.private || false); } catch (e: any) { return `GitHub error: ${e.message}`; }
+    }
+  },
+  GitHubCreateIssue: {
+    type: 'function',
+    function: { name: 'GitHubCreateIssue', description: 'Create an issue on a GitHub repository', parameters: { type: 'object', properties: { owner: { type: 'string', description: 'Repository owner' }, repo: { type: 'string', description: 'Repository name' }, title: { type: 'string', description: 'Issue title' }, body: { type: 'string', description: 'Issue body/description' } }, required: ['owner', 'repo', 'title'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.githubToken; if (!token) return 'GitHub token not configured.';
+      try { return await githubIntegration.createIssue(token, args.owner, args.repo, args.title, args.body || ''); } catch (e: any) { return `GitHub error: ${e.message}`; }
+    }
+  },
+  GitHubCreatePR: {
+    type: 'function',
+    function: { name: 'GitHubCreatePR', description: 'Create a pull request on a GitHub repository', parameters: { type: 'object', properties: { owner: { type: 'string', description: 'Repository owner' }, repo: { type: 'string', description: 'Repository name' }, title: { type: 'string', description: 'PR title' }, body: { type: 'string', description: 'PR description' }, head: { type: 'string', description: 'Head branch' }, base: { type: 'string', description: 'Base branch (default: main)' } }, required: ['owner', 'repo', 'title', 'head'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.githubToken; if (!token) return 'GitHub token not configured.';
+      try { return await githubIntegration.createPR(token, args.owner, args.repo, args.title, args.body || '', args.head, args.base || 'main'); } catch (e: any) { return `GitHub error: ${e.message}`; }
+    }
+  },
+  GitHubListPRs: {
+    type: 'function',
+    function: { name: 'GitHubListPRs', description: 'List pull requests on a GitHub repository', parameters: { type: 'object', properties: { owner: { type: 'string', description: 'Repository owner' }, repo: { type: 'string', description: 'Repository name' }, state: { type: 'string', description: 'Filter by state', enum: ['open', 'closed', 'all'] } }, required: ['owner', 'repo'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.githubToken; if (!token) return 'GitHub token not configured.';
+      try { return await githubIntegration.listPRs(token, args.owner, args.repo, args.state || 'open'); } catch (e: any) { return `GitHub error: ${e.message}`; }
+    }
+  },
+  GitHubNotifications: {
+    type: 'function',
+    function: { name: 'GitHubNotifications', description: 'Get your GitHub notifications', parameters: { type: 'object', properties: {} } },
+    execute: async () => {
+      const s = getLocalSettings(); const token = s.githubToken; if (!token) return 'GitHub token not configured.';
+      try { return await githubIntegration.getNotifications(token); } catch (e: any) { return `GitHub error: ${e.message}`; }
+    }
+  },
+  GitHubStarRepo: {
+    type: 'function',
+    function: { name: 'GitHubStarRepo', description: 'Star a GitHub repository', parameters: { type: 'object', properties: { owner: { type: 'string', description: 'Repository owner' }, repo: { type: 'string', description: 'Repository name' } }, required: ['owner', 'repo'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.githubToken; if (!token) return 'GitHub token not configured.';
+      try { return await githubIntegration.starRepo(token, args.owner, args.repo); } catch (e: any) { return `GitHub error: ${e.message}`; }
+    }
+  },
+  GitHubSearchCode: {
+    type: 'function',
+    function: { name: 'GitHubSearchCode', description: 'Search code across GitHub repositories', parameters: { type: 'object', properties: { query: { type: 'string', description: 'Search query (supports GitHub code search syntax)' } }, required: ['query'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.githubToken; if (!token) return 'GitHub token not configured.';
+      try { return await githubIntegration.searchCode(token, args.query); } catch (e: any) { return `GitHub error: ${e.message}`; }
+    }
+  },
+  GitHubProfile: {
+    type: 'function',
+    function: { name: 'GitHubProfile', description: 'Get your authenticated GitHub user profile', parameters: { type: 'object', properties: {} } },
+    execute: async () => {
+      const s = getLocalSettings(); const token = s.githubToken; if (!token) return 'GitHub token not configured.';
+      try { return await githubIntegration.getUserProfile(token); } catch (e: any) { return `GitHub error: ${e.message}`; }
+    }
+  },
+
+  // ── Gmail ─────────────────────────────────────────────────────────────────
+  GmailSendEmail: {
+    type: 'function',
+    function: { name: 'GmailSendEmail', description: 'Send an email via Gmail', parameters: { type: 'object', properties: { to: { type: 'string', description: 'Recipient email address' }, subject: { type: 'string', description: 'Email subject' }, body: { type: 'string', description: 'Email body text' } }, required: ['to', 'subject', 'body'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const key = s.gmailApiKey; if (!key) return 'Gmail API key not configured. Go to Settings > Apps > Gmail and add your API key or Apps Script deployment ID.';
+      try { return await gmailIntegration.sendEmail(key, args.to, args.subject, args.body); } catch (e: any) { return `Gmail error: ${e.message}`; }
+    }
+  },
+  GmailSearchInbox: {
+    type: 'function',
+    function: { name: 'GmailSearchInbox', description: 'Search your Gmail inbox', parameters: { type: 'object', properties: { query: { type: 'string', description: 'Search query' } }, required: ['query'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const key = s.gmailApiKey; if (!key) return 'Gmail API key not configured.';
+      try { return await gmailIntegration.searchInbox(key, args.query); } catch (e: any) { return `Gmail error: ${e.message}`; }
+    }
+  },
+  GmailListLabels: {
+    type: 'function',
+    function: { name: 'GmailListLabels', description: 'List Gmail labels/folders', parameters: { type: 'object', properties: {} } },
+    execute: async () => {
+      const s = getLocalSettings(); const key = s.gmailApiKey; if (!key) return 'Gmail API key not configured.';
+      try { return await gmailIntegration.listLabels(key); } catch (e: any) { return `Gmail error: ${e.message}`; }
+    }
+  },
+
+  // ── Slack ──────────────────────────────────────────────────────────────────
+  SlackSendMessage: {
+    type: 'function',
+    function: { name: 'SlackSendMessage', description: 'Send a message to a Slack channel', parameters: { type: 'object', properties: { channel: { type: 'string', description: 'Channel name or ID' }, text: { type: 'string', description: 'Message text' } }, required: ['channel', 'text'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.slackBotToken; if (!token) return 'Slack bot token not configured. Go to Settings > Apps > Slack and add your bot token.';
+      try { return await slackIntegration.sendMessage(token, args.channel, args.text); } catch (e: any) { return `Slack error: ${e.message}`; }
+    }
+  },
+  SlackListChannels: {
+    type: 'function',
+    function: { name: 'SlackListChannels', description: 'List all Slack channels', parameters: { type: 'object', properties: {} } },
+    execute: async () => {
+      const s = getLocalSettings(); const token = s.slackBotToken; if (!token) return 'Slack bot token not configured.';
+      try { return await slackIntegration.listChannels(token); } catch (e: any) { return `Slack error: ${e.message}`; }
+    }
+  },
+  SlackGetMessages: {
+    type: 'function',
+    function: { name: 'SlackGetMessages', description: 'Get recent messages from a Slack channel', parameters: { type: 'object', properties: { channel: { type: 'string', description: 'Channel ID' }, limit: { type: 'number', description: 'Number of messages to retrieve' } }, required: ['channel'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.slackBotToken; if (!token) return 'Slack bot token not configured.';
+      try { return await slackIntegration.getMessages(token, args.channel, args.limit || 10); } catch (e: any) { return `Slack error: ${e.message}`; }
+    }
+  },
+  SlackSetStatus: {
+    type: 'function',
+    function: { name: 'SlackSetStatus', description: 'Set your Slack status', parameters: { type: 'object', properties: { text: { type: 'string', description: 'Status text' }, emoji: { type: 'string', description: 'Status emoji (e.g. :coffee:)' } }, required: ['text'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.slackBotToken; if (!token) return 'Slack bot token not configured.';
+      try { return await slackIntegration.setStatus(token, args.text, args.emoji || ':speech_balloon:'); } catch (e: any) { return `Slack error: ${e.message}`; }
+    }
+  },
+
+  // ── Discord ────────────────────────────────────────────────────────────────
+  DiscordSendMessage: {
+    type: 'function',
+    function: { name: 'DiscordSendMessage', description: 'Send a message to a Discord channel', parameters: { type: 'object', properties: { channel_id: { type: 'string', description: 'Channel ID' }, content: { type: 'string', description: 'Message content' } }, required: ['channel_id', 'content'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.discordBotToken; if (!token) return 'Discord bot token not configured. Go to Settings > Apps > Discord and add your bot token.';
+      try { return await discordIntegration.sendMessage(token, args.channel_id, args.content); } catch (e: any) { return `Discord error: ${e.message}`; }
+    }
+  },
+  DiscordListGuilds: {
+    type: 'function',
+    function: { name: 'DiscordListGuilds', description: 'List Discord servers (guilds) the bot is in', parameters: { type: 'object', properties: {} } },
+    execute: async () => {
+      const s = getLocalSettings(); const token = s.discordBotToken; if (!token) return 'Discord bot token not configured.';
+      try { return await discordIntegration.listGuilds(token); } catch (e: any) { return `Discord error: ${e.message}`; }
+    }
+  },
+  DiscordGetChannels: {
+    type: 'function',
+    function: { name: 'DiscordGetChannels', description: 'List channels in a Discord server', parameters: { type: 'object', properties: { guild_id: { type: 'string', description: 'Guild/Server ID' } }, required: ['guild_id'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.discordBotToken; if (!token) return 'Discord bot token not configured.';
+      try { return await discordIntegration.getChannels(token, args.guild_id); } catch (e: any) { return `Discord error: ${e.message}`; }
+    }
+  },
+
+  // ── Telegram ───────────────────────────────────────────────────────────────
+  TelegramSendMessage: {
+    type: 'function',
+    function: { name: 'TelegramSendMessage', description: 'Send a message via Telegram bot', parameters: { type: 'object', properties: { chat_id: { type: 'string', description: 'Chat ID or username' }, text: { type: 'string', description: 'Message text (supports HTML)' } }, required: ['chat_id', 'text'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.telegramBotToken; if (!token) return 'Telegram bot token not configured. Go to Settings > Apps > Telegram and add your bot token from @BotFather.';
+      try { return await telegramIntegration.sendMessage(token, args.chat_id, args.text); } catch (e: any) { return `Telegram error: ${e.message}`; }
+    }
+  },
+  TelegramGetUpdates: {
+    type: 'function',
+    function: { name: 'TelegramGetUpdates', description: 'Get recent Telegram bot messages/updates', parameters: { type: 'object', properties: {} } },
+    execute: async () => {
+      const s = getLocalSettings(); const token = s.telegramBotToken; if (!token) return 'Telegram bot token not configured.';
+      try { return await telegramIntegration.getUpdates(token); } catch (e: any) { return `Telegram error: ${e.message}`; }
+    }
+  },
+  TelegramBotInfo: {
+    type: 'function',
+    function: { name: 'TelegramBotInfo', description: 'Get Telegram bot information', parameters: { type: 'object', properties: {} } },
+    execute: async () => {
+      const s = getLocalSettings(); const token = s.telegramBotToken; if (!token) return 'Telegram bot token not configured.';
+      try { return await telegramIntegration.getBotInfo(token); } catch (e: any) { return `Telegram error: ${e.message}`; }
+    }
+  },
+  TelegramSendPhoto: {
+    type: 'function',
+    function: { name: 'TelegramSendPhoto', description: 'Send a photo via Telegram bot', parameters: { type: 'object', properties: { chat_id: { type: 'string', description: 'Chat ID' }, photo_url: { type: 'string', description: 'URL of the photo to send' }, caption: { type: 'string', description: 'Photo caption' } }, required: ['chat_id', 'photo_url'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.telegramBotToken; if (!token) return 'Telegram bot token not configured.';
+      try { return await telegramIntegration.sendPhoto(token, args.chat_id, args.photo_url, args.caption || ''); } catch (e: any) { return `Telegram error: ${e.message}`; }
+    }
+  },
+
+  // ── Google Calendar ────────────────────────────────────────────────────────
+  GoogleCalendarEvents: {
+    type: 'function',
+    function: { name: 'GoogleCalendarEvents', description: 'List upcoming Google Calendar events', parameters: { type: 'object', properties: { calendar_id: { type: 'string', description: 'Calendar ID (default: primary)' }, max_results: { type: 'number', description: 'Max events to return' } } } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const key = s.googleCalendarApiKey; if (!key) return 'Google Calendar API key not configured. Go to Settings > Apps > Google Calendar and add your API key.';
+      try { return await googleCalendarIntegration.listEvents(key, args.calendar_id || 'primary', args.max_results || 10); } catch (e: any) { return `Calendar error: ${e.message}`; }
+    }
+  },
+  GoogleCalendarSearch: {
+    type: 'function',
+    function: { name: 'GoogleCalendarSearch', description: 'Search Google Calendar events', parameters: { type: 'object', properties: { query: { type: 'string', description: 'Search query' }, calendar_id: { type: 'string', description: 'Calendar ID (default: primary)' } }, required: ['query'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const key = s.googleCalendarApiKey; if (!key) return 'Google Calendar API key not configured.';
+      try { return await googleCalendarIntegration.searchEvents(key, args.query, args.calendar_id || 'primary'); } catch (e: any) { return `Calendar error: ${e.message}`; }
+    }
+  },
+
+  // ── Google Drive ───────────────────────────────────────────────────────────
+  GoogleDriveListFiles: {
+    type: 'function',
+    function: { name: 'GoogleDriveListFiles', description: 'List files in Google Drive', parameters: { type: 'object', properties: { max_results: { type: 'number', description: 'Max files to return' } } } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const key = s.googleDriveApiKey; if (!key) return 'Google Drive API key not configured. Go to Settings > Apps > Google Drive and add your API key.';
+      try { return await googleDriveIntegration.listFiles(key, '', args.max_results || 15); } catch (e: any) { return `Drive error: ${e.message}`; }
+    }
+  },
+  GoogleDriveSearch: {
+    type: 'function',
+    function: { name: 'GoogleDriveSearch', description: 'Search files in Google Drive', parameters: { type: 'object', properties: { query: { type: 'string', description: 'Search query' } }, required: ['query'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const key = s.googleDriveApiKey; if (!key) return 'Google Drive API key not configured.';
+      try { return await googleDriveIntegration.searchFiles(key, args.query); } catch (e: any) { return `Drive error: ${e.message}`; }
+    }
+  },
+
+  // ── Trello ─────────────────────────────────────────────────────────────────
+  TrelloListBoards: {
+    type: 'function',
+    function: { name: 'TrelloListBoards', description: 'List your Trello boards', parameters: { type: 'object', properties: {} } },
+    execute: async () => {
+      const s = getLocalSettings(); const key = s.trelloApiKey; const token = s.trelloToken; if (!key || !token) return 'Trello API key/token not configured. Go to Settings > Apps > Trello and add your credentials.';
+      try { return await trelloIntegration.listBoards(key, token); } catch (e: any) { return `Trello error: ${e.message}`; }
+    }
+  },
+  TrelloGetCards: {
+    type: 'function',
+    function: { name: 'TrelloGetCards', description: 'Get cards from a Trello board', parameters: { type: 'object', properties: { board_id: { type: 'string', description: 'Board ID' } }, required: ['board_id'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const key = s.trelloApiKey; const token = s.trelloToken; if (!key || !token) return 'Trello not configured.';
+      try { return await trelloIntegration.getCards(key, token, args.board_id); } catch (e: any) { return `Trello error: ${e.message}`; }
+    }
+  },
+  TrelloCreateCard: {
+    type: 'function',
+    function: { name: 'TrelloCreateCard', description: 'Create a new Trello card', parameters: { type: 'object', properties: { list_id: { type: 'string', description: 'List ID to add the card to' }, name: { type: 'string', description: 'Card name' }, description: { type: 'string', description: 'Card description' } }, required: ['list_id', 'name'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const key = s.trelloApiKey; const token = s.trelloToken; if (!key || !token) return 'Trello not configured.';
+      try { return await trelloIntegration.createCard(key, token, args.list_id, args.name, args.description || ''); } catch (e: any) { return `Trello error: ${e.message}`; }
+    }
+  },
+
+  // ── Spotify ────────────────────────────────────────────────────────────────
+  SpotifySearchTracks: {
+    type: 'function',
+    function: { name: 'SpotifySearchTracks', description: 'Search for tracks on Spotify', parameters: { type: 'object', properties: { query: { type: 'string', description: 'Search query' }, limit: { type: 'number', description: 'Max results' } }, required: ['query'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.spotifyToken; if (!token) return 'Spotify token not configured. Go to Settings > Apps > Spotify and add your access token.';
+      try { return await spotifyIntegration.searchTracks(token, args.query, args.limit || 10); } catch (e: any) { return `Spotify error: ${e.message}`; }
+    }
+  },
+  SpotifyGetPlaylists: {
+    type: 'function',
+    function: { name: 'SpotifyGetPlaylists', description: 'Get your Spotify playlists', parameters: { type: 'object', properties: { limit: { type: 'number', description: 'Max playlists to return' } } } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.spotifyToken; if (!token) return 'Spotify token not configured.';
+      try { return await spotifyIntegration.getPlaylists(token, args.limit || 20); } catch (e: any) { return `Spotify error: ${e.message}`; }
+    }
+  },
+  SpotifyGetArtist: {
+    type: 'function',
+    function: { name: 'SpotifyGetArtist', description: 'Get artist information from Spotify', parameters: { type: 'object', properties: { query: { type: 'string', description: 'Artist name to search' } }, required: ['query'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.spotifyToken; if (!token) return 'Spotify token not configured.';
+      try { return await spotifyIntegration.getArtist(token, args.query); } catch (e: any) { return `Spotify error: ${e.message}`; }
+    }
+  },
+
+  // ── Microsoft Teams ────────────────────────────────────────────────────────
+  TeamsSendMessage: {
+    type: 'function',
+    function: { name: 'TeamsSendMessage', description: 'Send a message to Microsoft Teams via webhook', parameters: { type: 'object', properties: { text: { type: 'string', description: 'Message text' }, title: { type: 'string', description: 'Message title (optional)' } }, required: ['text'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const url = s.teamsWebhookUrl; if (!url) return 'Teams webhook URL not configured. Go to Settings > Apps > Microsoft Teams and add your webhook URL.';
+      try { return await teamsIntegration.sendMessage(url, args.text, args.title); } catch (e: any) { return `Teams error: ${e.message}`; }
+    }
+  },
+
+  // ── WhatsApp ───────────────────────────────────────────────────────────────
+  WhatsAppSendMessage: {
+    type: 'function',
+    function: { name: 'WhatsAppSendMessage', description: 'Send a WhatsApp message via Business API', parameters: { type: 'object', properties: { to: { type: 'string', description: 'Recipient phone number (with country code)' }, text: { type: 'string', description: 'Message text' } }, required: ['to', 'text'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.whatsappToken; const phoneId = s.whatsappPhoneNumberId; if (!token || !phoneId) return 'WhatsApp not configured. Go to Settings > Apps > WhatsApp and add your token and phone number ID.';
+      try { return await whatsappIntegration.sendMessage(token, phoneId, args.to, args.text); } catch (e: any) { return `WhatsApp error: ${e.message}`; }
+    }
+  },
+
+  // ── LinkedIn ───────────────────────────────────────────────────────────────
+  LinkedInProfile: {
+    type: 'function',
+    function: { name: 'LinkedInProfile', description: 'Get your LinkedIn profile information', parameters: { type: 'object', properties: {} } },
+    execute: async () => {
+      const s = getLocalSettings(); const token = s.linkedinToken; if (!token) return 'LinkedIn token not configured. Go to Settings > Apps > LinkedIn and add your access token.';
+      try { return await linkedinIntegration.getProfile(token); } catch (e: any) { return `LinkedIn error: ${e.message}`; }
+    }
+  },
+  LinkedInCreatePost: {
+    type: 'function',
+    function: { name: 'LinkedInCreatePost', description: 'Create a LinkedIn post', parameters: { type: 'object', properties: { text: { type: 'string', description: 'Post content text' } }, required: ['text'] } },
+    execute: async (args: any) => {
+      const s = getLocalSettings(); const token = s.linkedinToken; if (!token) return 'LinkedIn token not configured.';
+      try { return await linkedinIntegration.createPost(token, args.text); } catch (e: any) { return `LinkedIn error: ${e.message}`; }
     }
   }
 
