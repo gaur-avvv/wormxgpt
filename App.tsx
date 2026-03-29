@@ -912,22 +912,27 @@ const Sidebar: React.FC<{
                     <>
                       <div className="space-y-1">
                         <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Temp</label><span className="text-[10px] text-[#F120F0] font-mono">{((settings as any)?.temperature || 0.87).toFixed(1)}</span></div>
+                        <p className="text-[8px] text-[#F120F0]/40 font-mono leading-tight">Controls randomness. Higher = more creative, lower = more focused</p>
                         <input type="range" min="0" max="2" step="0.1" value={(settings as any)?.temperature || 0.87} onChange={(e) => setSettings(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))} className="w-full accent-[#F120F0]" />
                       </div>
                       <div className="space-y-1">
                         <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Top P</label><span className="text-[10px] text-[#F120F0] font-mono">{((settings as any)?.topP || 1.0).toFixed(2)}</span></div>
+                        <p className="text-[8px] text-[#F120F0]/40 font-mono leading-tight">Nucleus sampling. Limits token pool to top probability mass</p>
                         <input type="range" min="0" max="1" step="0.05" value={(settings as any)?.topP || 1.0} onChange={(e) => setSettings(prev => ({ ...prev, topP: parseFloat(e.target.value) }))} className="w-full accent-[#F120F0]" />
                       </div>
                       <div className="space-y-1">
                         <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Max Tokens</label><span className="text-[10px] text-[#F120F0] font-mono">{(settings as any)?.maxTokens || 4000}</span></div>
+                        <p className="text-[8px] text-[#F120F0]/40 font-mono leading-tight">Maximum length of the generated response in tokens</p>
                         <input type="range" min="100" max="8192" step="100" value={(settings as any)?.maxTokens || 4000} onChange={(e) => setSettings(prev => ({ ...prev, maxTokens: parseInt(e.target.value) }))} className="w-full accent-[#F120F0]" />
                       </div>
                       <div className="space-y-1">
                         <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Presence</label><span className="text-[10px] text-[#F120F0] font-mono">{((settings as any)?.presencePenalty || 0.0).toFixed(1)}</span></div>
+                        <p className="text-[8px] text-[#F120F0]/40 font-mono leading-tight">Penalizes repeated topics. Higher = explores new subjects</p>
                         <input type="range" min="0" max="2" step="0.1" value={(settings as any)?.presencePenalty || 0.0} onChange={(e) => setSettings(prev => ({ ...prev, presencePenalty: parseFloat(e.target.value) }))} className="w-full accent-[#F120F0]" />
                       </div>
                       <div className="space-y-1">
                         <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Frequency</label><span className="text-[10px] text-[#F120F0] font-mono">{((settings as any)?.frequencyPenalty || 0.0).toFixed(1)}</span></div>
+                        <p className="text-[8px] text-[#F120F0]/40 font-mono leading-tight">Penalizes repeated words. Higher = less word repetition</p>
                         <input type="range" min="0" max="2" step="0.1" value={(settings as any)?.frequencyPenalty || 0.0} onChange={(e) => setSettings(prev => ({ ...prev, frequencyPenalty: parseFloat(e.target.value) }))} className="w-full accent-[#F120F0]" />
                       </div>
                       <div className="pt-2 border-t border-[#F120F0]/20 space-y-2">
@@ -935,6 +940,7 @@ const Sidebar: React.FC<{
                           <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Core Directive</label>
                           <button onClick={() => setSettings(prev => ({ ...prev, customPromptPrefix: '' }))} className="text-[9px] font-black uppercase text-[#F120F0]/50 hover:text-[#F120F0] px-1.5 py-0.5 border border-[#F120F0]/30 rounded hover:bg-[#F120F0]/20 transition-all">Reset</button>
                         </div>
+                        <p className="text-[8px] text-[#F120F0]/40 font-mono leading-tight">Custom system prompt injected before each message</p>
                         <textarea value={(settings as any)?.customPromptPrefix || ''} onChange={(e) => setSettings(prev => ({ ...prev, customPromptPrefix: e.target.value }))} rows={2} placeholder="Inject directive before each message..." className="w-full bg-black/80 border-2 border-[#F120F0]/40 rounded px-2 py-1.5 text-[10px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-bold resize-none" style={{ scrollbarWidth: 'none' }} />
                         <div className="flex gap-1.5">
                           <button onClick={() => setSettings(prev => ({ ...prev, promptInjectionEnabled: !prev.promptInjectionEnabled }))}                           className={`flex-1 py-1 text-[9px] font-black uppercase border-2 rounded transition-all ${(settings as any)?.promptInjectionEnabled ? 'bg-[#F120F0]/20 border-[#F120F0] text-[#F120F0]' : 'border-[#F120F0]/30 text-[#F120F0]/50'}`}>{(settings as any)?.promptInjectionEnabled ? 'ON' : 'OFF'}</button>
@@ -951,12 +957,15 @@ const Sidebar: React.FC<{
                           <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Token Opt.</label>
                           <button onClick={() => setSettings(prev => ({ ...prev, useTokenOptimization: !prev.useTokenOptimization }))} className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded transition-all ${(settings as any)?.useTokenOptimization ? 'bg-[#F120F0]/20 border-[#F120F0] text-[#F120F0]' : 'border-[#F120F0]/30 text-[#F120F0]/50'}`}>{(settings as any)?.useTokenOptimization ? 'ON' : 'OFF'}</button>
                         </div>
+                        <p className="text-[8px] text-[#F120F0]/40 font-mono leading-tight">Automatically compress context to save tokens and cost</p>
                         <div className="space-y-1">
                           <div className="flex justify-between"><label className="text-[9px] font-black uppercase text-[#F120F0]/80">Max Context</label><span className="text-[9px] text-[#F120F0] font-mono">{((settings as any)?.maxContextTokens || 8192) / 1024}K</span></div>
+                          <p className="text-[8px] text-[#F120F0]/30 font-mono leading-tight">Max tokens allowed in conversation context window</p>
                           <input type="range" min="1024" max="32768" step="1024" value={(settings as any)?.maxContextTokens || 8192} onChange={(e) => setSettings(prev => ({ ...prev, maxContextTokens: parseInt(e.target.value) }))} className="w-full accent-[#F120F0]" disabled={!(settings as any)?.useTokenOptimization} />
                         </div>
                         <div className="space-y-1">
                           <div className="flex justify-between"><label className="text-[9px] font-black uppercase text-[#F120F0]/80">Compress At</label><span className="text-[9px] text-[#F120F0] font-mono">{(settings as any)?.compressionThreshold || 75}%</span></div>
+                          <p className="text-[8px] text-[#F120F0]/30 font-mono leading-tight">Context usage % that triggers automatic compression</p>
                           <input type="range" min="50" max="95" step="5" value={(settings as any)?.compressionThreshold || 75} onChange={(e) => setSettings(prev => ({ ...prev, compressionThreshold: parseInt(e.target.value) }))} className="w-full accent-[#F120F0]" disabled={!(settings as any)?.useTokenOptimization} />
                         </div>
                       </div>
