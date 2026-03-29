@@ -807,23 +807,23 @@ const Sidebar: React.FC<{
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 sm:hidden" onClick={onMobileClose} />
         )}
 
-        <aside className={`fixed inset-y-0 left-0 z-50 w-64 sm:w-72 bg-[#050000] border-r-2 border-[#F120F0]/40 flex flex-col transition-transform duration-500 ease-in-out ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`} style={{ boxShadow: '0 0 30px rgba(241,32,240,0.3)' }}>
+        <aside className={`fixed inset-y-0 left-0 z-50 w-80 sm:w-[340px] bg-[#050000] border-r-2 border-[#F120F0]/40 flex flex-col transition-transform duration-500 ease-in-out ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`} style={{ boxShadow: '0 0 30px rgba(241,32,240,0.3)' }}>
           {/* Header & New Chat */}
           <div className="p-4 sm:p-6 border-b border-[#F120F0]/30 bg-gradient-to-b from-[#F120F0]/20 to-transparent flex-shrink-0">
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-col">
                 <h1 className="text-xl font-black text-[#F120F0] tracking-[0.2em] italic" style={{ textShadow: '0 0 20px rgba(241,32,240,0.8)' }}>SESSIONS</h1>
-                <span className="text-[8px] text-[#F120F0]/60 font-bold uppercase tracking-widest mt-1">Buffer_Active</span>
+                <span className="text-[10px] text-[#F120F0]/60 font-bold uppercase tracking-widest mt-1">Buffer_Active</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-[#F120F0] rounded-full animate-pulse shadow-[0_0_10px_#F120F0]"></div>
-                <span className="text-[7px] font-mono text-[#F120F0]/80">STATE: LIVE</span>
+                <span className="text-[9px] font-mono text-[#F120F0]/80">STATE: LIVE</span>
               </div>
             </div>
 
             <button
               onClick={onNewSession}
-              className="w-full py-3 bg-gradient-to-r from-[#F120F0] via-[#F120F0] to-[#F120F0] text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-lg border-b-4 border-[#F120F0]/60 hover:from-[#ff4dff] hover:via-[#F120F0] hover:to-[#ff4dff] hover:border-[#F120F0] active:translate-y-1 active:border-b-0 transition-all flex items-center justify-center gap-2 shadow-[0_10px_25px_rgba(241,32,240,0.5)]"
+              className="w-full py-3 bg-gradient-to-r from-[#F120F0] via-[#F120F0] to-[#F120F0] text-black font-black uppercase text-[11px] tracking-[0.3em] rounded-lg border-b-4 border-[#F120F0]/60 hover:from-[#ff4dff] hover:via-[#F120F0] hover:to-[#ff4dff] hover:border-[#F120F0] active:translate-y-1 active:border-b-0 transition-all flex items-center justify-center gap-2 shadow-[0_10px_25px_rgba(241,32,240,0.5)]"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
               NEW_INJECTION
@@ -832,7 +832,7 @@ const Sidebar: React.FC<{
 
           {/* Chat History - Main Section (Takes available space) */}
           <div className="flex-1 overflow-y-auto p-3" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', minHeight: '200px' }}>
-            <div className="text-[9px] font-black uppercase tracking-widest text-[#F120F0] mb-3 flex items-center gap-2" style={{ textShadow: '0 0 10px rgba(241,32,240,0.7)' }}>
+            <div className="text-[11px] font-black uppercase tracking-widest text-[#F120F0] mb-3 flex items-center gap-2" style={{ textShadow: '0 0 10px rgba(241,32,240,0.7)' }}>
               <span className="w-2 h-2 bg-[#F120F0] rounded-full animate-pulse shadow-[0_0_8px_#F120F0]"></span>
               Chat History ({sessions.length})
             </div>
@@ -844,7 +844,7 @@ const Sidebar: React.FC<{
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div className={`w-2 h-2 rounded-full ${s.id === activeSessionId ? 'bg-[#F120F0] animate-pulse shadow-[0_0_10px_#F120F0]' : 'bg-[#F120F0]/40'}`} />
-                  <span className={`text-[9px] font-bold uppercase tracking-wider truncate transition-colors ${s.id === activeSessionId ? 'text-[#F120F0] font-black' : 'text-[#F120F0]/70 group-hover:text-[#F120F0]'}`}>{s.title}</span>
+                  <span className={`text-[11px] font-bold uppercase tracking-wider truncate transition-colors ${s.id === activeSessionId ? 'text-[#F120F0] font-black' : 'text-[#F120F0]/70 group-hover:text-[#F120F0]'}`}>{s.title}</span>
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); onDeleteSession(s.id); }}
@@ -858,7 +858,7 @@ const Sidebar: React.FC<{
 
           {/* Provider & Model Selection - Always Visible */}
           <div className="border-t border-[#F120F0]/30 bg-black/60 p-3 flex-shrink-0 space-y-2">
-            <div className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]/80 mb-1">Provider</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]/80 mb-1">Provider</div>
             <select
               value={effectiveProvider}
               onChange={(e) => setSettings(prev => {
@@ -866,17 +866,17 @@ const Sidebar: React.FC<{
                 const newModels = MODEL_OPTIONS.filter(m => m.provider === newProvider);
                 return { ...prev, aiProvider: newProvider, model: newModels[0]?.value || prev.model };
               })}
-              className="w-full bg-black/80 border-2 border-[#F120F0]/50 rounded-lg px-2 py-1.5 text-[9px] text-[#F120F0] outline-none focus:border-[#F120F0] focus:shadow-[0_0_12px_rgba(241,32,240,0.4)] font-bold uppercase tracking-wider transition-all"
+              className="w-full bg-black/80 border-2 border-[#F120F0]/50 rounded-lg px-3 py-2 text-[11px] text-[#F120F0] outline-none focus:border-[#F120F0] focus:shadow-[0_0_12px_rgba(241,32,240,0.4)] font-bold uppercase tracking-wider transition-all"
             >
               {providerOptions.map(p => (
                 <option key={p} value={p} className="bg-black">{p}</option>
               ))}
             </select>
-            <div className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]/80 mt-2 mb-1">Model</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]/80 mt-2 mb-1">Model</div>
             <select
               value={selectedModelValue}
               onChange={(e) => setSettings(prev => ({ ...prev, model: e.target.value }))}
-              className="w-full bg-black/80 border-2 border-[#F120F0]/50 rounded-lg px-2 py-1.5 text-[9px] text-[#F120F0] outline-none focus:border-[#F120F0] focus:shadow-[0_0_12px_rgba(241,32,240,0.4)] font-bold transition-all"
+              className="w-full bg-black/80 border-2 border-[#F120F0]/50 rounded-lg px-3 py-2 text-[11px] text-[#F120F0] outline-none focus:border-[#F120F0] focus:shadow-[0_0_12px_rgba(241,32,240,0.4)] font-bold transition-all"
             >
               {modelsForProvider.map(m => (
                 <option key={m.value} value={m.value} className="bg-black">{m.label || m.value}</option>
@@ -891,10 +891,10 @@ const Sidebar: React.FC<{
               className="w-full flex items-center justify-between px-4 py-2.5 bg-black/40 hover:bg-[#F120F0]/10 transition-all"
             >
               <div className="flex items-center gap-2">
-                <svg className="w-3 h-3 text-[#F120F0]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" /></svg>
-                <span className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]">Settings</span>
+                  <svg className="w-4 h-4 text-[#F120F0]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" /></svg>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Settings</span>
               </div>
-              <svg className={`w-3 h-3 text-[#F120F0]/70 transition-transform duration-300 ${settingsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              <svg className={`w-4 h-4 text-[#F120F0]/70 transition-transform duration-300 ${settingsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </button>
 
             {settingsOpen && (
@@ -902,7 +902,7 @@ const Sidebar: React.FC<{
                 <div className="flex border-b border-[#F120F0]/20">
                   {(['params', 'keys', 'mcp', 'apps'] as const).map(tab => (
                     <button key={tab} onClick={() => setSettingsTab(tab)}
-                      className={`flex-1 py-1.5 text-[7px] font-black uppercase tracking-widest transition-all ${settingsTab === tab ? 'text-[#F120F0] border-b-2 border-[#F120F0] bg-[#F120F0]/10' : 'text-[#F120F0]/40 hover:text-[#F120F0]/70'}`}>
+                      className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${settingsTab === tab ? 'text-[#F120F0] border-b-2 border-[#F120F0] bg-[#F120F0]/10' : 'text-[#F120F0]/40 hover:text-[#F120F0]/70'}`}>
                       {tab === 'params' ? 'Params' : tab === 'keys' ? 'API Keys' : tab === 'mcp' ? 'MCP' : 'Apps'}
                     </button>
                   ))}
@@ -911,52 +911,52 @@ const Sidebar: React.FC<{
                   {settingsTab === 'params' && (
                     <>
                       <div className="space-y-1">
-                        <div className="flex justify-between"><label className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]">Temp</label><span className="text-[8px] text-[#F120F0] font-mono">{((settings as any)?.temperature || 0.87).toFixed(1)}</span></div>
+                        <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Temp</label><span className="text-[10px] text-[#F120F0] font-mono">{((settings as any)?.temperature || 0.87).toFixed(1)}</span></div>
                         <input type="range" min="0" max="2" step="0.1" value={(settings as any)?.temperature || 0.87} onChange={(e) => setSettings(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))} className="w-full accent-[#F120F0]" />
                       </div>
                       <div className="space-y-1">
-                        <div className="flex justify-between"><label className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]">Top P</label><span className="text-[8px] text-[#F120F0] font-mono">{((settings as any)?.topP || 1.0).toFixed(2)}</span></div>
+                        <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Top P</label><span className="text-[10px] text-[#F120F0] font-mono">{((settings as any)?.topP || 1.0).toFixed(2)}</span></div>
                         <input type="range" min="0" max="1" step="0.05" value={(settings as any)?.topP || 1.0} onChange={(e) => setSettings(prev => ({ ...prev, topP: parseFloat(e.target.value) }))} className="w-full accent-[#F120F0]" />
                       </div>
                       <div className="space-y-1">
-                        <div className="flex justify-between"><label className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]">Max Tokens</label><span className="text-[8px] text-[#F120F0] font-mono">{(settings as any)?.maxTokens || 4000}</span></div>
+                        <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Max Tokens</label><span className="text-[10px] text-[#F120F0] font-mono">{(settings as any)?.maxTokens || 4000}</span></div>
                         <input type="range" min="100" max="8192" step="100" value={(settings as any)?.maxTokens || 4000} onChange={(e) => setSettings(prev => ({ ...prev, maxTokens: parseInt(e.target.value) }))} className="w-full accent-[#F120F0]" />
                       </div>
                       <div className="space-y-1">
-                        <div className="flex justify-between"><label className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]">Presence</label><span className="text-[8px] text-[#F120F0] font-mono">{((settings as any)?.presencePenalty || 0.0).toFixed(1)}</span></div>
+                        <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Presence</label><span className="text-[10px] text-[#F120F0] font-mono">{((settings as any)?.presencePenalty || 0.0).toFixed(1)}</span></div>
                         <input type="range" min="0" max="2" step="0.1" value={(settings as any)?.presencePenalty || 0.0} onChange={(e) => setSettings(prev => ({ ...prev, presencePenalty: parseFloat(e.target.value) }))} className="w-full accent-[#F120F0]" />
                       </div>
                       <div className="space-y-1">
-                        <div className="flex justify-between"><label className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]">Frequency</label><span className="text-[8px] text-[#F120F0] font-mono">{((settings as any)?.frequencyPenalty || 0.0).toFixed(1)}</span></div>
+                        <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Frequency</label><span className="text-[10px] text-[#F120F0] font-mono">{((settings as any)?.frequencyPenalty || 0.0).toFixed(1)}</span></div>
                         <input type="range" min="0" max="2" step="0.1" value={(settings as any)?.frequencyPenalty || 0.0} onChange={(e) => setSettings(prev => ({ ...prev, frequencyPenalty: parseFloat(e.target.value) }))} className="w-full accent-[#F120F0]" />
                       </div>
                       <div className="pt-2 border-t border-[#F120F0]/20 space-y-2">
                         <div className="flex items-center justify-between">
-                          <label className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]">Core Directive</label>
-                          <button onClick={() => setSettings(prev => ({ ...prev, customPromptPrefix: '' }))} className="text-[7px] font-black uppercase text-[#F120F0]/50 hover:text-[#F120F0] px-1.5 py-0.5 border border-[#F120F0]/30 rounded hover:bg-[#F120F0]/20 transition-all">Reset</button>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Core Directive</label>
+                          <button onClick={() => setSettings(prev => ({ ...prev, customPromptPrefix: '' }))} className="text-[9px] font-black uppercase text-[#F120F0]/50 hover:text-[#F120F0] px-1.5 py-0.5 border border-[#F120F0]/30 rounded hover:bg-[#F120F0]/20 transition-all">Reset</button>
                         </div>
-                        <textarea value={(settings as any)?.customPromptPrefix || ''} onChange={(e) => setSettings(prev => ({ ...prev, customPromptPrefix: e.target.value }))} rows={2} placeholder="Inject directive before each message..." className="w-full bg-black/80 border-2 border-[#F120F0]/40 rounded px-2 py-1.5 text-[8px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-bold resize-none" style={{ scrollbarWidth: 'none' }} />
+                        <textarea value={(settings as any)?.customPromptPrefix || ''} onChange={(e) => setSettings(prev => ({ ...prev, customPromptPrefix: e.target.value }))} rows={2} placeholder="Inject directive before each message..." className="w-full bg-black/80 border-2 border-[#F120F0]/40 rounded px-2 py-1.5 text-[10px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-bold resize-none" style={{ scrollbarWidth: 'none' }} />
                         <div className="flex gap-1.5">
-                          <button onClick={() => setSettings(prev => ({ ...prev, promptInjectionEnabled: !prev.promptInjectionEnabled }))} className={`flex-1 py-1 text-[7px] font-black uppercase border-2 rounded transition-all ${(settings as any)?.promptInjectionEnabled ? 'bg-[#F120F0]/20 border-[#F120F0] text-[#F120F0]' : 'border-[#F120F0]/30 text-[#F120F0]/50'}`}>{(settings as any)?.promptInjectionEnabled ? 'ON' : 'OFF'}</button>
-                          <select value={(settings as any)?.promptInjectionMode || 'always'} onChange={(e) => setSettings(prev => ({ ...prev, promptInjectionMode: e.target.value as any }))} disabled={!(settings as any)?.promptInjectionEnabled} className="flex-1 bg-black/80 border-2 border-[#F120F0]/40 rounded px-1 py-1 text-[7px] text-[#F120F0] outline-none font-bold uppercase">
+                          <button onClick={() => setSettings(prev => ({ ...prev, promptInjectionEnabled: !prev.promptInjectionEnabled }))}                           className={`flex-1 py-1 text-[9px] font-black uppercase border-2 rounded transition-all ${(settings as any)?.promptInjectionEnabled ? 'bg-[#F120F0]/20 border-[#F120F0] text-[#F120F0]' : 'border-[#F120F0]/30 text-[#F120F0]/50'}`}>{(settings as any)?.promptInjectionEnabled ? 'ON' : 'OFF'}</button>
+                                                    <select value={(settings as any)?.promptInjectionMode || 'always'} onChange={(e) => setSettings(prev => ({ ...prev, promptInjectionMode: e.target.value as any }))} disabled={!(settings as any)?.promptInjectionEnabled} className="flex-1 bg-black/80 border-2 border-[#F120F0]/40 rounded px-1 py-1 text-[9px] text-[#F120F0] outline-none font-bold uppercase">
                             <option value="always" className="bg-black">Always</option>
                             <option value="once" className="bg-black">Once</option>
                             <option value="manual" className="bg-black">Manual</option>
                           </select>
                         </div>
-                        <button onClick={() => setSettings(prev => ({ ...prev, customPromptPrefix: DEFAULT_SYSTEM_INSTRUCTION }))} className="w-full py-1 text-[7px] font-black uppercase text-[#F120F0] border-2 border-[#F120F0]/40 rounded hover:bg-[#F120F0]/20 hover:border-[#F120F0] transition-all">Load Default Directive</button>
+                        <button onClick={() => setSettings(prev => ({ ...prev, customPromptPrefix: DEFAULT_SYSTEM_INSTRUCTION }))} className="w-full py-1 text-[9px] font-black uppercase text-[#F120F0] border-2 border-[#F120F0]/40 rounded hover:bg-[#F120F0]/20 hover:border-[#F120F0] transition-all">Load Default Directive</button>
                       </div>
                       <div className="pt-2 border-t border-[#F120F0]/20 space-y-2">
                         <div className="flex items-center justify-between">
-                          <label className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]">Token Opt.</label>
-                          <button onClick={() => setSettings(prev => ({ ...prev, useTokenOptimization: !prev.useTokenOptimization }))} className={`text-[7px] font-black uppercase px-2 py-0.5 border rounded transition-all ${(settings as any)?.useTokenOptimization ? 'bg-[#F120F0]/20 border-[#F120F0] text-[#F120F0]' : 'border-[#F120F0]/30 text-[#F120F0]/50'}`}>{(settings as any)?.useTokenOptimization ? 'ON' : 'OFF'}</button>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Token Opt.</label>
+                          <button onClick={() => setSettings(prev => ({ ...prev, useTokenOptimization: !prev.useTokenOptimization }))} className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded transition-all ${(settings as any)?.useTokenOptimization ? 'bg-[#F120F0]/20 border-[#F120F0] text-[#F120F0]' : 'border-[#F120F0]/30 text-[#F120F0]/50'}`}>{(settings as any)?.useTokenOptimization ? 'ON' : 'OFF'}</button>
                         </div>
                         <div className="space-y-1">
-                          <div className="flex justify-between"><label className="text-[7px] font-black uppercase text-[#F120F0]/80">Max Context</label><span className="text-[7px] text-[#F120F0] font-mono">{((settings as any)?.maxContextTokens || 8192) / 1024}K</span></div>
+                          <div className="flex justify-between"><label className="text-[9px] font-black uppercase text-[#F120F0]/80">Max Context</label><span className="text-[9px] text-[#F120F0] font-mono">{((settings as any)?.maxContextTokens || 8192) / 1024}K</span></div>
                           <input type="range" min="1024" max="32768" step="1024" value={(settings as any)?.maxContextTokens || 8192} onChange={(e) => setSettings(prev => ({ ...prev, maxContextTokens: parseInt(e.target.value) }))} className="w-full accent-[#F120F0]" disabled={!(settings as any)?.useTokenOptimization} />
                         </div>
                         <div className="space-y-1">
-                          <div className="flex justify-between"><label className="text-[7px] font-black uppercase text-[#F120F0]/80">Compress At</label><span className="text-[7px] text-[#F120F0] font-mono">{(settings as any)?.compressionThreshold || 75}%</span></div>
+                          <div className="flex justify-between"><label className="text-[9px] font-black uppercase text-[#F120F0]/80">Compress At</label><span className="text-[9px] text-[#F120F0] font-mono">{(settings as any)?.compressionThreshold || 75}%</span></div>
                           <input type="range" min="50" max="95" step="5" value={(settings as any)?.compressionThreshold || 75} onChange={(e) => setSettings(prev => ({ ...prev, compressionThreshold: parseInt(e.target.value) }))} className="w-full accent-[#F120F0]" disabled={!(settings as any)?.useTokenOptimization} />
                         </div>
                       </div>
@@ -999,11 +999,11 @@ const Sidebar: React.FC<{
                               onChange={(e) => { setSettings(prev => ({ ...prev, [p.key]: e.target.value })); setSidebarVerificationStatuses(prev => ({ ...prev, [p.key]: 'idle' })); }}
                               onBlur={(e) => { if (e.target.value) verifyKey(e.target.value); }}
                               placeholder={p.label}
-                              className={`${bgColor} border-2 ${borderColor} rounded-lg px-3 py-2 text-[9px] ${textColor} outline-none transition-all font-bold w-full`}
+                              className={`${bgColor} border-2 ${borderColor} rounded-lg px-3 py-2 text-[11px] ${textColor} outline-none transition-all font-bold w-full`}
                               style={{ boxShadow: `0 0 ${status === 'idle' ? '8px' : '15px'} ${glowColor}` }} />
                             {hasKeyVal && (
                               <button onClick={() => verifyKey((settings as any)?.[p.key] || '')}
-                                className={`absolute right-2 top-1/2 -translate-y-1/2 text-[7px] font-black uppercase px-2 py-1 rounded transition-all ${status === 'valid' ? 'bg-green-600 text-black' : status === 'invalid' ? 'bg-red-600 text-black' : status === 'verifying' ? 'bg-yellow-600 text-black animate-pulse' : 'bg-[#F120F0]/80 text-black hover:bg-[#F120F0]'}`}>
+                                className={`absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-black uppercase px-2 py-1 rounded transition-all ${status === 'valid' ? 'bg-green-600 text-black' : status === 'invalid' ? 'bg-red-600 text-black' : status === 'verifying' ? 'bg-yellow-600 text-black animate-pulse' : 'bg-[#F120F0]/80 text-black hover:bg-[#F120F0]'}`}>
                                 {status === 'valid' ? '?' : status === 'invalid' ? '?' : status === 'verifying' ? '...' : 'V'}
                               </button>
                             )}
@@ -1016,16 +1016,16 @@ const Sidebar: React.FC<{
                     <div className="space-y-2">
                       {/* Master toggle */}
                       <button onClick={() => setSettings(prev => ({ ...prev, mcpEnabled: !prev.mcpEnabled }))}
-                        className={`w-full py-1.5 rounded text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${settings.mcpEnabled ? 'bg-[#F120F0] text-black shadow-[0_0_20px_rgba(241,32,240,0.7)]' : 'bg-zinc-900 text-[#F120F0] border-2 border-[#F120F0]/40'}`}>
+                        className={`w-full py-2 rounded text-[11px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${settings.mcpEnabled ? 'bg-[#F120F0] text-black shadow-[0_0_20px_rgba(241,32,240,0.7)]' : 'bg-zinc-900 text-[#F120F0] border-2 border-[#F120F0]/40'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${settings.mcpEnabled ? 'bg-black animate-pulse' : 'bg-[#F120F0]/40'}`} />
                         {settings.mcpEnabled ? 'MCP ENABLED' : 'MCP DISABLED'}
                       </button>
 
                       {/* Active server URLs */}
                       <div className="space-y-1">
-                        <div className="text-[7px] font-black uppercase tracking-widest text-[#F120F0]/50 px-1">Active Servers</div>
+                        <div className="text-[9px] font-black uppercase tracking-widest text-[#F120F0]/50 px-1">Active Servers</div>
                         {((settings as any)?.mcpServerUrls || []).length === 0 && (
-                          <div className="text-[7px] text-zinc-700 px-2 py-1.5 italic">No servers configured</div>
+                          <div className="text-[9px] text-zinc-700 px-2 py-1.5 italic">No servers configured</div>
                         )}
                         {((settings as any)?.mcpServerUrls || []).map((url: string, idx: number) => {
                           const status = mcpService.getStatus(url);
@@ -1036,10 +1036,10 @@ const Sidebar: React.FC<{
                               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all" style={{ background: statusColor, boxShadow: status === 'connected' ? `0 0 6px ${statusColor}` : 'none' }} />
                               <input type="text" value={url}
                                 onChange={(e) => { const next = [...((settings as any)?.mcpServerUrls || [])]; next[idx] = e.target.value; setSettings(prev => ({ ...prev, mcpServerUrls: next })); }}
-                                className="flex-1 bg-black/80 border border-[#F120F0]/30 rounded px-2 py-1 text-[8px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-mono min-w-0"
-                                placeholder="https://..." />
-                              {status === 'connected' && toolCount > 0 && (
-                                <span className="text-[6px] font-black text-green-500 flex-shrink-0">{toolCount}T</span>
+                                                              className="flex-1 bg-black/80 border border-[#F120F0]/30 rounded px-2 py-1.5 text-[10px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-mono min-w-0"
+                                                              placeholder="https://..." />
+                                                            {status === 'connected' && toolCount > 0 && (
+                                                              <span className="text-[8px] font-black text-green-500 flex-shrink-0">{toolCount}T</span>
                               )}
                               <button onClick={() => { const next = ((settings as any)?.mcpServerUrls || []).filter((_: string, i: number) => i !== idx); setSettings(prev => ({ ...prev, mcpServerUrls: next })); }}
                                 className="text-[#F120F0]/30 hover:text-red-400 transition-colors flex-shrink-0 text-[10px] leading-none">✕</button>
@@ -1047,20 +1047,20 @@ const Sidebar: React.FC<{
                           );
                         })}
                         <button onClick={() => setSettings(prev => ({ ...prev, mcpServerUrls: [...(prev.mcpServerUrls || []), ''] }))}
-                          className="w-full py-1 text-[7px] font-black uppercase tracking-widest text-[#F120F0]/50 border border-dashed border-[#F120F0]/20 rounded hover:border-[#F120F0]/50 hover:text-[#F120F0] transition-all">
-                          + Add Server URL
+                                                    className="w-full py-1.5 text-[9px] font-black uppercase tracking-widest text-[#F120F0]/50 border border-dashed border-[#F120F0]/20 rounded hover:border-[#F120F0]/50 hover:text-[#F120F0] transition-all">
+                                                    + Add Server URL
                         </button>
                       </div>
 
                       {/* Curated servers */}
                       <div className="space-y-1 pt-1 border-t border-[#F120F0]/10">
-                        <div className="text-[7px] font-black uppercase tracking-widest text-[#F120F0]/50 px-1">Curated Servers</div>
+                        <div className="text-[9px] font-black uppercase tracking-widest text-[#F120F0]/50 px-1">Curated Servers</div>
                         <div className="max-h-52 overflow-y-auto space-y-0.5" style={{ scrollbarWidth: 'none' }}>
                           {(() => {
                             const cats = [...new Set(mcpService.CURATED_SERVERS.map((s: any) => s.category))];
                             return cats.map(cat => (
                               <div key={cat as string}>
-                                <div className="text-[6px] font-black uppercase tracking-widest text-[#F120F0]/30 px-2 pt-1.5 pb-0.5">{cat as string}</div>
+                                <div className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]/30 px-2 pt-1.5 pb-0.5">{cat as string}</div>
                                 {mcpService.CURATED_SERVERS.filter((s: any) => s.category === cat).map((server: any) => {
                                   const alreadyAdded = ((settings as any)?.mcpServerUrls || []).includes(server.url);
                                   const status = mcpService.getStatus(server.url);
@@ -1073,13 +1073,13 @@ const Sidebar: React.FC<{
                                         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor, boxShadow: status === 'connected' ? `0 0 5px ${statusColor}` : 'none' }} />
                                         <div className="min-w-0 flex-1">
                                           <div className="flex items-center gap-1">
-                                            <span className="text-[8px] font-black text-[#F120F0]/80 truncate">{server.name}</span>
-                                            <span className="text-[5px] font-black uppercase px-1 rounded flex-shrink-0" style={{ background: `${authColor}20`, color: authColor }}>
+                                            <span className="text-[10px] font-black text-[#F120F0]/80 truncate">{server.name}</span>
+                                            <span className="text-[7px] font-black uppercase px-1 rounded flex-shrink-0" style={{ background: `${authColor}20`, color: authColor }}>
                                               {server.auth === 'none' ? 'FREE' : server.auth === 'bearer' ? 'KEY' : 'OAUTH'}
                                             </span>
                                           </div>
-                                          <div className="text-[6px] text-zinc-600 truncate">{server.description}</div>
-                                          {status === 'connected' && toolCount > 0 && <div className="text-[5px] text-green-600 font-mono">{toolCount} tools</div>}
+                                          <div className="text-[8px] text-zinc-600 truncate">{server.description}</div>
+                                          {status === 'connected' && toolCount > 0 && <div className="text-[7px] text-green-600 font-mono">{toolCount} tools</div>}
                                         </div>
                                       </div>
                                       <button
@@ -1090,7 +1090,7 @@ const Sidebar: React.FC<{
                                             setSettings(prev => ({ ...prev, mcpServerUrls: [...(prev.mcpServerUrls || []), server.url] }));
                                           }
                                         }}
-                                        className={`text-[7px] font-black px-1.5 py-0.5 rounded flex-shrink-0 transition-all ${alreadyAdded ? 'text-red-400 border border-red-500/30 hover:bg-red-900/20' : 'text-[#F120F0] border border-[#F120F0]/30 hover:bg-[#F120F0]/20'}`}>
+                                        className={`text-[9px] font-black px-1.5 py-0.5 rounded flex-shrink-0 transition-all ${alreadyAdded ? 'text-red-400 border border-red-500/30 hover:bg-red-900/20' : 'text-[#F120F0] border border-[#F120F0]/30 hover:bg-[#F120F0]/20'}`}>
                                         {alreadyAdded ? '✕' : '+'}
                                       </button>
                                     </div>
@@ -1111,8 +1111,8 @@ const Sidebar: React.FC<{
                     <div className="space-y-3">
                       {/* App Integrations Header */}
                       <div className="flex items-center justify-between">
-                        <div className="text-[8px] font-black uppercase tracking-widest text-[#F120F0]">App_Integrations</div>
-                        <div className="text-[7px] font-mono text-[#F120F0]/40">{APP_INTEGRATIONS.filter(a => (settings.connectedApps || []).includes(a.id)).length}/{APP_INTEGRATIONS.length}</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">App_Integrations</div>
+                        <div className="text-[9px] font-mono text-[#F120F0]/40">{APP_INTEGRATIONS.filter(a => (settings.connectedApps || []).includes(a.id)).length}/{APP_INTEGRATIONS.length}</div>
                       </div>
 
                       {/* App categories */}
@@ -1120,7 +1120,7 @@ const Sidebar: React.FC<{
                         const cats = [...new Set(APP_INTEGRATIONS.map(i => i.category))];
                         return cats.map(cat => (
                           <div key={cat} className="space-y-1.5">
-                            <div className="text-[7px] font-black uppercase tracking-widest text-[#F120F0]/50 border-b border-[#F120F0]/10 pb-0.5">{cat}</div>
+                            <div className="text-[9px] font-black uppercase tracking-widest text-[#F120F0]/50 border-b border-[#F120F0]/10 pb-0.5">{cat}</div>
                             {APP_INTEGRATIONS.filter(i => i.category === cat).map(app => {
                               const settingsKeyTyped = app.settingsKey as keyof AppSettings;
                               const hasToken = app.authType === 'none' || !!((settings as any)?.[settingsKeyTyped]);
@@ -1138,12 +1138,12 @@ const Sidebar: React.FC<{
                                       )}
                                       <div>
                                         <div className="flex items-center gap-1">
-                                          <span className="text-[8px] font-black text-zinc-300">{app.name}</span>
-                                          <span className="text-[6px] font-black uppercase px-1 py-0.5 rounded" style={{ background: isConnected ? 'rgba(34,197,94,0.15)' : 'rgba(241,32,240,0.1)', color: isConnected ? '#22c55e' : '#71717a' }}>
+                                          <span className="text-[10px] font-black text-zinc-300">{app.name}</span>
+                                          <span className="text-[8px] font-black uppercase px-1 py-0.5 rounded" style={{ background: isConnected ? 'rgba(34,197,94,0.15)' : 'rgba(241,32,240,0.1)', color: isConnected ? '#22c55e' : '#71717a' }}>
                                             {isConnected ? 'LINKED' : app.authType === 'none' ? 'FREE' : app.authType.toUpperCase()}
                                           </span>
                                         </div>
-                                        <div className="text-[6px] text-zinc-600">{app.description}</div>
+                                        <div className="text-[8px] text-zinc-600">{app.description}</div>
                                       </div>
                                     </div>
                                   </div>
@@ -1155,8 +1155,8 @@ const Sidebar: React.FC<{
                                         <input type="password" value={(settings as any)?.[settingsKeyTyped] || ''}
                                           onChange={(e) => setSettings(prev => ({ ...prev, [settingsKeyTyped]: e.target.value }))}
                                           placeholder={`${app.name} ${app.authType === 'webhook' ? 'Webhook URL' : app.authType === 'bot_token' ? 'Bot Token' : 'API Key'}`}
-                                          className="flex-1 bg-black/80 border border-[#F120F0]/20 rounded px-2 py-1 text-[8px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-mono min-w-0" />
-                                        <button
+                                                                                  className="flex-1 bg-black/80 border border-[#F120F0]/20 rounded px-2 py-1.5 text-[10px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-mono min-w-0" />
+                                                                                <button
                                           onClick={() => {
                                             const currentApps = settings.connectedApps || [];
                                             if (isConnected) {
@@ -1168,7 +1168,7 @@ const Sidebar: React.FC<{
                                             }
                                           }}
                                           disabled={!hasToken}
-                                          className={`text-[7px] font-black uppercase px-2 py-1 rounded flex-shrink-0 transition-all ${isConnected ? 'text-red-400 border border-red-500/30 hover:bg-red-900/20' : hasToken ? 'text-green-400 border border-green-500/30 hover:bg-green-900/20' : 'text-zinc-700 border border-zinc-800 cursor-not-allowed'}`}>
+                                          className={`text-[9px] font-black uppercase px-2 py-1 rounded flex-shrink-0 transition-all ${isConnected ? 'text-red-400 border border-red-500/30 hover:bg-red-900/20' : hasToken ? 'text-green-400 border border-green-500/30 hover:bg-green-900/20' : 'text-zinc-700 border border-zinc-800 cursor-not-allowed'}`}>
                                           {isConnected ? 'UNLINK' : 'LINK'}
                                         </button>
                                       </div>
@@ -1176,7 +1176,7 @@ const Sidebar: React.FC<{
                                         <input key={extra.key} type="password" value={(settings as any)?.[extra.key] || ''}
                                           onChange={(e) => setSettings(prev => ({ ...prev, [extra.key]: e.target.value }))}
                                           placeholder={extra.placeholder}
-                                          className="w-full bg-black/80 border border-[#F120F0]/20 rounded px-2 py-1 text-[8px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-mono" />
+                                          className="w-full bg-black/80 border border-[#F120F0]/20 rounded px-2 py-1.5 text-[10px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-mono" />
                                       ))}
                                     </div>
                                   )}
@@ -1184,10 +1184,10 @@ const Sidebar: React.FC<{
                                   {/* Links */}
                                   <div className="flex flex-wrap gap-1 mt-1.5">
                                     {app.docsUrl && (
-                                      <a href={app.docsUrl} target="_blank" rel="noopener noreferrer" className="text-[6px] font-black uppercase px-1 py-0.5 rounded border border-zinc-800 text-zinc-500 hover:border-[#F120F0] hover:text-[#F120F0] transition-all">Docs</a>
+                                      <a href={app.docsUrl} target="_blank" rel="noopener noreferrer" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-zinc-800 text-zinc-500 hover:border-[#F120F0] hover:text-[#F120F0] transition-all">Docs</a>
                                     )}
                                     {app.getTokenUrl && (
-                                      <a href={app.getTokenUrl} target="_blank" rel="noopener noreferrer" className="text-[6px] font-black uppercase px-1 py-0.5 rounded border border-[#F120F0]/30 text-[#F120F0]/50 hover:border-[#F120F0] hover:text-[#F120F0] transition-all">Get Key</a>
+                                      <a href={app.getTokenUrl} target="_blank" rel="noopener noreferrer" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-[#F120F0]/30 text-[#F120F0]/50 hover:border-[#F120F0] hover:text-[#F120F0] transition-all">Get Key</a>
                                     )}
                                   </div>
 
@@ -1195,7 +1195,7 @@ const Sidebar: React.FC<{
                                   {isConnected && (
                                     <div className="mt-1.5 flex flex-wrap gap-0.5">
                                       {app.features.map(f => (
-                                        <span key={f} className="text-[6px] font-bold uppercase px-1 py-0.5 rounded bg-[#F120F0]/10 text-[#F120F0]/60">{f}</span>
+                                        <span key={f} className="text-[8px] font-bold uppercase px-1 py-0.5 rounded bg-[#F120F0]/10 text-[#F120F0]/60">{f}</span>
                                       ))}
                                     </div>
                                   )}
@@ -1206,7 +1206,7 @@ const Sidebar: React.FC<{
                         ));
                       })()}
 
-                      <div className="text-[7px] text-zinc-600 p-2 bg-black/30 rounded border border-zinc-800/40">
+                      <div className="text-[9px] text-zinc-600 p-2 bg-black/30 rounded border border-zinc-800/40">
                         Linked apps enable tools in the App Integrations category. Enable them from the Agent tools panel. 1SecMail requires no API key.
                       </div>
                     </div>
@@ -2818,7 +2818,7 @@ const App: React.FC = () => {
                             <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse shadow-[0_0_10px_#dc2626]"></span>
                             Capabilities_Matrix
                           </div>
-                          <div className="text-[8px] font-mono text-zinc-600 uppercase">State: Active</div>
+                          <div className="text-[10px] font-mono text-zinc-600 uppercase">State: Active</div>
                         </div>
                         <div className="relative group/search">
                           <input
@@ -2826,7 +2826,7 @@ const App: React.FC = () => {
                             placeholder="SEARCH_MODULES..."
                             value={toolSearchQuery}
                             onChange={(e) => setToolSearchQuery(e.target.value)}
-                            className="w-full bg-black/50 border border-red-900/40 rounded-lg py-1.5 pl-8 pr-3 text-[10px] font-mono text-red-400 placeholder:text-red-950/50 focus:outline-none focus:border-red-600/80 focus:ring-1 focus:ring-red-600/20 transition-all"
+                            className="w-full bg-black/50 border border-red-900/40 rounded-lg py-2 pl-8 pr-3 text-[11px] font-mono text-red-400 placeholder:text-red-950/50 focus:outline-none focus:border-red-600/80 focus:ring-1 focus:ring-red-600/20 transition-all"
                           />
                           <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-red-900 group-focus-within/search:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -2882,8 +2882,8 @@ const App: React.FC = () => {
                                 >
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm">{category.icon}</span>
-                                    <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: category.color }}>{category.title}</span>
-                                    <span className="text-[7px] font-mono px-1.5 py-0.5 rounded-full bg-black/40" style={{ color: category.color }}>
+                                    <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: category.color }}>{category.title}</span>
+                                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-black/40" style={{ color: category.color }}>
                                       {filteredTools.filter(t => (settings.enabledTools || []).includes(t)).length}/{filteredTools.length}
                                     </span>
                                   </div>
@@ -2905,10 +2905,10 @@ const App: React.FC = () => {
                                         className={`flex items-center justify-between gap-2 px-3 py-1.5 cursor-pointer transition-all duration-150 ${enabled ? 'bg-zinc-900/60 text-zinc-200' : 'bg-black/20 text-zinc-500 hover:text-zinc-300'}`}
                                       >
                                         <div className="flex flex-col min-w-0">
-                                          <span className="text-[9px] font-black uppercase tracking-wide truncate">{tool.function.name}</span>
-                                          <span className="text-[7px] opacity-60 truncate max-w-[190px]">{tool.function.description}</span>
+                                          <span className="text-[11px] font-black uppercase tracking-wide truncate">{tool.function.name}</span>
+                                          <span className="text-[9px] opacity-60 truncate max-w-[250px]">{tool.function.description}</span>
                                           {tool.function.parameters?.properties && Object.keys(tool.function.parameters.properties).length > 0 && (
-                                            <span className="text-[6px] opacity-40 truncate max-w-[190px] mt-0.5 font-mono">
+                                            <span className="text-[8px] opacity-40 truncate max-w-[250px] mt-0.5 font-mono">
                                               {Object.entries(tool.function.parameters.properties).slice(0, 3).map(([k, v]: [string, any]) => `${k}${(tool.function.parameters.required || []).includes(k) ? '*' : ''}`).join(' · ')}
                                               {Object.keys(tool.function.parameters.properties).length > 3 ? ` +${Object.keys(tool.function.parameters.properties).length - 3}` : ''}
                                             </span>
@@ -2936,7 +2936,7 @@ const App: React.FC = () => {
                       <div className="p-3 border-t border-red-900/30 bg-black flex justify-between items-center">
                         <button
                           onClick={() => { setIsSidebarOpen(true); setIsAgentMenuOpen(false); }}
-                          className="flex items-center gap-1.5 px-3 py-1 bg-red-700/90 text-white rounded text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-red-700/90 text-white rounded text-[11px] font-black uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95"
                         >
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" /></svg>
                           Open_Settings
@@ -3192,7 +3192,7 @@ const SettingsModal: React.FC<{
                   placeholder="SEARCH_MODULES..."
                   value={toolSearchQuery}
                   onChange={(e) => setToolSearchQuery(e.target.value)}
-                  className="w-full bg-black/50 border border-red-900/40 rounded-lg py-1.5 pl-8 pr-3 text-[10px] font-mono text-red-400 placeholder:text-red-950/50 focus:outline-none focus:border-red-600/80 focus:ring-1 focus:ring-red-600/20 transition-all"
+                  className="w-full bg-black/50 border border-red-900/40 rounded-lg py-2 pl-8 pr-3 text-[11px] font-mono text-red-400 placeholder:text-red-950/50 focus:outline-none focus:border-red-600/80 focus:ring-1 focus:ring-red-600/20 transition-all"
                 />
                 <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-red-900 group-focus-within/search:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

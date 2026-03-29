@@ -4385,10 +4385,10 @@ finally:
 
       const jsScript = `
         const el = document.querySelector('${selector.replace(/'/g, "\\'")}');
-        if (!el) return JSON.stringify({ error: 'Element not found: ${selector}', available_buttons: Array.from(document.querySelectorAll('button, a, [role="button"], input[type="submit"]')).slice(0, 20).map(e => ({ tag: e.tagName, text: (e.textContent || '').trim().substring(0, 60), id: e.id, class: e.className?.toString().substring(0, 60), href: e.getAttribute('href') })) });
+        if (!el) return JSON.stringify({ error: 'Element not found: ${selector.replace(/'/g, "\\'")}', available_buttons: Array.from(document.querySelectorAll('button, a, [role="button"], input[type="submit"]')).slice(0, 20).map(e => ({ tag: e.tagName, text: (e.textContent || '').trim().substring(0, 60), id: e.id, class: e.className?.toString().substring(0, 60), href: e.getAttribute('href') })) });
         el.click();
         ${waitFor ? `await new Promise(r => { const check = () => document.querySelector('${waitFor.replace(/'/g, "\\'")}') ? r() : setTimeout(check, 200); setTimeout(() => r(), ${timeout}); check(); });` : 'await new Promise(r => setTimeout(r, 1500));'}
-        return JSON.stringify({ clicked: '${selector}', new_url: window.location.href, title: document.title, body_text: document.body.innerText.substring(0, 8000) });
+        return JSON.stringify({ clicked: '${selector.replace(/'/g, "\\'")}', new_url: window.location.href, title: document.title, body_text: document.body.innerText.substring(0, 8000) });
       `;
 
       // Try WebScraping.AI
@@ -4451,7 +4451,7 @@ finally:
       const fillOps = fields.map((f: any) => `
         (() => {
           const el = document.querySelector('${(f.selector || '').replace(/'/g, "\\'")}');
-          if (!el) return { selector: '${f.selector}', status: 'not_found' };
+          if (!el) return { selector: '${(f.selector || '').replace(/'/g, "\\'")}', status: 'not_found' };
           const tag = el.tagName.toLowerCase();
           if (tag === 'select') {
             el.value = '${(f.value || '').replace(/'/g, "\\'")}';
@@ -4464,7 +4464,7 @@ finally:
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
           }
-          return { selector: '${f.selector}', status: 'filled', value: '${f.value}' };
+          return { selector: '${(f.selector || '').replace(/'/g, "\\'")}', status: 'filled', value: '${(f.value || '').replace(/'/g, "\\'")}' };
         })()
       `).join(',\n');
 
@@ -4722,7 +4722,7 @@ finally:
         const r = await fetch(apiUrl, { signal: AbortSignal.timeout(20000) });
         if (r.ok) {
           const result = await r.text();
-          try { return result; } catch { return JSON.stringify({ url, raw: result.substring(0, 10000) }); }
+          try { const parsed = JSON.parse(result); return JSON.stringify({ url, extract: extractType, data: parsed }); } catch { return JSON.stringify({ url, raw: result.substring(0, 10000) }); }
         }
       } catch (_) {}
 
