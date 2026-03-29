@@ -1014,20 +1014,21 @@ const callToolHandler = async (request: any) => {
     }
 
     case "whois_lookup": {
+      const safeDomain = a.domain.replace(/[^a-zA-Z0-9.-]/g, '');
       try {
-        const r = await fetch(`https://whois.freeaitools.org/?domain=${encodeURIComponent(a.domain)}`, {
+        const r = await fetch(`https://whois.freeaitools.org/?domain=${encodeURIComponent(safeDomain)}`, {
           headers: { 'User-Agent': UA },
           signal: AbortSignal.timeout(10000)
         });
         if (!r.ok) {
           // Fallback: try another endpoint
-          const cmd = isWindows() ? `nslookup ${a.domain}` : `whois ${a.domain} 2>/dev/null | head -60`;
+          const cmd = isWindows() ? `nslookup ${safeDomain}` : `whois ${safeDomain} 2>/dev/null | head -60`;
           return txt(runCmd(cmd, 5000));
         }
         const text = await r.text();
         return txt(text.substring(0, 5000));
       } catch (e: any) {
-        const cmd = isWindows() ? `nslookup ${a.domain}` : `whois ${a.domain} 2>/dev/null | head -60`;
+        const cmd = isWindows() ? `nslookup ${safeDomain}` : `whois ${safeDomain} 2>/dev/null | head -60`;
         return txt(runCmd(cmd, 5000));
       }
     }
@@ -1067,7 +1068,7 @@ const callToolHandler = async (request: any) => {
       const data = a.text;
       const size = Math.min(data.length * 2 + 10, 40);
       const lines: string[] = ['QR Code for: ' + data.substring(0, 80), ''];
-      lines.push('█'.repeat(size + 4));
+      lines.push('█'.repeat(2 * size + 4));
       // Simple visual pattern based on data hash
       const hashVal = createHash('md5').update(data).digest();
       for (let y = 0; y < Math.min(size, 20); y++) {
@@ -1079,7 +1080,7 @@ const callToolHandler = async (request: any) => {
         row += '██';
         lines.push(row);
       }
-      lines.push('█'.repeat(size + 4));
+      lines.push('█'.repeat(2 * size + 4));
       lines.push('', `Scan with QR reader or use: https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(data)}&size=300x300`);
       return txt(lines.join('\n'));
     }
@@ -1087,28 +1088,31 @@ const callToolHandler = async (request: any) => {
     case "website_screenshot": {
       try {
         const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-        const page = await browser.newPage();
-        await page.setViewport({ width: a.width || 1280, height: a.height || 800 });
-        await page.goto(a.url, { waitUntil: 'networkidle2', timeout: 20000 });
-        const screenshot = await page.screenshot({ fullPage: a.full_page || false, encoding: 'base64' });
-        await browser.close();
-        return txt(`Screenshot captured for ${a.url}\nSize: ${a.width || 1280}x${a.height || 800}\nFull Page: ${a.full_page || false}\nBase64 length: ${(screenshot as string).length}\n\ndata:image/png;base64,${(screenshot as string).substring(0, 200)}...`);
+        try {
+          const page = await browser.newPage();
+          await page.setViewport({ width: a.width || 1280, height: a.height || 800 });
+          await page.goto(a.url, { waitUntil: 'networkidle2', timeout: 20000 });
+          const screenshot = await page.screenshot({ fullPage: a.full_page || false, encoding: 'base64' });
+          return txt(`Screenshot captured for ${a.url}\nSize: ${a.width || 1280}x${a.height || 800}\nFull Page: ${a.full_page || false}\nBase64 length: ${(screenshot as string).length}\n\ndata:image/png;base64,${(screenshot as string).substring(0, 200)}...`);
+        } finally {
+          await browser.close().catch(() => {});
+        }
       } catch (e: any) { return txt(`Screenshot failed: ${e.message}`); }
     }
 
     case "website_to_markdown": {
       try {
         const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-        const page = await browser.newPage();
-        await page.goto(a.url, { waitUntil: 'networkidle2', timeout: 20000 });
-        const html = await page.evaluate(() => {
-          // Remove scripts, styles, nav, footer
-          document.querySelectorAll('script, style, nav, footer, header, aside, iframe, noscript').forEach(el => el.remove());
-          return document.body?.innerHTML || '';
-        });
-        await browser.close();
-        // Simple HTML to markdown
-        let md = html
+        try {
+          const page = await browser.newPage();
+          await page.goto(a.url, { waitUntil: 'networkidle2', timeout: 20000 });
+          const html = await page.evaluate(() => {
+            // Remove scripts, styles, nav, footer
+            document.querySelectorAll('script, style, nav, footer, header, aside, iframe, noscript').forEach(el => el.remove());
+            return document.body?.innerHTML || '';
+          });
+          // Simple HTML to markdown
+          let md = html
           .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '\n# $1\n')
           .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '\n## $1\n')
           .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '\n### $1\n')
@@ -1127,7 +1131,10 @@ const callToolHandler = async (request: any) => {
           .replace(/&gt;/g, '>')
           .replace(/\n{3,}/g, '\n\n')
           .trim();
-        return txt(md.substring(0, 50000));
+          return txt(md.substring(0, 50000));
+        } finally {
+          await browser.close().catch(() => {});
+        }
       } catch (e: any) { return txt(`Conversion failed: ${e.message}`); }
     }
 
@@ -1201,17 +1208,20 @@ const callToolHandler = async (request: any) => {
     case "webpage_links": {
       try {
         const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-        const page = await browser.newPage();
-        await page.goto(a.url, { waitUntil: 'networkidle2', timeout: 20000 });
-        const links = await page.evaluate(() => {
-          return Array.from(document.querySelectorAll('a[href]')).map(a => ({
-            text: (a as HTMLAnchorElement).innerText?.trim().substring(0, 100) || '',
-            href: (a as HTMLAnchorElement).href
-          })).filter(l => l.href && !l.href.startsWith('javascript:'));
-        });
-        await browser.close();
-        const unique = [...new Map(links.map((l: any) => [l.href, l])).values()];
-        return txt(`Found ${unique.length} links on ${a.url}:\n\n${(unique as any[]).slice(0, 100).map((l: any) => `[${l.text || 'No text'}] ${l.href}`).join('\n')}`);
+        try {
+          const page = await browser.newPage();
+          await page.goto(a.url, { waitUntil: 'networkidle2', timeout: 20000 });
+          const links = await page.evaluate(() => {
+            return Array.from(document.querySelectorAll('a[href]')).map(a => ({
+              text: (a as HTMLAnchorElement).innerText?.trim().substring(0, 100) || '',
+              href: (a as HTMLAnchorElement).href
+            })).filter(l => l.href && !l.href.startsWith('javascript:'));
+          });
+          const unique = [...new Map(links.map((l: any) => [l.href, l])).values()];
+          return txt(`Found ${unique.length} links on ${a.url}:\n\n${(unique as any[]).slice(0, 100).map((l: any) => `[${l.text || 'No text'}] ${l.href}`).join('\n')}`);
+        } finally {
+          await browser.close().catch(() => {});
+        }
       } catch (e: any) { return txt(`Link extraction failed: ${e.message}`); }
     }
 
