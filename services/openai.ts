@@ -17,13 +17,17 @@ class OpenAIService {
   ): AsyncGenerator<string | { type: 'tool_call'; name: string; args: any; callId: string }> {
     if (!this.apiKey) throw new Error('OpenAI API Key not set.');
 
-    // Context Pruning: Last N messages
     const { getDynamicTools } = await import('./tools');
     const dynamicTools = await getDynamicTools(settings);
 
-    // Context Pruning: Last N messages
-    const attachedCount = settings.attachedMessagesCount || 8;
-    let recentMessages = messages.slice(-attachedCount);
+    // Smart context pruning: use token-aware pruning when optimization is available
+    const contextWindow = settings.maxContextTokens || 128000;
+    const responseBudget = settings.maxTokens || Math.min(Math.floor(contextWindow * 0.25), 4096);
+    const prunedByTokens = pruneHistory(messages, settings.systemInstruction, contextWindow, responseBudget);
+
+    // Also respect attachedMessagesCount as a hard cap
+    const attachedCount = settings.attachedMessagesCount || 50;
+    let recentMessages = prunedByTokens.slice(-attachedCount);
     
     // Ensure we don't start with a message that is ONLY tool results or an assistant message with tool_calls
     // without its preceding user prompt.
