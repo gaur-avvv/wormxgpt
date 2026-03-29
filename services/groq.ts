@@ -1,6 +1,6 @@
 import Groq from "groq-sdk";
 import { AppSettings, Message } from "../types";
-import { pruneHistory } from '../utils/tokenManager';
+import { estimateTokens, pruneHistory } from '../utils/tokenManager';
 import { validateAndFixToolArgs } from "../utils/toolHelpers";
 
 export interface StreamResponse {
@@ -68,9 +68,6 @@ export class GroqService {
       apiKey: key,
       dangerouslyAllowBrowser: true
     });
-
-    // Estimate tokens (rough: ~4 chars per token)
-    const estimateTokens = (text: string) => Math.ceil(text.length / 4);
 
     // Model context window limits (actual context sizes)
     const modelContextLimits: Record<string, number> = {
