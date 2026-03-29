@@ -124,4 +124,20 @@ export interface AppSettings {
   promptInjectionMode?: 'always' | 'once' | 'manual';
   injectedPrompts?: string[];
   lastInjectedPrompt?: string;
+  // App Integrations
+  githubToken?: string;
+  gmailApiKey?: string;
+  slackBotToken?: string;
+  discordBotToken?: string;
+  telegramBotToken?: string;
+  whatsappToken?: string;
+  whatsappPhoneNumberId?: string;
+  teamsWebhookUrl?: string;
+  googleCalendarApiKey?: string;
+  googleDriveApiKey?: string;
+  trelloApiKey?: string;
+  trelloToken?: string;
+  linkedinToken?: string;
+  spotifyToken?: string;
+  connectedApps?: string[];
 }
