@@ -60,7 +60,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     description: 'Code execution, compilation, and technical operations',
     icon: '',
     color: '#10b981',
-    tools: ['JDoodleCompiler', 'CodeExecutor', 'RegexTester', 'HashGenerator', 'Base64Tool', 'DependencyScanner']
+    tools: ['JDoodleCompiler', 'CodeExecutor', 'RegexTester', 'HashGenerator', 'Base64Tool', 'DependencyScanner', 'Base64Encode', 'Base64Decode', 'JWTDecode', 'JSONFormatter', 'CSVToJSON', 'TextDiff', 'TextStats']
   },
   {
     id: 'communication_utility',
@@ -5826,10 +5826,172 @@ finally:
         return JSON.stringify({ product: args.product, reviews: d.results || [] });
       } catch (e: any) { return JSON.stringify({ error: e.message }); }
     }
+  },
+
+  // ── Encoding & Crypto Tools ──────────────────────────────────────────────────
+
+  Base64Encode: {
+    type: 'function',
+    function: {
+      name: 'Base64Encode',
+      description: 'Encode text to Base64. Supports UTF-8 text input.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Text to encode' }
+        },
+        required: ['text']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const encoded = btoa(unescape(encodeURIComponent(args.text)));
+        return JSON.stringify({ input_length: args.text.length, encoded, output_length: encoded.length });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  Base64Decode: {
+    type: 'function',
+    function: {
+      name: 'Base64Decode',
+      description: 'Decode a Base64-encoded string back to plaintext.',
+      parameters: {
+        type: 'object',
+        properties: {
+          encoded: { type: 'string', description: 'Base64-encoded string' }
+        },
+        required: ['encoded']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const decoded = decodeURIComponent(escape(atob(args.encoded)));
+        return JSON.stringify({ decoded, length: decoded.length });
+      } catch (e: any) { return JSON.stringify({ error: `Invalid Base64: ${e.message}` }); }
+    }
+  },
+
+  JWTDecode: {
+    type: 'function',
+    function: {
+      name: 'JWTDecode',
+      description: 'Decode a JWT token header and payload without verifying signature.',
+      parameters: {
+        type: 'object',
+        properties: {
+          token: { type: 'string', description: 'JWT token string' }
+        },
+        required: ['token']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const parts = args.token.split('.');
+        if (parts.length < 2) return JSON.stringify({ error: 'Invalid JWT format' });
+        const header = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')));
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const exp = payload.exp ? new Date(payload.exp * 1000).toISOString() : null;
+        const iat = payload.iat ? new Date(payload.iat * 1000).toISOString() : null;
+        const isExpired = payload.exp ? Date.now() / 1000 > payload.exp : null;
+        return JSON.stringify({ header, payload, issued_at: iat, expires: exp, is_expired: isExpired, has_signature: parts.length === 3 });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  // ── Text & Data Processing Tools ─────────────────────────────────────────────
+
+  CSVToJSON: {
+    type: 'function',
+    function: {
+      name: 'CSVToJSON',
+      description: 'Convert CSV text to JSON array of objects using the first row as headers.',
+      parameters: {
+        type: 'object',
+        properties: {
+          csv: { type: 'string', description: 'CSV text content' },
+          delimiter: { type: 'string', description: 'Column delimiter (default: comma)' }
+        },
+        required: ['csv']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const delimiter = args.delimiter || ',';
+        const lines = args.csv.trim().split('\n');
+        if (lines.length < 2) return JSON.stringify({ error: 'CSV must have at least header + 1 data row' });
+        const headers = lines[0].split(delimiter).map((h: string) => h.trim().replace(/^"|"$/g, ''));
+        const result = lines.slice(1).map((line: string) => {
+          const values = line.split(delimiter).map((v: string) => v.trim().replace(/^"|"$/g, ''));
+          const obj: Record<string, string> = {};
+          headers.forEach((h: string, i: number) => { obj[h] = values[i] || ''; });
+          return obj;
+        });
+        return JSON.stringify({ rows: result.length, columns: headers.length, headers, data: result });
+      } catch (e: any) { return JSON.stringify({ error: e.message }); }
+    }
+  },
+
+  TextDiff: {
+    type: 'function',
+    function: {
+      name: 'TextDiff',
+      description: 'Compare two text blocks line-by-line and show differences (additions, removals, unchanged).',
+      parameters: {
+        type: 'object',
+        properties: {
+          text_a: { type: 'string', description: 'Original text' },
+          text_b: { type: 'string', description: 'Modified text' }
+        },
+        required: ['text_a', 'text_b']
+      }
+    },
+    execute: async (args: any) => {
+      const linesA = args.text_a.split('\n');
+      const linesB = args.text_b.split('\n');
+      const maxLen = Math.max(linesA.length, linesB.length);
+      const diff: string[] = [];
+      let added = 0, removed = 0, unchanged = 0;
+      for (let i = 0; i < maxLen; i++) {
+        const la = linesA[i];
+        const lb = linesB[i];
+        if (la === undefined) { diff.push(`+ ${lb}`); added++; }
+        else if (lb === undefined) { diff.push(`- ${la}`); removed++; }
+        else if (la !== lb) { diff.push(`- ${la}`); diff.push(`+ ${lb}`); added++; removed++; }
+        else { diff.push(`  ${la}`); unchanged++; }
+      }
+      return JSON.stringify({ added, removed, unchanged, total_lines: maxLen, diff: diff.join('\n') });
+    }
+  },
+
+  TextStats: {
+    type: 'function',
+    function: {
+      name: 'TextStats',
+      description: 'Analyze text and return character count, word count, line count, sentence count, paragraph count, and estimated reading time.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Text to analyze' }
+        },
+        required: ['text']
+      }
+    },
+    execute: async (args: any) => {
+      const text = args.text || '';
+      const chars = text.length;
+      const charsNoSpaces = text.replace(/\s/g, '').length;
+      const words = text.split(/\s+/).filter((w: string) => w.length > 0).length;
+      const lines = text.split('\n').length;
+      const sentences = text.split(/[.!?]+/).filter((s: string) => s.trim().length > 0).length;
+      const paragraphs = text.split(/\n\s*\n/).filter((p: string) => p.trim().length > 0).length;
+      const readingTimeMin = +(words / 200).toFixed(1);
+      const speakingTimeMin = +(words / 130).toFixed(1);
+      return JSON.stringify({ characters: chars, characters_no_spaces: charsNoSpaces, words, lines, sentences, paragraphs, reading_time_minutes: readingTimeMin, speaking_time_minutes: speakingTimeMin });
+    }
   }
 
 };
-
 // ── Helper: extract links from markdown content ────────────────────────────
 function extractLinksFromMarkdown(md: string): { text: string; url: string }[] {
   const links: { text: string; url: string }[] = [];
