@@ -6,13 +6,15 @@ export interface AppIntegration {
   id: string;
   name: string;
   icon: string;
-  category: 'developer' | 'communication' | 'productivity' | 'social' | 'media';
+  category: 'developer' | 'communication' | 'productivity' | 'social' | 'media' | 'utility';
   description: string;
   color: string;
-  authType: 'token' | 'oauth' | 'bot_token' | 'api_key' | 'webhook';
+  authType: 'token' | 'oauth' | 'bot_token' | 'api_key' | 'webhook' | 'none';
   settingsKey: string;
   docsUrl: string;
+  getTokenUrl: string;
   features: string[];
+  extraSettings?: { key: string; label: string; placeholder: string }[];
 }
 
 export const APP_INTEGRATIONS: AppIntegration[] = [
@@ -26,7 +28,8 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#8b5cf6',
     authType: 'token',
     settingsKey: 'githubToken',
-    docsUrl: 'https://github.com/settings/tokens',
+    docsUrl: 'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token',
+    getTokenUrl: 'https://github.com/settings/tokens/new',
     features: ['Create/manage repos', 'Issues & PRs', 'Gists', 'Actions', 'Notifications', 'Search code']
   },
 
@@ -40,7 +43,8 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#ea4335',
     authType: 'api_key',
     settingsKey: 'gmailApiKey',
-    docsUrl: 'https://console.cloud.google.com/apis/credentials',
+    docsUrl: 'https://developers.google.com/gmail/api/quickstart',
+    getTokenUrl: 'https://console.cloud.google.com/apis/credentials',
     features: ['Send emails', 'Read inbox', 'Search messages', 'Manage labels', 'Draft emails']
   },
   {
@@ -52,7 +56,8 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#4a154b',
     authType: 'bot_token',
     settingsKey: 'slackBotToken',
-    docsUrl: 'https://api.slack.com/apps',
+    docsUrl: 'https://api.slack.com/tutorials/tracks/getting-a-token',
+    getTokenUrl: 'https://api.slack.com/apps',
     features: ['Send messages', 'List channels', 'Read messages', 'Upload files', 'Manage reactions']
   },
   {
@@ -64,7 +69,8 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#5865f2',
     authType: 'bot_token',
     settingsKey: 'discordBotToken',
-    docsUrl: 'https://discord.com/developers/applications',
+    docsUrl: 'https://discord.com/developers/docs/getting-started',
+    getTokenUrl: 'https://discord.com/developers/applications',
     features: ['Send messages', 'Manage channels', 'Server info', 'User lookup', 'Reactions']
   },
   {
@@ -76,7 +82,8 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#0088cc',
     authType: 'bot_token',
     settingsKey: 'telegramBotToken',
-    docsUrl: 'https://core.telegram.org/bots#botfather',
+    docsUrl: 'https://core.telegram.org/bots/tutorial',
+    getTokenUrl: 'https://t.me/BotFather',
     features: ['Send messages', 'Send media', 'Group management', 'Inline queries', 'Webhooks']
   },
   {
@@ -88,8 +95,10 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#25d366',
     authType: 'token',
     settingsKey: 'whatsappToken',
-    docsUrl: 'https://developers.facebook.com/docs/whatsapp/cloud-api',
-    features: ['Send messages', 'Send templates', 'Media messages', 'Read receipts']
+    docsUrl: 'https://developers.facebook.com/docs/whatsapp/cloud-api/get-started',
+    getTokenUrl: 'https://developers.facebook.com/apps/',
+    features: ['Send messages', 'Send templates', 'Media messages', 'Read receipts'],
+    extraSettings: [{ key: 'whatsappPhoneNumberId', label: 'Phone Number ID', placeholder: 'WhatsApp Business Phone Number ID' }]
   },
   {
     id: 'teams',
@@ -101,6 +110,7 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     authType: 'webhook',
     settingsKey: 'teamsWebhookUrl',
     docsUrl: 'https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/',
+    getTokenUrl: 'https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook',
     features: ['Send messages', 'Adaptive cards', 'Channel posts', 'Webhooks']
   },
 
@@ -114,7 +124,8 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#4285f4',
     authType: 'api_key',
     settingsKey: 'googleCalendarApiKey',
-    docsUrl: 'https://console.cloud.google.com/apis/credentials',
+    docsUrl: 'https://developers.google.com/calendar/api/quickstart/js',
+    getTokenUrl: 'https://console.cloud.google.com/apis/credentials',
     features: ['List events', 'Create events', 'Update events', 'Delete events', 'Free/busy check']
   },
   {
@@ -126,7 +137,8 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#0f9d58',
     authType: 'api_key',
     settingsKey: 'googleDriveApiKey',
-    docsUrl: 'https://console.cloud.google.com/apis/credentials',
+    docsUrl: 'https://developers.google.com/drive/api/quickstart/js',
+    getTokenUrl: 'https://console.cloud.google.com/apis/credentials',
     features: ['List files', 'Search files', 'Upload files', 'Download files', 'Share files']
   },
   {
@@ -138,8 +150,10 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#0052cc',
     authType: 'api_key',
     settingsKey: 'trelloApiKey',
-    docsUrl: 'https://trello.com/power-ups/admin',
-    features: ['List boards', 'Manage cards', 'Create lists', 'Add comments', 'Move cards']
+    docsUrl: 'https://developer.atlassian.com/cloud/trello/guides/rest-api/api-introduction/',
+    getTokenUrl: 'https://trello.com/power-ups/admin',
+    features: ['List boards', 'Manage cards', 'Create lists', 'Add comments', 'Move cards'],
+    extraSettings: [{ key: 'trelloToken', label: 'Trello Token', placeholder: 'Trello authorization token' }]
   },
 
   // ── Social ────────────────────────────────────────────────────────────────
@@ -152,7 +166,8 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#0077b5',
     authType: 'token',
     settingsKey: 'linkedinToken',
-    docsUrl: 'https://www.linkedin.com/developers/apps',
+    docsUrl: 'https://learn.microsoft.com/en-us/linkedin/shared/authentication/getting-access',
+    getTokenUrl: 'https://www.linkedin.com/developers/apps',
     features: ['View profile', 'Create posts', 'Share content', 'Network info']
   },
 
@@ -166,8 +181,24 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     color: '#1db954',
     authType: 'token',
     settingsKey: 'spotifyToken',
-    docsUrl: 'https://developer.spotify.com/dashboard',
+    docsUrl: 'https://developer.spotify.com/documentation/web-api',
+    getTokenUrl: 'https://developer.spotify.com/dashboard',
     features: ['Search tracks', 'Get playlists', 'Album info', 'Artist info', 'Recommendations']
+  },
+
+  // ── Utility ─────────────────────────────────────────────────────────────
+  {
+    id: 'secmail',
+    name: '1SecMail',
+    icon: '\uD83D\uDCEC',
+    category: 'utility',
+    description: 'Generate temporary disposable email addresses, check inbox, read emails',
+    color: '#ff6b35',
+    authType: 'none',
+    settingsKey: '',
+    docsUrl: 'https://www.1secmail.com/api/',
+    getTokenUrl: '',
+    features: ['Generate email', 'Check inbox', 'Read emails', 'Multiple domains']
   },
 ];
 
@@ -551,6 +582,110 @@ export const linkedinIntegration = {
 
   async createPost(token: string, text: string): Promise<string> {
     return `LinkedIn post prepared: "${text.substring(0, 100)}..."\nNote: LinkedIn API requires OAuth2 with specific scopes (w_member_social). Set up at https://www.linkedin.com/developers/apps`;
+  },
+};
+
+// ── 1SecMail Temporary Email Integration ─────────────────────────────────────
+
+export const secmailIntegration = {
+  async generateEmail(count = 1): Promise<string> {
+    const data = await apiRequest(`https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=${count}`);
+    if (Array.isArray(data) && data.length > 0) {
+      return `Generated temporary email(s):\n${data.join('\n')}\n\nUse these addresses to receive emails. Check inbox with the TempMailInbox tool.`;
+    }
+    return 'Failed to generate email address.';
+  },
+
+  async getInbox(email: string): Promise<string> {
+    const [login, domain] = email.split('@');
+    if (!login || !domain) return 'Invalid email format. Use format: user@domain.com';
+    const data = await apiRequest(`https://www.1secmail.com/api/v1/?action=getMessages&login=${login}&domain=${domain}`);
+    if (!Array.isArray(data) || data.length === 0) return `No messages in inbox for ${email}`;
+    return data.map((m: any) => `ID: ${m.id} | From: ${m.from} | Subject: ${m.subject} | Date: ${m.date}`).join('\n');
+  },
+
+  async readEmail(email: string, id: number): Promise<string> {
+    const [login, domain] = email.split('@');
+    if (!login || !domain) return 'Invalid email format.';
+    const data = await apiRequest(`https://www.1secmail.com/api/v1/?action=readMessage&login=${login}&domain=${domain}&id=${id}`);
+    return `From: ${data.from}\nTo: ${data.to}\nSubject: ${data.subject}\nDate: ${data.date}\n\n${data.textBody || data.htmlBody || '(empty body)'}`;
+  },
+};
+
+// ── Autofill / Form Data Generator ───────────────────────────────────────────
+
+export const autofillIntegration = {
+  generateIdentity(locale = 'en'): string {
+    const firstNames = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'David', 'Elizabeth', 'William', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen'];
+    const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
+    const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'protonmail.com'];
+    const streets = ['Main St', 'Oak Ave', 'Cedar Ln', 'Pine Dr', 'Elm Blvd', 'Maple Rd', 'Washington St', 'Park Ave', 'Lake Dr', 'Hill Rd'];
+    const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'San Antonio', 'Dallas', 'San Jose', 'Austin', 'Jacksonville'];
+    const states = ['NY', 'CA', 'IL', 'TX', 'AZ', 'TX', 'TX', 'CA', 'TX', 'FL'];
+    const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+    const randNum = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    const firstName = pick(firstNames);
+    const lastName = pick(lastNames);
+    const cityIdx = randNum(0, cities.length - 1);
+    const username = `${firstName.toLowerCase()}${lastName.toLowerCase()}${randNum(10, 99)}`;
+
+    const identity = {
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`,
+      email: `${username}@${pick(domains)}`,
+      username,
+      password: `${pick(['Secure', 'Strong', 'Ultra', 'Mega'])}${pick(['Pass', 'Key', 'Lock', 'Code'])}${randNum(100, 999)}!`,
+      phone: `+1${randNum(200, 999)}${randNum(200, 999)}${randNum(1000, 9999)}`,
+      dateOfBirth: `${randNum(1970, 2000)}-${String(randNum(1, 12)).padStart(2, '0')}-${String(randNum(1, 28)).padStart(2, '0')}`,
+      address: {
+        street: `${randNum(100, 9999)} ${pick(streets)}`,
+        city: cities[cityIdx],
+        state: states[cityIdx],
+        zipCode: String(randNum(10000, 99999)),
+        country: 'US'
+      },
+      company: `${pick(['Tech', 'Global', 'Digital', 'Smart', 'Next'])}${pick(['Corp', 'Labs', 'Systems', 'Solutions', 'Group'])}`,
+      jobTitle: pick(['Software Engineer', 'Product Manager', 'Data Analyst', 'Designer', 'Marketing Manager', 'Sales Director', 'DevOps Engineer', 'QA Lead']),
+      creditCard: {
+        number: `4${String(randNum(100000000000000, 999999999999999))}`,
+        expiry: `${String(randNum(1, 12)).padStart(2, '0')}/${randNum(26, 30)}`,
+        cvv: String(randNum(100, 999)),
+        name: `${firstName} ${lastName}`
+      }
+    };
+
+    return JSON.stringify(identity, null, 2);
+  },
+
+  generateFormData(fields: string[]): string {
+    const generators: Record<string, () => string> = {
+      'name': () => ['John Smith', 'Jane Doe', 'Alex Johnson', 'Sam Wilson'][Math.floor(Math.random() * 4)],
+      'first_name': () => ['James', 'Mary', 'Robert', 'Jennifer'][Math.floor(Math.random() * 4)],
+      'last_name': () => ['Smith', 'Johnson', 'Williams', 'Brown'][Math.floor(Math.random() * 4)],
+      'email': () => `user${Math.floor(Math.random() * 9999)}@${['gmail.com', 'yahoo.com', 'outlook.com'][Math.floor(Math.random() * 3)]}`,
+      'phone': () => `+1${Math.floor(Math.random() * 9000000000 + 1000000000)}`,
+      'address': () => `${Math.floor(Math.random() * 9000 + 1000)} ${['Main St', 'Oak Ave', 'Pine Dr'][Math.floor(Math.random() * 3)]}`,
+      'city': () => ['New York', 'Los Angeles', 'Chicago', 'Houston'][Math.floor(Math.random() * 4)],
+      'state': () => ['NY', 'CA', 'IL', 'TX'][Math.floor(Math.random() * 4)],
+      'zip': () => String(Math.floor(Math.random() * 90000 + 10000)),
+      'country': () => ['US', 'UK', 'CA', 'AU'][Math.floor(Math.random() * 4)],
+      'company': () => ['TechCorp', 'GlobalLabs', 'DigitalSystems', 'SmartSolutions'][Math.floor(Math.random() * 4)],
+      'website': () => `https://www.${['example', 'test', 'demo', 'sample'][Math.floor(Math.random() * 4)]}.com`,
+      'username': () => `user_${Math.floor(Math.random() * 99999)}`,
+      'password': () => `Str0ng!Pass${Math.floor(Math.random() * 9999)}`,
+      'date': () => `${Math.floor(Math.random() * 30 + 1970)}-${String(Math.floor(Math.random() * 12 + 1)).padStart(2, '0')}-${String(Math.floor(Math.random() * 28 + 1)).padStart(2, '0')}`,
+      'bio': () => 'Passionate about technology and innovation.',
+    };
+
+    const result: Record<string, string> = {};
+    for (const field of fields) {
+      const key = field.toLowerCase().replace(/[^a-z_]/g, '_');
+      const gen = generators[key] || generators['name'];
+      result[field] = gen();
+    }
+    return JSON.stringify(result, null, 2);
   },
 };
 

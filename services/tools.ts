@@ -1,6 +1,6 @@
 import TurndownService from 'turndown';
 import { faker } from '@faker-js/faker';
-import { githubIntegration, gmailIntegration, slackIntegration, discordIntegration, telegramIntegration, googleCalendarIntegration, googleDriveIntegration, trelloIntegration, spotifyIntegration, teamsIntegration, whatsappIntegration, linkedinIntegration } from './integrations';
+import { githubIntegration, gmailIntegration, slackIntegration, discordIntegration, telegramIntegration, googleCalendarIntegration, googleDriveIntegration, trelloIntegration, spotifyIntegration, teamsIntegration, whatsappIntegration, linkedinIntegration, secmailIntegration, autofillIntegration } from './integrations';
 
 export interface ToolCall {
   id: string;
@@ -173,7 +173,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     description: 'Direct connect to GitHub, Gmail, Slack, Discord, Telegram, Google Calendar, Drive, Trello, Spotify, Teams, WhatsApp, LinkedIn',
     icon: '',
     color: '#F120F0',
-    tools: ['GitHubListRepos', 'GitHubCreateRepo', 'GitHubCreateIssue', 'GitHubCreatePR', 'GitHubListPRs', 'GitHubNotifications', 'GitHubStarRepo', 'GitHubSearchCode', 'GitHubProfile', 'GmailSendEmail', 'GmailSearchInbox', 'GmailListLabels', 'SlackSendMessage', 'SlackListChannels', 'SlackGetMessages', 'SlackSetStatus', 'DiscordSendMessage', 'DiscordListGuilds', 'DiscordGetChannels', 'TelegramSendMessage', 'TelegramGetUpdates', 'TelegramBotInfo', 'TelegramSendPhoto', 'GoogleCalendarEvents', 'GoogleCalendarSearch', 'GoogleDriveListFiles', 'GoogleDriveSearch', 'TrelloListBoards', 'TrelloGetCards', 'TrelloCreateCard', 'SpotifySearchTracks', 'SpotifyGetPlaylists', 'SpotifyGetArtist', 'TeamsSendMessage', 'WhatsAppSendMessage', 'LinkedInProfile', 'LinkedInCreatePost']
+    tools: ['GitHubListRepos', 'GitHubCreateRepo', 'GitHubCreateIssue', 'GitHubCreatePR', 'GitHubListPRs', 'GitHubNotifications', 'GitHubStarRepo', 'GitHubSearchCode', 'GitHubProfile', 'GmailSendEmail', 'GmailSearchInbox', 'GmailListLabels', 'SlackSendMessage', 'SlackListChannels', 'SlackGetMessages', 'SlackSetStatus', 'DiscordSendMessage', 'DiscordListGuilds', 'DiscordGetChannels', 'TelegramSendMessage', 'TelegramGetUpdates', 'TelegramBotInfo', 'TelegramSendPhoto', 'GoogleCalendarEvents', 'GoogleCalendarSearch', 'GoogleDriveListFiles', 'GoogleDriveSearch', 'TrelloListBoards', 'TrelloGetCards', 'TrelloCreateCard', 'SpotifySearchTracks', 'SpotifyGetPlaylists', 'SpotifyGetArtist', 'TeamsSendMessage', 'WhatsAppSendMessage', 'LinkedInProfile', 'LinkedInCreatePost', 'TempMailGenerate', 'TempMailInbox', 'TempMailRead', 'AutofillIdentity', 'AutofillFormData']
   }
 ];
 
@@ -6321,6 +6321,45 @@ finally:
     execute: async (args: any) => {
       const s = getLocalSettings(); const token = s.linkedinToken; if (!token) return 'LinkedIn token not configured.';
       try { return await linkedinIntegration.createPost(token, args.text); } catch (e: any) { return `LinkedIn error: ${e.message}`; }
+    }
+  },
+
+  // ── 1SecMail Temporary Email ────────────────────────────────────────────────
+  TempMailGenerate: {
+    type: 'function',
+    function: { name: 'TempMailGenerate', description: 'Generate a temporary disposable email address using 1SecMail. No API key needed.', parameters: { type: 'object', properties: { count: { type: 'number', description: 'Number of email addresses to generate (default: 1)' } } } },
+    execute: async (args: any) => {
+      try { return await secmailIntegration.generateEmail(args.count || 1); } catch (e: any) { return `1SecMail error: ${e.message}`; }
+    }
+  },
+  TempMailInbox: {
+    type: 'function',
+    function: { name: 'TempMailInbox', description: 'Check inbox of a 1SecMail temporary email address', parameters: { type: 'object', properties: { email: { type: 'string', description: 'Temporary email address (e.g. user@1secmail.com)' } }, required: ['email'] } },
+    execute: async (args: any) => {
+      try { return await secmailIntegration.getInbox(args.email); } catch (e: any) { return `1SecMail error: ${e.message}`; }
+    }
+  },
+  TempMailRead: {
+    type: 'function',
+    function: { name: 'TempMailRead', description: 'Read a specific email from a 1SecMail temporary inbox', parameters: { type: 'object', properties: { email: { type: 'string', description: 'Temporary email address' }, message_id: { type: 'number', description: 'Message ID from inbox listing' } }, required: ['email', 'message_id'] } },
+    execute: async (args: any) => {
+      try { return await secmailIntegration.readEmail(args.email, args.message_id); } catch (e: any) { return `1SecMail error: ${e.message}`; }
+    }
+  },
+
+  // ── Autofill / Form Data Generator ──────────────────────────────────────────
+  AutofillIdentity: {
+    type: 'function',
+    function: { name: 'AutofillIdentity', description: 'Generate a complete fake identity for form autofill (name, email, phone, address, company, credit card)', parameters: { type: 'object', properties: { locale: { type: 'string', description: 'Locale for data generation (default: en)' } } } },
+    execute: async (args: any) => {
+      try { return autofillIntegration.generateIdentity(args.locale || 'en'); } catch (e: any) { return `Autofill error: ${e.message}`; }
+    }
+  },
+  AutofillFormData: {
+    type: 'function',
+    function: { name: 'AutofillFormData', description: 'Generate form field values for specific fields (name, email, phone, address, city, state, zip, country, company, website, username, password, date, bio)', parameters: { type: 'object', properties: { fields: { type: 'array', items: { type: 'string' }, description: 'List of field names to generate data for' } }, required: ['fields'] } },
+    execute: async (args: any) => {
+      try { return autofillIntegration.generateFormData(args.fields || ['name', 'email', 'phone']); } catch (e: any) { return `Autofill error: ${e.message}`; }
     }
   }
 
