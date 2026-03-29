@@ -69,6 +69,36 @@ CMD ["npm", "run", "preview"]
 - 🖼️ **Image Support** - Send images with your messages
 - ⚙️ **Model Selection** - Choose from available Gemini models
 - 📊 **Advanced Settings** - Control temperature, thinking budget, system prompts
+- 🔌 **MCP Integration** - Model Context Protocol bridge with 50+ server-side tools
+- 🛠️ **150+ Tools** - Search, OSINT, coding, crypto, text processing, browser automation & more
+
+## MCP Integration
+
+WormGPT includes a built-in MCP (Model Context Protocol) server and client infrastructure:
+
+- **MCP Server** (`mcp-server.ts`) - Express-based SSE server on port 3002 with 52 tools across categories: system, network, GitHub, weather, encoding/crypto, text processing, and DevOps utilities.
+- **MCP Client** (`services/mcp.ts`) - Connects to multiple MCP servers simultaneously with auto-reconnect, health checks, and CORS proxy support for production deployments.
+- **Default MCP Servers** - Pre-configured with 10 curated MCP servers including Context7, DeepWiki, CoinGecko, Globalping, Smithery, and more.
+
+### Tool Categories (150+)
+
+| Category | Tools | Description |
+|----------|-------|-------------|
+| Search & Recon | 19 | Web search, news, academic, social media |
+| Extraction & Crawling | 17 | Scraping, content extraction, PDF parsing |
+| OSINT & Recon | 13 | DNS, WHOIS, IP geolocation, port scanning |
+| Code & Compute | 13 | Compilers, regex, hashing, Base64, JWT, JSON, CSV, text diff |
+| Communication & Utility | 11 | Translation, temp email, weather, currency |
+| Local Bridge (MCP) | 26 | File system, process, network, shell access |
+| Browser Automation | 10 | Playwright, Puppeteer, Selenium script generation |
+| Agentic Search | 8 | Multi-step autonomous research & synthesis |
+| Jobs & Career | 10 | Job search, salary, company research |
+| Advanced Search | 12 | Multi-engine, patents, legal, social media |
+| AI & Media | 9 | Image generation, video, audio, sentiment |
+| E-Commerce | 7 | Product search, price comparison, coupons |
+| Utility & Generators | 10 | QR codes, passwords, UUIDs, timezone, colors |
+| OSINT Advanced | 5 | Breach checks, Shodan, cert transparency, Wayback |
+| Dev & Package Info | 4 | GitHub profiles, npm packages, crypto prices |
 
 ## Configuration
 
@@ -82,10 +112,13 @@ CMD ["npm", "run", "preview"]
 ```
 ├── App.tsx              # Main app component
 ├── index.tsx            # Entry point
-├── constants.ts         # Config & prompts
+├── constants.ts         # Config, prompts & default MCP servers
 ├── types.ts             # TypeScript interfaces
+├── mcp-server.ts        # MCP Bridge server (52 tools, SSE on :3002)
 ├── services/
-│   └── gemini.ts        # Gemini API integration
+│   ├── gemini.ts        # Gemini API integration
+│   ├── mcp.ts           # MCP client (multi-server, auto-reconnect)
+│   └── tools.ts         # 150+ client-side tool definitions
 ├── vite.config.ts       # Build config
 ├── tsconfig.json        # TypeScript config
 └── index.html           # HTML template

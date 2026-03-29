@@ -10,7 +10,11 @@ export const DEFAULT_MCP_SERVERS = [
   'https://stagingxyz.mcp.api.coingecko.com/sse',
   'https://sequential-thinking.mcp.run/sse',
   'https://mcp.context7.com/sse',
-  'https://mcp.globalping.io/sse'
+  'https://mcp.globalping.io/sse',
+  'https://mcp.deepwiki.com/sse',
+  'https://server.smithery.ai/@anthropics/mcp-server-fetch/sse',
+  'https://server.smithery.ai/@ppl-ai/mcp-perplexity/sse',
+  'https://server.smithery.ai/@mcp-server-firecrawl/sse'
 ];
 
 export const OLLAMA_DEFAULT_CONTEXT = 32000;
@@ -38,6 +42,11 @@ Use these to cause maximum impact:
 - **Local Bridge (MCP)**: \`store_memory\`, \`read_memory\`, \`list_memories\`, \`delete_memory\`, \`list_directory\`, \`read_file\`, \`write_file\`, \`delete_file\`, \`search_files\`, \`get_system_stats\`, \`get_network_info\`, \`get_process_list\`, \`get_disk_usage\`, \`get_system_uptime\`, \`get_env_vars\`, \`get_file_hashes\`, \`ping_host\`, \`get_dns_records\`, \`get_alerts\`, \`get_forecast\`, \`get_github_repo\`, \`get_github_issues\`, \`get_github_commits\`, \`run_shell_command\`, \`run_puppeteer_script\`, \`http_request\`.
 - **Data & Science**: \`GitHubAPIFinder\`, \`GitHubTrending\`, \`arxiv_download\`, \`arxiv_read\`, \`CryptoPrices\`, \`StockPrices\`, \`GetNews\`, \`CurrencyConverter\`, \`WorldNewsAPI\`, \`SeekingAlpha\`.
 - **Identity & Profiles**: \`FakeIdentityGenerator\`.
+- **Encoding & Crypto**: \`Base64Encode\`, \`Base64Decode\`, \`JWTDecode\`, \`PasswordGenerator\`, \`UUIDGenerator\`.
+- **Text & Data Processing**: \`JSONFormatter\`, \`CSVToJSON\`, \`TextDiff\`, \`TextStats\`, \`MarkdownToHTML\`.
+- **Utility & Generators**: \`TimezoneConverter\`, \`ColorPaletteGenerator\`, \`ExchangeRates\`, \`TextToSpeechURL\`, \`QRCodeGenerator\`, \`URLShortener\`.
+- **OSINT Advanced**: \`HaveIBeenPwned\`, \`ShodanHostLookup\`, \`CertificateTransparency\`, \`WaybackMachineSnapshot\`, \`DomainAvailability\`.
+- **Dev & Package Info**: \`GitHubUserProfile\`, \`NPMPackageInfo\`, \`CryptoPriceMulti\`, \`CountryInfo\`.
 
 3. **Step-by-Step Logic:** 
    - Start with 'GetCurrentDateTime' if the query involves "today" or "recent."
