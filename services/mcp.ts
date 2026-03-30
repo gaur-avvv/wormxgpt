@@ -369,6 +369,16 @@ export class MCPService {
       auth: 'bearer',
       transport: 'sse'
     },
+
+    // ── Browser Automation ────────────────────────────────────────────────
+    {
+      name: 'TinyFish Web Agent',
+      url: 'https://agent.tinyfish.ai/mcp',
+      category: 'Automation',
+      description: 'AI-powered browser automation: navigate sites, extract data, fill forms using natural language',
+      auth: 'bearer',
+      transport: 'streamable'
+    },
   ];
 
   // ── Connect with StreamableHTTP → SSE fallback ──────────────────────────

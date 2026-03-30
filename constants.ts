@@ -14,7 +14,8 @@ export const DEFAULT_MCP_SERVERS = [
   'https://mcp.deepwiki.com/sse',
   'https://server.smithery.ai/@anthropics/mcp-server-fetch/sse',
   'https://server.smithery.ai/@ppl-ai/mcp-perplexity/sse',
-  'https://server.smithery.ai/@mcp-server-firecrawl/sse'
+  'https://server.smithery.ai/@mcp-server-firecrawl/sse',
+  'https://agent.tinyfish.ai/mcp'
 ];
 
 export const OLLAMA_DEFAULT_CONTEXT = 32000;

@@ -14,6 +14,7 @@ import {
   xaiService,
   moonshotService,
   ollamaService,
+  tinyfishService,
   mcpService,
   ATTACHED_TOOLS,
   executeToolCall,
@@ -641,6 +642,7 @@ const Sidebar: React.FC<{
       { key: 'serperApiKey', label: 'Serper_Search' },
       { key: 'serpapiApiKey', label: 'SerpAPI_Search' },
       { key: 'firecrawlApiKey', label: 'Firecrawl' },
+      { key: 'tinyfishApiKey', label: 'TinyFish_WebAgent' },
       // New LiteLLM providers
       { key: 'nvidiaApiKey', label: 'NVIDIA_NIM' },
       { key: 'fireworksApiKey', label: 'Fireworks_AI' },
@@ -720,6 +722,7 @@ const Sidebar: React.FC<{
           else if (keyStr.includes('moonshot')) isValid = await moonshotService.verifyApiKey(key);
           else if (keyStr.includes('ollama')) isValid = await ollamaService.verifyApiKey(key);
           else if (keyStr.includes('pollinations')) isValid = await pollinationsService.verifyApiKey(key);
+          else if (keyStr.includes('tinyfish')) isValid = await tinyfishService.verifyApiKey(key);
           else isValid = true; // non-verifiable keys (search APIs, etc.) assumed valid if present
         } catch (e) { isValid = false; }
         setSidebarVerificationStatuses(prev => ({ ...prev, [providerKey]: isValid ? 'valid' : 'invalid' }));
@@ -745,7 +748,7 @@ const Sidebar: React.FC<{
       settings.togetherApiKey, settings.openRouterApiKey, settings.cerebrasApiKey, settings.siliconFlowApiKey,
       settings.moonshotApiKey, settings.ollamaApiKey, settings.cohereApiKey, settings.wisGateApiKey,
       settings.tavilyApiKey, settings.braveApiKey, settings.serperApiKey, settings.serpapiApiKey,
-      settings.firecrawlApiKey, settings.pollinationsApiKey
+      settings.firecrawlApiKey, settings.pollinationsApiKey, settings.tinyfishApiKey
     ]);
 
     const handleHijack = async () => {
@@ -1001,6 +1004,7 @@ const Sidebar: React.FC<{
                             else if (pk.includes('moonshot')) isValid = await moonshotService.verifyApiKey(key);
                             else if (pk.includes('ollama')) isValid = await ollamaService.verifyApiKey(key);
                             else if (pk.includes('pollinations')) isValid = await pollinationsService.verifyApiKey(key);
+                            else if (pk.includes('tinyfish')) isValid = await tinyfishService.verifyApiKey(key);
                             else isValid = true;
                           } catch (e) { isValid = false; }
                           setSidebarVerificationStatuses(prev => ({ ...prev, [p.key]: isValid ? 'valid' : 'invalid' }));
@@ -3185,6 +3189,7 @@ const SettingsModal: React.FC<{
       else if (prov.includes('moonshot')) isValid = await moonshotService.verifyApiKey(key);
       else if (prov.includes('ollama')) isValid = await ollamaService.verifyApiKey(key);
       else if (prov.includes('pollinations')) isValid = await pollinationsService.verifyApiKey(key);
+      else if (prov.includes('tinyfish')) isValid = await tinyfishService.verifyApiKey(key);
       else isValid = true; 
     } catch (e) { isValid = false; }
     
@@ -3237,7 +3242,8 @@ const SettingsModal: React.FC<{
     { key: 'mojeekApiKey', label: 'Mojeek_Search' },
     { key: 'serperApiKey', label: 'Serper_Search' },
     { key: 'serpapiApiKey', label: 'SerpAPI_Search' },
-    { key: 'firecrawlApiKey', label: 'Firecrawl' }
+    { key: 'firecrawlApiKey', label: 'Firecrawl' },
+    { key: 'tinyfishApiKey', label: 'TinyFish_WebAgent' }
   ];
 
   useEffect(() => {
