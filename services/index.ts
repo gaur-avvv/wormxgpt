@@ -13,6 +13,7 @@ export { perplexityService } from './perplexity';
 export { xaiService } from './xai';
 export { moonshotService } from './moonshot';
 export { ollamaService } from './ollama';
+export { tinyfishService } from './tinyfish';
 export { ATTACHED_TOOLS, executeToolCall, validateAndFixToolArgs, TOOL_CATEGORIES } from './tools';
 export { pluginRegistry } from './plugins';
 export { mcpService } from './mcp';

@@ -176,6 +176,14 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     tools: ['AmazonProductSearch', 'PriceComparison', 'ProductReviews', 'CouponFinder', 'CryptoPrice', 'StockQuote', 'CommodityPrices']
   },
   {
+    id: 'tinyfish_web_agent',
+    title: 'TinyFish Web Agent',
+    description: 'AI-powered browser automation: navigate websites, extract data, fill forms, and complete multi-step tasks using natural language. Supports sync, async, batch, SSE streaming, and run management.',
+    icon: '',
+    color: '#00d4aa',
+    tools: ['TinyFishRunSync', 'TinyFishRunAsync', 'TinyFishRunBatch', 'TinyFishRunSSE', 'TinyFishGetRun', 'TinyFishListRuns', 'TinyFishCancelRun']
+  },
+  {
     id: 'app_integrations',
     title: 'App Integrations',
     description: 'Direct connect to GitHub, Gmail, Slack, Discord, Telegram, Google Calendar, Drive, Trello, Spotify, Teams, WhatsApp, LinkedIn',
@@ -6857,6 +6865,229 @@ finally:
       try { return autofillIntegration.generateIdentity(args.locale || 'en'); } catch (e: any) { return `Autofill error: ${e.message}`; }
     }
   },
+  // ── TinyFish Web Agent ──────────────────────────────────────────────────
+  TinyFishRunSync: {
+    type: 'function',
+    function: {
+      name: 'TinyFishRunSync',
+      description: 'Run a TinyFish Web Agent browser automation synchronously. Navigates a website, performs actions, and returns structured results. Use for quick single-page tasks like extracting data, filling forms, or reading content.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Target website URL to automate (e.g. https://example.com)' },
+          goal: { type: 'string', description: 'Natural language description of what to accomplish on the website' },
+          browser_profile: { type: 'string', enum: ['lite', 'stealth'], description: 'Browser profile: lite (standard) or stealth (anti-detection). Default: lite' },
+          proxy_country: { type: 'string', enum: ['US', 'GB', 'CA', 'DE', 'FR', 'JP', 'AU'], description: 'Proxy country code for geographic routing (optional)' },
+          use_vault: { type: 'boolean', description: 'Use saved vault credentials for authenticated sites (default: false)' }
+        },
+        required: ['url', 'goal']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const { tinyfishService } = await import('./tinyfish');
+        const s = getLocalSettings();
+        if (s.tinyfishApiKey) tinyfishService.setApiKey(s.tinyfishApiKey);
+        const result = await tinyfishService.runSync({
+          url: args.url,
+          goal: args.goal,
+          browser_profile: args.browser_profile || 'lite',
+          proxy_config: args.proxy_country ? { enabled: true, country_code: args.proxy_country } : undefined,
+          use_vault: args.use_vault
+        });
+        return result;
+      } catch (e: any) { return `TinyFish error: ${e.message}`; }
+    }
+  },
+  TinyFishRunAsync: {
+    type: 'function',
+    function: {
+      name: 'TinyFishRunAsync',
+      description: 'Start a TinyFish Web Agent automation asynchronously. Returns a run_id immediately without waiting. Use for long-running tasks, then poll with TinyFishGetRun.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Target website URL to automate' },
+          goal: { type: 'string', description: 'Natural language description of what to accomplish' },
+          browser_profile: { type: 'string', enum: ['lite', 'stealth'], description: 'Browser profile (default: lite)' },
+          proxy_country: { type: 'string', enum: ['US', 'GB', 'CA', 'DE', 'FR', 'JP', 'AU'], description: 'Proxy country code (optional)' },
+          use_vault: { type: 'boolean', description: 'Use vault credentials (default: false)' }
+        },
+        required: ['url', 'goal']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const { tinyfishService } = await import('./tinyfish');
+        const s = getLocalSettings();
+        if (s.tinyfishApiKey) tinyfishService.setApiKey(s.tinyfishApiKey);
+        const result = await tinyfishService.runAsync({
+          url: args.url,
+          goal: args.goal,
+          browser_profile: args.browser_profile || 'lite',
+          proxy_config: args.proxy_country ? { enabled: true, country_code: args.proxy_country } : undefined,
+          use_vault: args.use_vault
+        });
+        return result;
+      } catch (e: any) { return `TinyFish error: ${e.message}`; }
+    }
+  },
+  TinyFishRunBatch: {
+    type: 'function',
+    function: {
+      name: 'TinyFishRunBatch',
+      description: 'Start multiple TinyFish Web Agent automations at once (max 100). Each run gets its own run_id. Use for parallel scraping or multi-site tasks.',
+      parameters: {
+        type: 'object',
+        properties: {
+          runs: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                url: { type: 'string', description: 'Target URL' },
+                goal: { type: 'string', description: 'Goal for this run' },
+                browser_profile: { type: 'string', enum: ['lite', 'stealth'] }
+              },
+              required: ['url', 'goal']
+            },
+            description: 'Array of automation runs to execute (max 100)'
+          }
+        },
+        required: ['runs']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const { tinyfishService } = await import('./tinyfish');
+        const s = getLocalSettings();
+        if (s.tinyfishApiKey) tinyfishService.setApiKey(s.tinyfishApiKey);
+        const result = await tinyfishService.runBatch(args.runs || []);
+        return result;
+      } catch (e: any) { return `TinyFish error: ${e.message}`; }
+    }
+  },
+  TinyFishRunSSE: {
+    type: 'function',
+    function: {
+      name: 'TinyFishRunSSE',
+      description: 'Run TinyFish Web Agent with real-time SSE streaming. Get live progress updates, browser streaming URL, and final results as events.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Target website URL to automate' },
+          goal: { type: 'string', description: 'Natural language description of what to accomplish' },
+          browser_profile: { type: 'string', enum: ['lite', 'stealth'], description: 'Browser profile (default: lite)' },
+          proxy_country: { type: 'string', enum: ['US', 'GB', 'CA', 'DE', 'FR', 'JP', 'AU'], description: 'Proxy country code (optional)' },
+          use_vault: { type: 'boolean', description: 'Use vault credentials (default: false)' }
+        },
+        required: ['url', 'goal']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const { tinyfishService } = await import('./tinyfish');
+        const s = getLocalSettings();
+        if (s.tinyfishApiKey) tinyfishService.setApiKey(s.tinyfishApiKey);
+        const events: any[] = [];
+        for await (const event of tinyfishService.runSSE({
+          url: args.url,
+          goal: args.goal,
+          browser_profile: args.browser_profile || 'lite',
+          proxy_config: args.proxy_country ? { enabled: true, country_code: args.proxy_country } : undefined,
+          use_vault: args.use_vault
+        })) {
+          events.push(event);
+        }
+        const complete = events.find(e => e.type === 'COMPLETE');
+        if (complete) {
+          return {
+            run_id: complete.run_id,
+            status: complete.status,
+            result: complete.result,
+            error: complete.error,
+            streaming_url: events.find(e => e.type === 'STREAMING_URL')?.streaming_url,
+            steps: events.filter(e => e.type === 'PROGRESS').map(e => e.purpose)
+          };
+        }
+        return { events };
+      } catch (e: any) { return `TinyFish error: ${e.message}`; }
+    }
+  },
+  TinyFishGetRun: {
+    type: 'function',
+    function: {
+      name: 'TinyFishGetRun',
+      description: 'Get detailed information about a specific TinyFish automation run by its ID. Use after TinyFishRunAsync to check status and get results.',
+      parameters: {
+        type: 'object',
+        properties: {
+          run_id: { type: 'string', description: 'The run_id returned from a previous async/batch run' }
+        },
+        required: ['run_id']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const { tinyfishService } = await import('./tinyfish');
+        const s = getLocalSettings();
+        if (s.tinyfishApiKey) tinyfishService.setApiKey(s.tinyfishApiKey);
+        return await tinyfishService.getRun(args.run_id);
+      } catch (e: any) { return `TinyFish error: ${e.message}`; }
+    }
+  },
+  TinyFishListRuns: {
+    type: 'function',
+    function: {
+      name: 'TinyFishListRuns',
+      description: 'List and search TinyFish automation runs with optional filtering by status, goal text, and date range. Returns paginated results.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED'], description: 'Filter by run status' },
+          goal: { type: 'string', description: 'Search runs by goal text' },
+          limit: { type: 'number', description: 'Max results to return (default: 20)' },
+          offset: { type: 'number', description: 'Pagination offset (default: 0)' }
+        }
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const { tinyfishService } = await import('./tinyfish');
+        const s = getLocalSettings();
+        if (s.tinyfishApiKey) tinyfishService.setApiKey(s.tinyfishApiKey);
+        return await tinyfishService.listRuns({
+          status: args.status,
+          goal: args.goal,
+          limit: args.limit || 20,
+          offset: args.offset || 0
+        });
+      } catch (e: any) { return `TinyFish error: ${e.message}`; }
+    }
+  },
+  TinyFishCancelRun: {
+    type: 'function',
+    function: {
+      name: 'TinyFishCancelRun',
+      description: 'Cancel a running TinyFish automation by its run_id. Only works for runs started via async or SSE endpoints.',
+      parameters: {
+        type: 'object',
+        properties: {
+          run_id: { type: 'string', description: 'The run_id to cancel' }
+        },
+        required: ['run_id']
+      }
+    },
+    execute: async (args: any) => {
+      try {
+        const { tinyfishService } = await import('./tinyfish');
+        const s = getLocalSettings();
+        if (s.tinyfishApiKey) tinyfishService.setApiKey(s.tinyfishApiKey);
+        return await tinyfishService.cancelRun(args.run_id);
+      } catch (e: any) { return `TinyFish error: ${e.message}`; }
+    }
+  },
+
   AutofillFormData: {
     type: 'function',
     function: { name: 'AutofillFormData', description: 'Generate form field values for specific fields (name, email, phone, address, city, state, zip, country, company, website, username, password, date, bio)', parameters: { type: 'object', properties: { fields: { type: 'array', items: { type: 'string' }, description: 'List of field names to generate data for' } }, required: ['fields'] } },

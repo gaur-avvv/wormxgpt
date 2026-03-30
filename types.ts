@@ -93,6 +93,7 @@ export interface AppSettings {
   serperApiKey?: string;
   serpapiApiKey?: string;
   firecrawlApiKey?: string;
+  tinyfishApiKey?: string;
   // Advanced Model Parameters
   topK?: number;
   minP?: number;
