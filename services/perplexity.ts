@@ -106,6 +106,19 @@ class PerplexityService {
       }
     }
   }
+  async *streamChat(
+    settings: AppSettings,
+    messages: Message[],
+    signal?: AbortSignal
+  ): AsyncGenerator<{ text: string; images: string[]; video?: string; audio?: string; sources?: { title: string; url: string }[] }> {
+    let accumulatedText = '';
+    for await (const chunk of this.generateContentStream(messages, settings)) {
+      if (typeof chunk === 'string') {
+        accumulatedText += chunk;
+        yield { text: accumulatedText, images: [] };
+      }
+    }
+  }
 }
 
 export const perplexityService = new PerplexityService();
