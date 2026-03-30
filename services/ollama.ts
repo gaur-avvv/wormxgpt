@@ -14,11 +14,16 @@ export const ollamaService = {
 
   async verifyApiKey(key: string): Promise<boolean> {
     try {
-      const response = await fetch('http://localhost:11434/api/tags', {
+      const baseUrl = this.host || 'http://localhost:11434';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (key) {
+        headers['Authorization'] = `Bearer ${key}`;
+      }
+      const response = await fetch(`${baseUrl}/api/tags`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers
       });
       return response.ok;
     } catch {

@@ -19,7 +19,7 @@ class XAIService {
           'Authorization': `Bearer ${key}`
         },
         body: JSON.stringify({
-          model: 'grok-beta',
+          model: 'grok-2-latest',
           messages: [{ role: 'user', content: 'Hello' }],
           max_tokens: 1,
           stream: false
@@ -174,6 +174,19 @@ class XAIService {
         const fixedArgs = validateAndFixToolArgs(tc.name, tc.args);
         onToolCall?.(tc.name, fixedArgs);
         yield { type: 'tool_call', name: tc.name, args: fixedArgs, callId: tc.id };
+      }
+    }
+  }
+  async *streamChat(
+    settings: AppSettings,
+    messages: Message[],
+    signal?: AbortSignal
+  ): AsyncGenerator<{ text: string; images: string[]; video?: string; audio?: string; sources?: { title: string; url: string }[] }> {
+    let accumulatedText = '';
+    for await (const chunk of this.generateContentStream(messages, settings)) {
+      if (typeof chunk === 'string') {
+        accumulatedText += chunk;
+        yield { text: accumulatedText, images: [] };
       }
     }
   }
