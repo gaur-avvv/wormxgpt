@@ -745,7 +745,7 @@ const Sidebar: React.FC<{
       settings.togetherApiKey, settings.openRouterApiKey, settings.cerebrasApiKey, settings.siliconFlowApiKey,
       settings.moonshotApiKey, settings.ollamaApiKey, settings.cohereApiKey, settings.wisGateApiKey,
       settings.tavilyApiKey, settings.braveApiKey, settings.serperApiKey, settings.serpapiApiKey,
-      settings.firecrawlApiKey, settings.mistralApiKey
+      settings.firecrawlApiKey, settings.pollinationsApiKey
     ]);
 
     const handleHijack = async () => {
