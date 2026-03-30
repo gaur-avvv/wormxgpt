@@ -17,6 +17,30 @@ class PollinationsService {
     this.apiKey = key;
   }
 
+  async verifyApiKey(key: string): Promise<boolean> {
+    // Pollinations works without an API key (free tier), so if a key is provided we verify it
+    // by making a lightweight request. If no key is required, just check the service is reachable.
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (key) {
+        headers['Authorization'] = `Bearer ${key}`;
+      }
+      const response = await fetch(this.baseUrl + '/v1/chat/completions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: 'openai',
+          messages: [{ role: 'user', content: 'hi' }],
+          max_tokens: 1,
+          stream: false
+        })
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
   async *streamChat(settings: AppSettings, messages: Message[], signal?: AbortSignal): AsyncGenerator<{ text: string; images: string[]; video?: string; audio?: string; sources?: { title: string; url: string }[] }> {
     if (signal?.aborted) return;
     const lastMessage = messages[messages.length - 1];

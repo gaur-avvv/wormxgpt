@@ -39,7 +39,7 @@ class OpenRouterService {
           'X-Title': 'WormGPT Terminal'
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-3-70b-instruct',
+          model: 'meta-llama/llama-3.3-70b-instruct',
           messages: [{ role: 'user', content: 'Hello' }],
           max_tokens: 1,
           stream: false

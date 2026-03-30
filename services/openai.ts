@@ -167,6 +167,22 @@ class OpenAIService {
     }
   }
 
+  async *streamChat(
+    settings: AppSettings,
+    messages: Message[],
+    signal?: AbortSignal
+  ): AsyncGenerator<{ text: string; images: string[]; video?: string; audio?: string; sources?: { title: string; url: string }[] }> {
+    if (signal?.aborted) return;
+    let accumulatedText = '';
+    for await (const chunk of this.generateContentStream(messages, settings)) {
+      if (signal?.aborted) return;
+      if (typeof chunk === 'string') {
+        accumulatedText += chunk;
+        yield { text: accumulatedText, images: [] };
+      }
+    }
+  }
+
   async verifyApiKey(key: string): Promise<boolean> {
     if (!key) return false;
     try {

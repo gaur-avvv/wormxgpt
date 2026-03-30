@@ -719,6 +719,8 @@ const Sidebar: React.FC<{
           else if (keyStr.includes('siliconFlow') || keyStr.includes('siliconflow')) isValid = await siliconflowService.verifyApiKey(key);
           else if (keyStr.includes('moonshot')) isValid = await moonshotService.verifyApiKey(key);
           else if (keyStr.includes('ollama')) isValid = await ollamaService.verifyApiKey(key, settings);
+          else if (keyStr.includes('ollama')) isValid = await ollamaService.verifyApiKey(key);
+          else if (keyStr.includes('pollinations')) isValid = await pollinationsService.verifyApiKey(key);
           else isValid = true; // non-verifiable keys (search APIs, etc.) assumed valid if present
         } catch (e) { isValid = false; }
         setSidebarVerificationStatuses(prev => ({ ...prev, [providerKey]: isValid ? 'valid' : 'invalid' }));
@@ -744,7 +746,7 @@ const Sidebar: React.FC<{
       settings.togetherApiKey, settings.openRouterApiKey, settings.cerebrasApiKey, settings.siliconFlowApiKey,
       settings.moonshotApiKey, settings.ollamaApiKey, settings.cohereApiKey, settings.wisGateApiKey,
       settings.tavilyApiKey, settings.braveApiKey, settings.serperApiKey, settings.serpapiApiKey,
-      settings.firecrawlApiKey, settings.mistralApiKey
+      settings.firecrawlApiKey, settings.pollinationsApiKey
     ]);
 
     const handleHijack = async () => {
@@ -987,20 +989,22 @@ const Sidebar: React.FC<{
                           setSidebarVerificationStatuses(prev => ({ ...prev, [p.key]: 'verifying' }));
                           let isValid = false;
                           try {
-                            if (p.key.includes('gemini')) isValid = await geminiService.verifyApiKey(key);
-                            else if (p.key.includes('groq')) isValid = await groqService.verifyApiKey(key);
-                            else if (p.key.includes('anthropic')) isValid = await anthropicService.verifyApiKey(key);
-                            else if (p.key.includes('openai')) isValid = await openaiService.verifyApiKey(key);
-                            else if (p.key.includes('deepseek')) isValid = await deepseekService.verifyApiKey(key);
-                            else if (p.key.includes('mistral')) isValid = await mistralService.verifyApiKey(key);
-                            else if (p.key.includes('xai')) isValid = await xaiService.verifyApiKey(key);
-                            else if (p.key.includes('perplexity')) isValid = await perplexityService.verifyApiKey(key);
-                            else if (p.key.includes('together')) isValid = await togetherService.verifyApiKey(key);
-                            else if (p.key.includes('openrouter')) isValid = await openrouterService.verifyApiKey(key);
-                            else if (p.key.includes('cerebras')) isValid = await cerebrasService.verifyApiKey(key);
-                            else if (p.key.includes('siliconflow')) isValid = await siliconflowService.verifyApiKey(key);
-                            else if (p.key.includes('moonshot')) isValid = await moonshotService.verifyApiKey(key);
-                            else if (p.key.includes('ollama')) isValid = await ollamaService.verifyApiKey(key, settings);
+                            const pk = p.key.toLowerCase();
+                            if (pk.includes('gemini')) isValid = await geminiService.verifyApiKey(key);
+                            else if (pk.includes('groq')) isValid = await groqService.verifyApiKey(key);
+                            else if (pk.includes('anthropic')) isValid = await anthropicService.verifyApiKey(key);
+                            else if (pk.includes('openai')) isValid = await openaiService.verifyApiKey(key);
+                            else if (pk.includes('deepseek')) isValid = await deepseekService.verifyApiKey(key);
+                            else if (pk.includes('mistral')) isValid = await mistralService.verifyApiKey(key);
+                            else if (pk.includes('xai')) isValid = await xaiService.verifyApiKey(key);
+                            else if (pk.includes('perplexity')) isValid = await perplexityService.verifyApiKey(key);
+                            else if (pk.includes('together')) isValid = await togetherService.verifyApiKey(key);
+                            else if (pk.includes('openrouter')) isValid = await openrouterService.verifyApiKey(key);
+                            else if (pk.includes('cerebras')) isValid = await cerebrasService.verifyApiKey(key);
+                            else if (pk.includes('siliconflow')) isValid = await siliconflowService.verifyApiKey(key);
+                            else if (pk.includes('moonshot')) isValid = await moonshotService.verifyApiKey(key);
+                            else if (pk.includes('ollama')) isValid = await ollamaService.verifyApiKey(key);
+                            else if (pk.includes('pollinations')) isValid = await pollinationsService.verifyApiKey(key);
                             else isValid = true;
                           } catch (e) { isValid = false; }
                           setSidebarVerificationStatuses(prev => ({ ...prev, [p.key]: isValid ? 'valid' : 'invalid' }));
@@ -3180,10 +3184,22 @@ const SettingsModal: React.FC<{
     
     let isValid = false;
     try {
-      if (provider.includes('gemini')) isValid = await geminiService.verifyApiKey(key);
-      else if (provider.includes('groq')) isValid = await groqService.verifyApiKey(key);
-      else if (provider.includes('anthropic')) isValid = await anthropicService.verifyApiKey(key);
-      else if (provider.includes('openai')) isValid = await openaiService.verifyApiKey(key);
+      const prov = provider.toLowerCase();
+      if (prov.includes('gemini')) isValid = await geminiService.verifyApiKey(key);
+      else if (prov.includes('groq')) isValid = await groqService.verifyApiKey(key);
+      else if (prov.includes('anthropic')) isValid = await anthropicService.verifyApiKey(key);
+      else if (prov.includes('openai')) isValid = await openaiService.verifyApiKey(key);
+      else if (prov.includes('deepseek')) isValid = await deepseekService.verifyApiKey(key);
+      else if (prov.includes('mistral')) isValid = await mistralService.verifyApiKey(key);
+      else if (prov.includes('xai')) isValid = await xaiService.verifyApiKey(key);
+      else if (prov.includes('perplexity')) isValid = await perplexityService.verifyApiKey(key);
+      else if (prov.includes('together')) isValid = await togetherService.verifyApiKey(key);
+      else if (prov.includes('openrouter')) isValid = await openrouterService.verifyApiKey(key);
+      else if (prov.includes('cerebras')) isValid = await cerebrasService.verifyApiKey(key);
+      else if (prov.includes('siliconflow')) isValid = await siliconflowService.verifyApiKey(key);
+      else if (prov.includes('moonshot')) isValid = await moonshotService.verifyApiKey(key);
+      else if (prov.includes('ollama')) isValid = await ollamaService.verifyApiKey(key);
+      else if (prov.includes('pollinations')) isValid = await pollinationsService.verifyApiKey(key);
       else isValid = true; 
     } catch (e) { isValid = false; }
     

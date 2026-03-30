@@ -33,6 +33,7 @@ export const ollamaService = {
   async verifyApiKey(key: string, settings?: AppSettings): Promise<boolean> {
     try {
       const host = this._getEffectiveHost(settings);
+      const baseUrl = this.host || 'http://localhost:11434';
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -42,6 +43,9 @@ export const ollamaService = {
       const response = await fetch(`${host}/api/tags`, {
         method: 'GET',
         headers,
+      const response = await fetch(`${baseUrl}/api/tags`, {
+        method: 'GET',
+        headers
       });
       return response.ok;
     } catch {
