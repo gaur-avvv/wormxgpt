@@ -1,6 +1,6 @@
 import Groq from "groq-sdk";
 import { AppSettings, Message } from "../types";
-import { pruneHistory } from '../utils/tokenManager';
+import { estimateTokens, pruneHistory } from '../utils/tokenManager';
 import { validateAndFixToolArgs } from "../utils/toolHelpers";
 
 export interface StreamResponse {
@@ -69,61 +69,38 @@ export class GroqService {
       dangerouslyAllowBrowser: true
     });
 
-    // Estimate tokens (rough: ~4 chars per token)
-    const estimateTokens = (text: string) => Math.ceil(text.length / 4);
-
-    // Model token limits (conservative to avoid rate limits)
-    const modelLimits: Record<string, number> = {
-      'llama-3.1-8b-instant': 4000,
-      'llama-3.3-70b-versatile': 4000,
-      'meta-llama/llama-4-maverick-17b-128e-instruct': 4000,
-      'meta-llama/llama-4-scout-17b-16e-instruct': 4000,
-      'meta-llama/llama-guard-4-12b': 4000,
-      'moonshotai/kimi-k2-instruct-0905': 4000,
-      'qwen/qwen3-32b': 4000,
-      'default': 4000
+    // Model context window limits (actual context sizes)
+    const modelContextLimits: Record<string, number> = {
+      'llama-3.1-8b-instant': 131072,
+      'llama-3.3-70b-versatile': 131072,
+      'meta-llama/llama-4-maverick-17b-128e-instruct': 131072,
+      'meta-llama/llama-4-scout-17b-16e-instruct': 131072,
+      'meta-llama/llama-guard-4-12b': 16384,
+      'moonshotai/kimi-k2-instruct-0905': 131072,
+      'qwen/qwen3-32b': 32768,
+      'default': 32768
     };
 
-    const maxTokens = modelLimits[settings.model] || modelLimits['default'];
+    // Use user-configured context or model-specific limit
+    const contextWindow = settings.maxContextTokens || modelContextLimits[settings.model] || modelContextLimits['default'];
+    // Adaptive max response tokens: use user setting or scale based on context
+    const maxTokens = settings.maxTokens || Math.min(Math.floor(contextWindow * 0.25), 8192);
 
-    // Truncate system instruction if too long (keep under 1000 tokens)
+    // Truncate system instruction if too long (keep under 2000 tokens)
     let systemPrompt = settings.systemInstruction;
     const systemTokens = estimateTokens(systemPrompt);
-    if (systemTokens > 1000) {
-      // Keep first 3500 chars (~875 tokens)
-      systemPrompt = systemPrompt.slice(0, 3500) + '...';
-      console.log(`System prompt truncated from ${systemTokens} to ~875 tokens`);
+    const maxSystemTokens = Math.min(Math.floor(contextWindow * 0.15), 2000);
+    if (systemTokens > maxSystemTokens) {
+      systemPrompt = systemPrompt.slice(0, maxSystemTokens * 4) + '...';
+      console.log(`System prompt truncated from ${systemTokens} to ~${maxSystemTokens} tokens`);
     }
 
-    // Calculate remaining budget for history
-    const systemBudget = estimateTokens(systemPrompt);
-    const responseBudget = 1500; // Reserve for response
-    const historyBudget = maxTokens - systemBudget - responseBudget;
+    // Use pruneHistory for consistent token management
+    const responseBudget = maxTokens;
+    const recentHistory = pruneHistory(history, systemPrompt, contextWindow, responseBudget);
+    const historyTokens = recentHistory.reduce((sum, m) => sum + estimateTokens(m.content), 0);
 
-    // Build history from most recent, staying within budget
-    let recentHistory: Message[] = [];
-    let historyTokens = 0;
-
-    for (let i = history.length - 1; i >= 0; i--) {
-      const msgTokens = estimateTokens(history[i].content);
-      if (historyTokens + msgTokens > historyBudget) {
-        break;
-      }
-      recentHistory.unshift(history[i]);
-      historyTokens += msgTokens;
-    }
-
-    // Ensure at least the last message is included
-    if (recentHistory.length === 0 && history.length > 0) {
-      const lastMsg = history[history.length - 1];
-      // Truncate if necessary
-      recentHistory = [{
-        ...lastMsg,
-        content: lastMsg.content.slice(0, historyBudget * 4)
-      }];
-    }
-
-    console.log(`Token budget: ${maxTokens}, System: ~${systemBudget}, History: ${recentHistory.length} msgs (~${historyTokens} tokens)`);
+    console.log(`Context: ${contextWindow}, Response budget: ${maxTokens}, System: ~${estimateTokens(systemPrompt)}, History: ${recentHistory.length} msgs (~${historyTokens} tokens)`);
 
     // Build messages with system instruction as the first message
     const messages: any[] = [

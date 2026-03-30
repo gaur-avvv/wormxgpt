@@ -48,21 +48,34 @@ export class GeminiService {
 
     const isThinkingSupported = settings.model.includes('gemini-3') || settings.model.includes('gemini-2.5');
 
-    // Token budget (Gemini has higher limits but be conservative)
-    const maxTokens = 28000; // Conservative limit for most Gemini models
-    const responseBudget = 4000;
+    // Dynamic token budgeting based on model capabilities
+    const modelContextLimits: Record<string, number> = {
+      'gemini-2.5-flash': 1048576,
+      'gemini-2.5-pro': 1048576,
+      'gemini-2.0-flash': 1048576,
+      'gemini-1.5-flash': 1048576,
+      'gemini-1.5-pro': 2097152,
+      'default': 131072
+    };
+    const modelKey = Object.keys(modelContextLimits).find(k => settings.model.includes(k)) || 'default';
+    const contextWindow = settings.maxContextTokens || modelContextLimits[modelKey];
+    // Adaptive response budget: use user setting or scale to 10% of context (capped at 8192)
+    const responseBudget = settings.maxTokens || Math.min(Math.floor(contextWindow * 0.1), 8192);
 
     // Truncate system instruction if extremely long
     let systemPrompt = settings.systemInstruction;
     if (!(settings.injectSystemPrompts ?? true)) {
       systemPrompt = '';
-    } else if (estimateTokens(systemPrompt) > 2000) {
-      systemPrompt = systemPrompt.slice(0, 7500) + '...';
-      console.log('System prompt truncated for Gemini');
+    } else {
+      const maxSystemTokens = Math.min(Math.floor(contextWindow * 0.1), 4000);
+      if (estimateTokens(systemPrompt) > maxSystemTokens) {
+        systemPrompt = systemPrompt.slice(0, maxSystemTokens * 4) + '...';
+        console.log('System prompt truncated for Gemini');
+      }
     }
 
     const systemBudget = estimateTokens(systemPrompt);
-    const historyBudget = maxTokens - systemBudget - responseBudget;
+    const historyBudget = Math.max(contextWindow - systemBudget - responseBudget, 2000);
 
     const historyWithoutLast = messages.slice(0, -1);
 
@@ -79,7 +92,7 @@ export class GeminiService {
       historyTokens += msgTokens;
     }
 
-    console.log(`Gemini: Token budget ${maxTokens}, System: ~${systemBudget}, History: ${recentHistory.length} msgs (~${historyTokens} tokens)`);
+    console.log(`Gemini: Context ${contextWindow}, Response budget: ${responseBudget}, System: ~${systemBudget}, History: ${recentHistory.length} msgs (~${historyTokens} tokens)`);
 
     // Validate image is a properly formatted base64 data URL with valid mime type
     const isValidBase64Image = (img: string): boolean => {
@@ -170,7 +183,7 @@ export class GeminiService {
             systemInstruction: systemPrompt,
             temperature: settings.temperature,
             topP: settings.topP ?? 1.0,
-            maxOutputTokens: settings.maxTokens ?? 4000,
+            maxOutputTokens: responseBudget,
             thinkingConfig: isThinkingSupported ? {
               thinkingBudget: settings.thinkingBudget
             } : undefined,

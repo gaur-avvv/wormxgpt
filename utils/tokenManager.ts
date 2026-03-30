@@ -1,6 +1,20 @@
 import { Message } from '../types';
 
-export const estimateTokens = (text: string) => Math.ceil(text.length / 4);
+// More accurate token estimation: ~4 chars/token for English,
+// but accounts for code blocks (~3.5 chars/token) and URLs (~2 chars/token)
+export const estimateTokens = (text: string): number => {
+  if (!text) return 0;
+  const len = text.length;
+  // Quick estimate for short texts
+  if (len < 100) return Math.ceil(len / 4);
+  // Count code blocks and URLs for better estimation
+  const codeMatches = text.match(/```[\s\S]*?```/g);
+  const codeBlockChars = codeMatches ? codeMatches.reduce((sum: number, m: string) => sum + m.length, 0) : 0;
+  const urlMatches = text.match(/https?:\/\/\S+/g);
+  const urlChars = urlMatches ? urlMatches.reduce((sum: number, m: string) => sum + m.length, 0) : 0;
+  const normalChars = len - codeBlockChars - urlChars;
+  return Math.ceil(normalChars / 4 + codeBlockChars / 3.5 + urlChars / 2);
+};
 
 export const pruneToolResult = (result: string, maxChars: number = 32000): string => {
   if (!result || result.length <= maxChars) return result;

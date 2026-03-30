@@ -12,8 +12,27 @@ export const ollamaService = {
     this.host = host || 'http://localhost:11434';
   },
 
-  async verifyApiKey(key: string): Promise<boolean> {
+  _getEffectiveHost(settings?: AppSettings): string {
+    if (settings?.ollamaHost?.trim()) {
+      return settings.ollamaHost.trim().replace(/\/+$/, '');
+    }
+    return this.host.replace(/\/+$/, '');
+  },
+
+  _getHeaders(settings: AppSettings, apiKey?: string) {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    const key = apiKey || settings.ollamaApiKey;
+    if (key) {
+      headers['Authorization'] = `Bearer ${key}`;
+    }
+    return headers;
+  },
+
+  async verifyApiKey(key: string, settings?: AppSettings): Promise<boolean> {
     try {
+      const host = this._getEffectiveHost(settings);
       const baseUrl = this.host || 'http://localhost:11434';
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -21,6 +40,9 @@ export const ollamaService = {
       if (key) {
         headers['Authorization'] = `Bearer ${key}`;
       }
+      const response = await fetch(`${host}/api/tags`, {
+        method: 'GET',
+        headers,
       const response = await fetch(`${baseUrl}/api/tags`, {
         method: 'GET',
         headers
@@ -31,31 +53,32 @@ export const ollamaService = {
     }
   },
 
-  _getBaseUrl(settings: AppSettings) {
-    const useLocalhost = settings.ollamaUseLocalhost === true;
-    const cloudBase = '/ollama-cloud';
-    const localBase = '/ollama-local';
-
-    return settings.ollamaHost?.trim()
-      ? settings.ollamaHost.trim()
-      : useLocalhost ? localBase : cloudBase;
-  },
-
-  _getHeaders(settings: AppSettings, apiKey?: string) {
-    const isCloud = !settings.ollamaUseLocalhost;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (isCloud && (apiKey || settings.ollamaApiKey)) {
-      headers['Authorization'] = `Bearer ${apiKey || settings.ollamaApiKey}`;
+  async listModels(settings?: AppSettings): Promise<string[]> {
+    try {
+      const host = this._getEffectiveHost(settings);
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      const apiKey = settings?.ollamaApiKey || this.apiKey;
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+      const response = await fetch(`${host}/api/tags`, {
+        method: 'GET',
+        headers,
+      });
+      if (!response.ok) return [];
+      const data = await response.json();
+      return (data.models || []).map((m: any) => m.name || m.model);
+    } catch {
+      return [];
     }
-    return headers;
   },
 
   async webSearch(settings: AppSettings, query: string, max_results: number = 5): Promise<any> {
-    const baseUrl = this._getBaseUrl(settings);
+    const host = this._getEffectiveHost(settings);
     const headers = this._getHeaders(settings);
-    const r = await fetch(`${baseUrl}/api/web_search`, {
+    const r = await fetch(`${host}/api/web_search`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ query, max_results })
@@ -64,9 +87,9 @@ export const ollamaService = {
   },
 
   async webFetch(settings: AppSettings, url: string): Promise<any> {
-    const baseUrl = this._getBaseUrl(settings);
+    const host = this._getEffectiveHost(settings);
     const headers = this._getHeaders(settings);
-    const r = await fetch(`${baseUrl}/api/web_fetch`, {
+    const r = await fetch(`${host}/api/web_fetch`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ url })
@@ -82,36 +105,59 @@ export const ollamaService = {
   ): AsyncGenerator<{ text: string; thinking?: string; images: string[] }> {
     if (signal?.aborted) return;
 
-    const baseUrl = this._getBaseUrl(settings);
+    const host = this._getEffectiveHost(settings);
     const apiKey = settings.ollamaApiKey || this.apiKey;
 
     const { pruneHistory } = await import('../utils/tokenManager');
     const { getDynamicTools } = await import('./tools');
     const dynamicTools = await getDynamicTools(settings);
 
-    // Prune history to avoid context overflow (Ollama works best with ~32k context for agents)
+    // Use contextWindow for history pruning, responseBudget for generation
+    const contextWindow = settings.maxContextTokens || 32000;
+    const responseBudget = settings.maxTokens || 4000;
+
+    // Prune history to avoid context overflow
     const prunedMessages = pruneHistory(
       messages, 
       settings.systemInstruction, 
-      settings.maxTokens || 32000, 
-      4000
+      contextWindow, 
+      responseBudget
     );
 
-    const formattedMessages = prunedMessages.map(m => ({
-      role: m.role === 'model' ? 'assistant' : 'user',
-      content: m.content,
-      images: m.images?.map(img => img.split(',')[1] || img)
-    }));
+    const formattedMessages: any[] = [];
+
+    // Add system instruction as first message
+    if (settings.systemInstruction && (settings.injectSystemPrompts ?? true)) {
+      formattedMessages.push({
+        role: 'system',
+        content: settings.systemInstruction
+      });
+    }
+
+    // Add conversation history
+    for (const m of prunedMessages) {
+      formattedMessages.push({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.content,
+        images: m.images?.filter(img => img && img.startsWith('data:')).map(img => {
+          const base64Part = img.split(',')[1];
+          return base64Part || img;
+        })
+      });
+    }
 
     const headers = this._getHeaders(settings, apiKey);
 
+    // Clean model name - remove any cloud suffixes
+    const modelName = settings.model.replace('-cloud', '').replace(':cloud', '');
+
     try {
-      const response = await fetch(`${baseUrl}/api/chat`, {
+      const response = await fetch(`${host}/api/chat`, {
         method: 'POST',
         headers,
         signal,
         body: JSON.stringify({
-          model: settings.model.replace('-cloud', '').replace(':cloud', ''),
+          model: modelName,
           messages: formattedMessages,
           stream: true,
           think: true,
@@ -122,7 +168,8 @@ export const ollamaService = {
           options: {
             temperature: settings.temperature,
             top_p: settings.topP,
-            num_ctx: settings.thinkingBudget || 32000,
+            num_ctx: contextWindow,
+            num_predict: responseBudget,
           }
         }),
       });
@@ -166,16 +213,55 @@ export const ollamaService = {
             if (data.message?.tool_calls) {
               onToolCall?.(data.message.tool_calls);
             }
-          } catch (e) {
+            // Handle error responses from Ollama
+            if (data.error) {
+              throw new Error(data.error);
+            }
+          } catch (e: any) {
+            if (e.message && !e.message.includes('JSON')) {
+              throw e; // Re-throw actual Ollama errors
+            }
             console.error('Error parsing Ollama stream chunk:', e, line);
+          }
+        }
+      }
+
+      // Process any remaining buffer
+      if (buffer.trim()) {
+        try {
+          const data = JSON.parse(buffer);
+          if (data.message?.content) {
+            accumulatedText += data.message.content;
+            yield { text: accumulatedText, thinking: accumulatedThinking, images: [] };
+          }
+          if (data.error) {
+            throw new Error(data.error);
+          }
+        } catch (e: any) {
+          if (e.message && !e.message.includes('JSON')) {
+            throw e;
           }
         }
       }
     } catch (error: any) {
       if (error.name === 'AbortError') return;
       console.error('Ollama stream error:', error);
+      
+      let errorMsg = error.message || 'Unknown error';
+      
+      // Provide helpful error messages for common issues
+      if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || errorMsg.includes('ERR_CONNECTION_REFUSED')) {
+        errorMsg = `Cannot connect to Ollama at ${host}. Make sure Ollama is running and accessible.\n\n` +
+          `To start Ollama:\n` +
+          `• Local: Run \`ollama serve\` in your terminal\n` +
+          `• Remote: Check the host URL in Settings → Provider → Ollama\n` +
+          `• CORS: Set OLLAMA_ORIGINS="*" environment variable`;
+      } else if (errorMsg.includes('model') && errorMsg.includes('not found')) {
+        errorMsg = `Model "${settings.model}" not found. Pull it first with: \`ollama pull ${settings.model}\``;
+      }
+      
       yield {
-        text: `[SYSTEM ERROR] Ollama Connection Severed: ${error.message}`,
+        text: `[SYSTEM ERROR] Ollama Connection Severed: ${errorMsg}`,
         images: []
       };
     }

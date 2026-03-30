@@ -718,6 +718,7 @@ const Sidebar: React.FC<{
           else if (keyStr.includes('cerebras')) isValid = await cerebrasService.verifyApiKey(key);
           else if (keyStr.includes('siliconFlow') || keyStr.includes('siliconflow')) isValid = await siliconflowService.verifyApiKey(key);
           else if (keyStr.includes('moonshot')) isValid = await moonshotService.verifyApiKey(key);
+          else if (keyStr.includes('ollama')) isValid = await ollamaService.verifyApiKey(key, settings);
           else if (keyStr.includes('ollama')) isValid = await ollamaService.verifyApiKey(key);
           else if (keyStr.includes('pollinations')) isValid = await pollinationsService.verifyApiKey(key);
           else isValid = true; // non-verifiable keys (search APIs, etc.) assumed valid if present
@@ -844,8 +845,11 @@ const Sidebar: React.FC<{
                 className={`group relative p-3 rounded-lg border-2 transition-all duration-300 cursor-pointer flex items-center justify-between mb-2 ${s.id === activeSessionId ? 'bg-[#F120F0]/20 border-[#F120F0]/70 shadow-[inset_0_0_20px_rgba(241,32,240,0.4)]' : 'bg-zinc-950/60 border-[#F120F0]/30 hover:border-[#F120F0]/60 hover:shadow-[0_0_15px_rgba(241,32,240,0.3)]'}`}
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className={`w-2 h-2 rounded-full ${s.id === activeSessionId ? 'bg-[#F120F0] animate-pulse shadow-[0_0_10px_#F120F0]' : 'bg-[#F120F0]/40'}`} />
-                  <span className={`text-[11px] font-bold uppercase tracking-wider truncate transition-colors ${s.id === activeSessionId ? 'text-[#F120F0] font-black' : 'text-[#F120F0]/70 group-hover:text-[#F120F0]'}`}>{s.title}</span>
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.id === activeSessionId ? 'bg-[#F120F0] animate-pulse shadow-[0_0_10px_#F120F0]' : 'bg-[#F120F0]/40'}`} />
+                  <div className="min-w-0 flex-1">
+                    <span className={`text-[11px] font-bold uppercase tracking-wider truncate block transition-colors ${s.id === activeSessionId ? 'text-[#F120F0] font-black' : 'text-[#F120F0]/70 group-hover:text-[#F120F0]'}`}>{s.title}</span>
+                    <span className={`text-[8px] font-mono tracking-wider ${s.id === activeSessionId ? 'text-[#F120F0]/60' : 'text-[#F120F0]/30'}`}>{s.messages.length} msg{s.messages.length !== 1 ? 's' : ''}</span>
+                  </div>
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); onDeleteSession(s.id); }}
@@ -1542,6 +1546,11 @@ const App: React.FC = () => {
     return savedId || (sessions.length > 0 ? sessions[0].id : '');
   });
 
+  // Ref to track the session ID that an active stream is writing to.
+  // This prevents messages leaking into other sessions when the user
+  // switches sessions while a response is still streaming.
+  const streamingSessionIdRef = useRef<string | null>(null);
+
   // 3. Initialize Settings from LocalStorage
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem(SETTINGS_KEY);
@@ -1988,6 +1997,11 @@ const App: React.FC = () => {
     const textToSend = forcedText || input;
     if ((!textToSend.trim() && attachments.length === 0) || isStreaming) return;
 
+    // Capture the session ID at send-time so streaming updates always
+    // target the correct session, even if the user switches sessions.
+    const targetSessionId = activeSessionId;
+    streamingSessionIdRef.current = targetSessionId;
+
     // --- Phase 1: Pre-processing Filters ---
     const filteredInput = await pluginRegistry.runFilters(textToSend, 'PRE');
 
@@ -2023,11 +2037,11 @@ const App: React.FC = () => {
     const currentTitle = activeSession.title;
     const updatedMessages = [...activeSession.messages, userMessage];
 
-    // Update global sessions state
-    setSessions(prev => prev.map(s => s.id === activeSessionId ? {
+    // Update global sessions state — use captured targetSessionId
+    setSessions(prev => prev.map(s => s.id === targetSessionId ? {
       ...s,
       messages: updatedMessages,
-      title: currentTitle === 'NEW_SESSION' ? input.slice(0, 24) || 'ACTIVE_THREAD' : s.title
+      title: currentTitle === 'NEW_SESSION' ? textToSend.slice(0, 24) || 'ACTIVE_THREAD' : s.title
     } : s));
 
     setInput('');
@@ -2036,13 +2050,13 @@ const App: React.FC = () => {
 
     const modelMessage: Message = {
       role: 'model',
-      content: 'Establizing Dark Link.... ',
+      content: 'Establishing Dark Link.... ',
       timestamp: Date.now(),
       images: []
     };
 
-    // Add placeholder
-    setSessions(prev => prev.map(s => s.id === activeSessionId ? {
+    // Add placeholder — use captured targetSessionId
+    setSessions(prev => prev.map(s => s.id === targetSessionId ? {
       ...s,
       messages: [...updatedMessages, modelMessage]
     } : s));
@@ -2213,7 +2227,7 @@ const App: React.FC = () => {
           });
         }
 
-        setSessions(prev => prev.map(s => s.id === activeSessionId ? {
+        setSessions(prev => prev.map(s => s.id === targetSessionId ? {
           ...s,
           messages: s.messages.map((m, idx) => idx === s.messages.length - 1 ? {
             ...m,
@@ -2230,7 +2244,7 @@ const App: React.FC = () => {
       // --- Phase 1: Post-processing Filters ---
       const finalizedText = await pluginRegistry.runFilters(accumulatedText, 'POST');
       if (finalizedText !== accumulatedText) {
-        setSessions(prev => prev.map(s => s.id === activeSessionId ? {
+        setSessions(prev => prev.map(s => s.id === targetSessionId ? {
           ...s,
           messages: s.messages.map((m, idx) => idx === s.messages.length - 1 ? {
             ...m,
@@ -2253,8 +2267,8 @@ const App: React.FC = () => {
           ? `Invalid ${settings.aiProvider.toUpperCase()} API key. Check your credentials in the AI Provider section.`
           : err?.message || 'Failed to get response. Check API key, model selection, and network connection.';
 
-      // Display error message in chat
-      setSessions(prev => prev.map(s => s.id === activeSessionId ? {
+      // Display error message in chat — use captured targetSessionId
+      setSessions(prev => prev.map(s => s.id === targetSessionId ? {
         ...s,
         messages: s.messages.map((m, idx) => idx === s.messages.length - 1 ? {
           ...m,
@@ -2265,8 +2279,9 @@ const App: React.FC = () => {
       // Reset openaiService baseUrl in case it was overridden for a custom provider
       (openaiService as any).baseUrl = 'https://api.openai.com/v1/chat/completions';
       setIsStreaming(false);
+      streamingSessionIdRef.current = null;
       // Populate suggestions after stream ends
-      if (activeSessionId) {
+      if (targetSessionId) {
         setSuggestions([
           "Continue where you left off",
           "Elaborate more details",
