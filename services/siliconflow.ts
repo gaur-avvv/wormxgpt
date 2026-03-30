@@ -8,7 +8,7 @@ function estimateTokens(text: string): number {
 
 class SiliconFlowService {
   private apiKey: string = '';
-  private baseUrl = 'https://api.siliconflow.cn/v1';
+  private baseUrl = 'https://api.siliconflow.com/v1';
 
   constructor() {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('siliconFlowApiKey') : null;
