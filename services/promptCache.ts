@@ -65,10 +65,14 @@ class PromptCacheService {
     prompt: string,
     systemInstruction: string,
     temperature: number,
-    maxTokens: number
+    maxTokens: number,
+    conversationContext?: string
   ): string {
     // Use a fast hash combining all relevant parameters
-    const raw = `${model}|${temperature}|${maxTokens}|${systemInstruction.slice(0, 500)}|${prompt}`;
+    // Hash the full system instruction separately to avoid collisions from truncation
+    const sysHash = this.hashSystemInstruction(systemInstruction);
+    const contextPart = conversationContext ? `|${this.hashSystemInstruction(conversationContext)}` : '';
+    const raw = `${model}|${temperature}|${maxTokens}|${sysHash}|${prompt}${contextPart}`;
     let hash = 0;
     for (let i = 0; i < raw.length; i++) {
       const chr = raw.charCodeAt(i);
@@ -106,7 +110,8 @@ class PromptCacheService {
     prompt: string,
     systemInstruction: string,
     temperature: number,
-    maxTokens: number
+    maxTokens: number,
+    conversationContext?: string
   ): PromptCacheEntry | null {
     if (!this._enabled) return null;
 
@@ -117,7 +122,7 @@ class PromptCacheService {
       return null;
     }
 
-    const key = this.generateKey(model, prompt, systemInstruction, temperature, maxTokens);
+    const key = this.generateKey(model, prompt, systemInstruction, temperature, maxTokens, conversationContext);
     const entry = this.cache.get(key);
 
     if (!entry) {
@@ -151,7 +156,8 @@ class PromptCacheService {
     temperature: number,
     maxTokens: number,
     response: string,
-    images?: string[]
+    images?: string[],
+    conversationContext?: string
   ): void {
     if (!this._enabled) return;
 
@@ -161,7 +167,7 @@ class PromptCacheService {
     // Don't cache very short or error responses
     if (response.length < 10 || response.startsWith('[SYSTEM ERROR]')) return;
 
-    const key = this.generateKey(model, prompt, systemInstruction, temperature, maxTokens);
+    const key = this.generateKey(model, prompt, systemInstruction, temperature, maxTokens, conversationContext);
 
     // Evict oldest entries if cache is full
     if (this.cache.size >= MAX_PROMPT_CACHE_SIZE && !this.cache.has(key)) {

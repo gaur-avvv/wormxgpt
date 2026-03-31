@@ -97,20 +97,33 @@ class A2AService {
   }
 
   getStatus(url: string): A2AConnectionStatus {
-    return this.agents.get(url)?.status ?? 'disconnected';
+    return this.agents.get(this.normalizeUrl(url))?.status ?? 'disconnected';
   }
 
   getAgentCard(url: string): A2AAgentCard | undefined {
-    return this.agents.get(url)?.card;
+    return this.agents.get(this.normalizeUrl(url))?.card;
   }
 
   /**
    * Discover an A2A agent by fetching its agent card from the well-known URL
    */
+  /**
+   * Normalize a URL for consistent map key lookup:
+   * strips trailing slashes, lowercases protocol+host, preserves path case
+   */
+  private normalizeUrl(rawUrl: string): string {
+    try {
+      const u = new URL(rawUrl.replace(/\/+$/, ''));
+      return `${u.protocol}//${u.host.toLowerCase()}${u.pathname.replace(/\/+$/, '')}${u.search}${u.hash}`;
+    } catch {
+      return rawUrl.replace(/\/+$/, '').toLowerCase();
+    }
+  }
+
   async discoverAgent(baseUrl: string): Promise<A2AAgentCard | null> {
     if (!this._enabled) return null;
 
-    const normalizedUrl = baseUrl.replace(/\/$/, '');
+    const normalizedUrl = this.normalizeUrl(baseUrl);
     this.agents.set(normalizedUrl, {
       card: { name: '', description: '', url: normalizedUrl, protocolVersion: '', version: '', skills: [], capabilities: {}, defaultInputModes: [], defaultOutputModes: [] },
       status: 'connecting',
@@ -153,7 +166,7 @@ class A2AService {
   async sendMessage(agentUrl: string, text: string, contextId?: string): Promise<A2AMessage | A2ATask | null> {
     if (!this._enabled) return null;
 
-    const state = this.agents.get(agentUrl);
+    const state = this.agents.get(this.normalizeUrl(agentUrl));
     if (!state || state.status !== 'connected') {
       console.warn(`[A2A] Agent not connected: ${agentUrl}`);
       return null;
@@ -212,7 +225,7 @@ class A2AService {
   async *streamMessage(agentUrl: string, text: string, contextId?: string): AsyncGenerator<A2AEvent> {
     if (!this._enabled) return;
 
-    const state = this.agents.get(agentUrl);
+    const state = this.agents.get(this.normalizeUrl(agentUrl));
     if (!state || state.status !== 'connected') {
       console.warn(`[A2A] Agent not connected: ${agentUrl}`);
       return;
@@ -287,7 +300,7 @@ class A2AService {
    * Disconnect from an A2A agent
    */
   disconnect(url: string): void {
-    this.agents.delete(url);
+    this.agents.delete(this.normalizeUrl(url));
   }
 
   /**

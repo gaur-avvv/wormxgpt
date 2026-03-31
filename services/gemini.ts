@@ -147,17 +147,23 @@ export class GeminiService {
     const { validateAndFixToolArgs } = await import('../utils/toolHelpers');
     const { pruneToolResult } = await import('../utils/tokenManager');
 
+    // Build conversation context hash for cache key (includes chat history)
+    const conversationContext = chatHistory.map(m => `${m.role}:${(m.parts as any[])[0]?.text || ''}`).join('|');
+
     // Prompt cache lookup — serve cached response if available
     if (promptCacheService.enabled) {
       const cached = promptCacheService.lookup(
         settings.model, prompt, systemPrompt,
-        settings.temperature, settings.maxTokens ?? 4000
+        settings.temperature, settings.maxTokens ?? 4000,
+        conversationContext
       );
       if (cached) {
         yield { text: cached.response, images: cached.images || [] };
         return;
       }
     }
+
+    let usedToolCalls = false;
 
     try {
       for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -229,6 +235,7 @@ export class GeminiService {
         }
 
         if (isMakingToolCall && turnToolCalls.length > 0) {
+          usedToolCalls = true;
           const { executeToolCall } = await import('./tools');
 
           accumulatedText += turnText + "\n";
@@ -298,11 +305,13 @@ export class GeminiService {
       }
 
       // Store completed response in prompt cache
-      if (promptCacheService.enabled && accumulatedText) {
+      // Skip caching if tool calls were used (non-deterministic results)
+      if (promptCacheService.enabled && accumulatedText && !usedToolCalls) {
         promptCacheService.store(
           settings.model, prompt, systemPrompt,
           settings.temperature, settings.maxTokens ?? 4000,
-          accumulatedText, foundImages.length > 0 ? foundImages : undefined
+          accumulatedText, foundImages.length > 0 ? foundImages : undefined,
+          conversationContext
         );
       }
     } catch (error: any) {

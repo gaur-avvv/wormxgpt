@@ -399,26 +399,42 @@ export class MCPService {
 
     console.log(`[MCP] 📡 Connecting to ${url}...`);
 
-    // Helper: wrap connection attempt with a timeout
-    const connectWithTimeout = async (connectFn: () => Promise<boolean>): Promise<boolean> => {
-      return Promise.race([
-        connectFn(),
-        new Promise<boolean>((_, reject) =>
-          setTimeout(() => reject(new Error(`Connection timed out after ${this.CONNECT_TIMEOUT / 1000}s`)), this.CONNECT_TIMEOUT)
-        )
-      ]);
+    // Helper: wrap connection attempt with a timeout that properly cleans up
+    // leaked resources if the timeout fires but the background connection later succeeds
+    const connectWithTimeout = async (
+      createTransport: () => StreamableHTTPClientTransport | SSEClientTransport
+    ): Promise<{ client: Client; transport: StreamableHTTPClientTransport | SSEClientTransport }> => {
+      const transport = createTransport();
+      const client = new Client({ name: 'xgpt_ui', version: '2.3.0' }, { capabilities: {} });
+      let timedOut = false;
+      let timeoutId: ReturnType<typeof setTimeout>;
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          timedOut = true;
+          reject(new Error(`Connection timed out after ${this.CONNECT_TIMEOUT / 1000}s`));
+        }, this.CONNECT_TIMEOUT);
+      });
+
+      try {
+        await Promise.race([client.connect(transport), timeoutPromise]);
+        clearTimeout(timeoutId!);
+        return { client, transport };
+      } catch (err) {
+        clearTimeout(timeoutId!);
+        // Clean up resources on failure or timeout
+        try { await transport.close?.(); } catch (_) {}
+        throw err;
+      }
     };
 
     // Try StreamableHTTP first (modern protocol)
     try {
-      const connected = await connectWithTimeout(async () => {
-        const transport = new StreamableHTTPClientTransport(new URL(url));
-        const client = new Client({ name: 'xgpt_ui', version: '2.3.0' }, { capabilities: {} });
-        await client.connect(transport);
-        this._registerServer(url, client, transport);
-        return true;
-      });
-      if (connected) {
+      const { client, transport } = await connectWithTimeout(
+        () => new StreamableHTTPClientTransport(new URL(url))
+      );
+      this._registerServer(url, client, transport);
+      if (true) {
         console.log(`[MCP] ✅ StreamableHTTP connected: ${url}`);
         this.reconnectAttempts.delete(url);
         this._startHealthCheck();
@@ -430,14 +446,11 @@ export class MCPService {
 
     // Fallback: legacy SSE transport
     try {
-      const connected = await connectWithTimeout(async () => {
-        const transport = new SSEClientTransport(new URL(url));
-        const client = new Client({ name: 'xgpt_ui', version: '2.3.0' }, { capabilities: {} });
-        await client.connect(transport);
-        this._registerServer(url, client, transport);
-        return true;
-      });
-      if (connected) {
+      const { client: sseClient, transport: sseTransport } = await connectWithTimeout(
+        () => new SSEClientTransport(new URL(url))
+      );
+      this._registerServer(url, sseClient, sseTransport);
+      if (true) {
         console.log(`[MCP] ✅ SSE connected: ${url}`);
         this.reconnectAttempts.delete(url);
         this._startHealthCheck();

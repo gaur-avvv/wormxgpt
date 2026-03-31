@@ -816,7 +816,7 @@ const Sidebar: React.FC<{
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 sm:hidden" onClick={onMobileClose} />
         )}
 
-        <aside className={`fixed inset-y-0 left-0 z-50 w-80 sm:w-[340px] bg-[#050000] border-r-2 border-[#F120F0]/40 flex flex-col transition-transform duration-500 ease-in-out ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`} style={{ boxShadow: '0 0 30px rgba(241,32,240,0.3)' }}>
+        <aside className={`fixed inset-y-0 left-0 z-50 w-[85vw] max-w-80 sm:w-[340px] sm:max-w-[340px] bg-[#050000] border-r-2 border-[#F120F0]/40 flex flex-col transition-transform duration-500 ease-in-out ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`} style={{ boxShadow: '0 0 30px rgba(241,32,240,0.3)' }}>
           {/* Header & New Chat */}
           <div className="p-4 sm:p-6 border-b border-[#F120F0]/30 bg-gradient-to-b from-[#F120F0]/20 to-transparent flex-shrink-0">
             <div className="flex items-center justify-between mb-4">
@@ -840,7 +840,7 @@ const Sidebar: React.FC<{
           </div>
 
           {/* Chat History - Main Section (Takes available space) */}
-          <div className="flex-1 overflow-y-auto p-3 pb-16" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', minHeight: '120px' }}>
+          <div className="flex-1 overflow-y-auto p-3 pb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', minHeight: '80px' }}>
             <div className="text-[11px] font-black uppercase tracking-widest text-[#F120F0] mb-3 flex items-center gap-2" style={{ textShadow: '0 0 10px rgba(241,32,240,0.7)' }}>
               <span className="w-2 h-2 bg-[#F120F0] rounded-full animate-pulse shadow-[0_0_8px_#F120F0]"></span>
               Chat History ({sessions.length})
@@ -894,10 +894,10 @@ const Sidebar: React.FC<{
           </div>
 
           {/* Collapsible Settings Panel */}
-          <div className="border-t border-[#F120F0]/30 flex-shrink-0">
+          <div className="border-t border-[#F120F0]/30 flex-shrink-0 flex flex-col min-h-0" style={{ maxHeight: settingsOpen ? '60vh' : 'auto' }}>
             <button
               onClick={() => setSettingsOpen(o => !o)}
-              className="w-full flex items-center justify-between px-4 py-2.5 bg-black/40 hover:bg-[#F120F0]/10 transition-all"
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-black/40 hover:bg-[#F120F0]/10 transition-all flex-shrink-0"
             >
               <div className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-[#F120F0]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" /></svg>
@@ -907,7 +907,7 @@ const Sidebar: React.FC<{
             </button>
 
             {settingsOpen && (
-              <div className="bg-black/40 max-h-[55vh] overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="bg-black/40 flex-1 overflow-y-auto min-h-0" style={{ scrollbarWidth: 'thin', scrollbarColor: '#F120F0 transparent' }}>
                 <div className="flex border-b border-[#F120F0]/20">
                   {(['params', 'keys', 'mcp', 'apps'] as const).map(tab => (
                     <button key={tab} onClick={() => setSettingsTab(tab)}
@@ -1916,6 +1916,9 @@ const App: React.FC = () => {
       cacheService.configure(savedRedisToken, savedRedisUrl || undefined);
     }
 
+    // Restore prompt cache from localStorage on startup
+    promptCacheService.restore();
+
     // Initialize Supabase auth
     const savedAnonKey = localStorage.getItem('supabase_anon_key');
     if (savedAnonKey) {
@@ -1943,8 +1946,16 @@ const App: React.FC = () => {
       }
     }
 
+    // Persist prompt cache on page unload (tab close / navigate away)
+    const handleBeforeUnload = () => {
+      promptCacheService.persist();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     // Cleanup on unmount — prevents WebRTC/WebSocket/timer leaks
     return () => {
+      promptCacheService.persist();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       if (voiceServiceRef.current) {
         voiceServiceRef.current.cleanup();
       }
@@ -2187,6 +2198,46 @@ const App: React.FC = () => {
       let accumulatedAudio = '';
       let accumulatedSources: { title: string; url: string }[] = [];
 
+      // A2A: Forward message to connected agents if A2A is enabled
+      if (settings.a2aEnabled && settings.a2aAgentUrls?.length) {
+        for (const agentUrl of settings.a2aAgentUrls) {
+          if (a2aService.getStatus(agentUrl) === 'connected') {
+            try {
+              const a2aResponse = await a2aService.sendMessage(agentUrl, textToSend, activeSessionId);
+              if (a2aResponse && 'text' in a2aResponse && (a2aResponse as any).text) {
+                accumulatedText += `[A2A Agent] ${(a2aResponse as any).text}\n\n`;
+              }
+            } catch (e) {
+              console.warn('[A2A] Agent message forwarding failed:', e);
+            }
+          }
+        }
+      }
+
+      // Provider-agnostic prompt cache check for non-Gemini providers
+      // (Gemini handles its own cache internally in gemini.ts)
+      const isGeminiProvider = settings.aiProvider === 'gemini';
+      if (!isGeminiProvider && promptCacheService.enabled) {
+        const conversationCtx = updatedMessages.map(m => `${m.role}:${m.content.slice(0, 100)}`).join('|');
+        const cached = promptCacheService.lookup(
+          settings.model, textToSend, settings.systemInstruction,
+          settings.temperature, settings.maxTokens ?? 4000,
+          conversationCtx
+        );
+        if (cached) {
+          setSessions(prev => prev.map(s => s.id === activeSessionId ? {
+            ...s,
+            messages: s.messages.map((m, idx) => idx === s.messages.length - 1 ? {
+              ...m,
+              content: cached.response,
+              images: cached.images || []
+            } : m)
+          } : s));
+          setIsStreaming(false);
+          return;
+        }
+      }
+
       // Select appropriate service based on aiProvider
       let serviceToUse: any;
       const isGroq = settings.aiProvider === 'groq';
@@ -2358,6 +2409,18 @@ const App: React.FC = () => {
             sources: accumulatedSources
           } : m)
         } : s));
+      }
+
+      // Store response in prompt cache for non-Gemini providers
+      // (Gemini handles its own caching internally)
+      if (!isGeminiProvider && promptCacheService.enabled && accumulatedText && !accumulatedText.startsWith('[SYSTEM ERROR]')) {
+        const conversationCtx = updatedMessages.map(m => `${m.role}:${m.content.slice(0, 100)}`).join('|');
+        promptCacheService.store(
+          settings.model, textToSend, settings.systemInstruction,
+          settings.temperature, settings.maxTokens ?? 4000,
+          accumulatedText, accumulatedImages.length > 0 ? accumulatedImages : undefined,
+          conversationCtx
+        );
       }
 
       // --- Phase 1: Post-processing Filters ---
@@ -3085,7 +3148,7 @@ const App: React.FC = () => {
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 placeholder="Inject command string..."
-                className={`relative w-full bg-black border-2 border-red-900/30 focus:border-red-600/60 focus:ring-0 text-xs font-mono p-2 sm:p-3 pl-20 sm:pl-28 pr-20 sm:pr-28 h-12 sm:h-14 resize-none transition-all outline-none text-red-100 placeholder:text-red-900/30 hover:border-red-900/50 ${attachments.length > 0 ? 'rounded-b-lg' : 'rounded-lg shadow-[0_0_15px_rgba(220,38,38,0.05)]'}`}
+                className={`relative w-full bg-black border-2 border-red-900/30 focus:border-red-600/60 focus:ring-0 text-xs font-mono p-2 sm:p-3 pl-12 sm:pl-28 pr-16 sm:pr-28 h-12 sm:h-14 resize-none transition-all outline-none text-red-100 placeholder:text-red-900/30 hover:border-red-900/50 ${attachments.length > 0 ? 'rounded-b-lg' : 'rounded-lg shadow-[0_0_15px_rgba(220,38,38,0.05)]'}`}
               />
 
               <div className="absolute left-1.5 sm:left-2 bottom-2 sm:bottom-2.5 flex items-center gap-1 sm:gap-2 z-20">
