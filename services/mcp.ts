@@ -476,11 +476,12 @@ export class MCPService {
     return tools;
   }
 
-  async executeTool(name: string, args: any): Promise<string> {
+  async executeTool(name: string, args: any, options?: { useCache?: boolean }): Promise<string> {
+    const useCache = options?.useCache ?? false;
     const argsStr = JSON.stringify(args || {});
 
-    // Check cache for tool results (read-only tools benefit from caching)
-    if (cacheService.isConfigured) {
+    // Only check cache when explicitly opted in (for read-only, idempotent tools)
+    if (useCache && cacheService.isConfigured) {
       const cached = await cacheService.getCachedToolResult(name, argsStr);
       if (cached) {
         console.log(`[MCP] Cache hit for tool '${name}'`);
@@ -513,8 +514,8 @@ export class MCPService {
             resultStr = typeof result === 'string' ? result : JSON.stringify(result);
           }
 
-          // Cache the result for future calls (10 min TTL)
-          if (cacheService.isConfigured) {
+          // Only cache when explicitly opted in
+          if (useCache && cacheService.isConfigured) {
             cacheService.cacheToolResult(name, argsStr, resultStr, 600).catch(() => {});
           }
 

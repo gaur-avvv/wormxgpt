@@ -18,6 +18,7 @@ class SessionSyncService {
   private handlers: Map<string, Set<SyncEventHandler>> = new Map();
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private saveDebounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private pendingSaveData: Map<string, unknown> = new Map();
   private isActive = false;
 
   constructor() {
@@ -143,20 +144,33 @@ class SessionSyncService {
       clearTimeout(existingTimer);
     }
 
+    // Track pending data so we can flush on cleanup
+    this.pendingSaveData.set(key, data);
+
     const timer = setTimeout(() => {
-      try {
-        localStorage.setItem(key, JSON.stringify(data));
-      } catch (e) {
-        console.error('[SessionSync] Failed to save to localStorage:', e);
-        // Handle quota exceeded — trim old sessions
-        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-          this.handleQuotaExceeded(key, data);
-        }
-      }
-      this.saveDebounceTimers.delete(key);
+      this.flushKey(key);
     }, delay);
 
     this.saveDebounceTimers.set(key, timer);
+  }
+
+  /**
+   * Immediately flush a pending save for a specific key
+   */
+  private flushKey(key: string): void {
+    const data = this.pendingSaveData.get(key);
+    if (data === undefined) return;
+
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+      console.error('[SessionSync] Failed to save to localStorage:', e);
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        this.handleQuotaExceeded(key, data);
+      }
+    }
+    this.pendingSaveData.delete(key);
+    this.saveDebounceTimers.delete(key);
   }
 
   /**
@@ -211,10 +225,13 @@ class SessionSyncService {
       this.heartbeatTimer = null;
     }
 
-    for (const timer of this.saveDebounceTimers.values()) {
+    // Flush all pending saves before clearing timers to prevent data loss
+    for (const [key, timer] of this.saveDebounceTimers.entries()) {
       clearTimeout(timer);
+      this.flushKey(key);
     }
     this.saveDebounceTimers.clear();
+    this.pendingSaveData.clear();
 
     if (this.channel) {
       this.channel.close();
