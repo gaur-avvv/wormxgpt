@@ -105,9 +105,6 @@ class A2AService {
   }
 
   /**
-   * Discover an A2A agent by fetching its agent card from the well-known URL
-   */
-  /**
    * Normalize a URL for consistent map key lookup:
    * strips trailing slashes, lowercases protocol+host, preserves path case
    */

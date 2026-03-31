@@ -434,12 +434,10 @@ export class MCPService {
         () => new StreamableHTTPClientTransport(new URL(url))
       );
       this._registerServer(url, client, transport);
-      if (true) {
-        console.log(`[MCP] ✅ StreamableHTTP connected: ${url}`);
-        this.reconnectAttempts.delete(url);
-        this._startHealthCheck();
-        return true;
-      }
+      console.log(`[MCP] ✅ StreamableHTTP connected: ${url}`);
+      this.reconnectAttempts.delete(url);
+      this._startHealthCheck();
+      return true;
     } catch (e1: any) {
       console.warn(`[MCP] StreamableHTTP failed for ${url}, trying SSE...`, e1.message);
     }
@@ -450,12 +448,10 @@ export class MCPService {
         () => new SSEClientTransport(new URL(url))
       );
       this._registerServer(url, sseClient, sseTransport);
-      if (true) {
-        console.log(`[MCP] ✅ SSE connected: ${url}`);
-        this.reconnectAttempts.delete(url);
-        this._startHealthCheck();
-        return true;
-      }
+      console.log(`[MCP] ✅ SSE connected: ${url}`);
+      this.reconnectAttempts.delete(url);
+      this._startHealthCheck();
+      return true;
     } catch (e2: any) {
       console.error(`[MCP] ❌ Both transports failed for ${url}:`, e2.message);
       this._setStatus(url, 'error', e2.message);
