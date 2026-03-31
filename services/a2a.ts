@@ -220,16 +220,25 @@ class A2AService {
   }
 
   /**
-   * Disconnect from an A2A agent
+   * Disconnect from an A2A agent, closing the underlying transport.
    */
   disconnect(url: string): void {
+    const state = this.agents.get(this.normalizeUrl(url));
+    if (state?.client) {
+      try { (state.client as any).close?.(); } catch (_) { /* best-effort */ }
+    }
     this.agents.delete(this.normalizeUrl(url));
   }
 
   /**
-   * Disconnect from all A2A agents
+   * Disconnect from all A2A agents, closing all transports.
    */
   disconnectAll(): void {
+    for (const state of this.agents.values()) {
+      if (state.client) {
+        try { (state.client as any).close?.(); } catch (_) { /* best-effort */ }
+      }
+    }
     this.agents.clear();
   }
 
