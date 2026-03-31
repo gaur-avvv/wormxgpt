@@ -23,3 +23,7 @@ export type { AppIntegration } from './integrations';
 export { supabaseAuth } from './supabaseAuth';
 export { cacheService } from './cache';
 export { sessionSync } from './sessionSync';
+export { a2aService } from './a2a';
+export type { A2AAgentCard, A2AMessage, A2ATask, A2AEvent } from './a2a';
+export { promptCacheService } from './promptCache';
+export type { PromptCacheStats } from './promptCache';

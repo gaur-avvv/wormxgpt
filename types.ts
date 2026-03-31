@@ -147,4 +147,10 @@ export interface AppSettings {
   cacheEnabled?: boolean;
   redisUrl?: string;
   redisToken?: string;
+  // A2A (Agent-to-Agent) Protocol
+  a2aEnabled?: boolean;
+  a2aAgentUrls?: string[];
+  // Prompt Caching
+  promptCachingEnabled?: boolean;
+  promptCacheTTL?: number; // seconds, default 3600
 }
