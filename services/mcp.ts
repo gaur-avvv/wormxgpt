@@ -54,8 +54,9 @@ function patchFetchForProxy() {
 }
 
 function registerMcpUrl(url: string) {
-  // Register the base origin so all paths under it get proxied
+  // Register the full URL and its base origin so all paths under it get proxied
   try {
+    _knownMcpUrls.add(url);
     const { origin } = new URL(url);
     _knownMcpUrls.add(origin);
   } catch (_) {}
@@ -68,7 +69,10 @@ export class MCPService {
   private healthTimer: ReturnType<typeof setInterval> | null = null;
   private toolCache: Map<string, any[]> = new Map();
   private readonly TOOL_CALL_TIMEOUT = 45000;
+  private readonly CONNECT_TIMEOUT = 15000;
   private readonly RECONNECT_DELAY = 10000;
+  private readonly MAX_RECONNECT_ATTEMPTS = 3;
+  private reconnectAttempts: Map<string, number> = new Map();
 
   public get isConnected(): boolean {
     return Array.from(this.servers.values()).some(s => s.status === 'connected');
@@ -395,34 +399,57 @@ export class MCPService {
 
     console.log(`[MCP] 📡 Connecting to ${url}...`);
 
+    // Helper: wrap connection attempt with a timeout
+    const connectWithTimeout = async (connectFn: () => Promise<boolean>): Promise<boolean> => {
+      return Promise.race([
+        connectFn(),
+        new Promise<boolean>((_, reject) =>
+          setTimeout(() => reject(new Error(`Connection timed out after ${this.CONNECT_TIMEOUT / 1000}s`)), this.CONNECT_TIMEOUT)
+        )
+      ]);
+    };
+
     // Try StreamableHTTP first (modern protocol)
     try {
-      const transport = new StreamableHTTPClientTransport(new URL(url));
-      const client = new Client({ name: 'wormgpt_ui', version: '2.2.0' }, { capabilities: {} });
-      await client.connect(transport);
-      this._registerServer(url, client, transport);
-      console.log(`[MCP] ✅ StreamableHTTP connected: ${url}`);
-      this._startHealthCheck();
-      return true;
+      const connected = await connectWithTimeout(async () => {
+        const transport = new StreamableHTTPClientTransport(new URL(url));
+        const client = new Client({ name: 'xgpt_ui', version: '2.3.0' }, { capabilities: {} });
+        await client.connect(transport);
+        this._registerServer(url, client, transport);
+        return true;
+      });
+      if (connected) {
+        console.log(`[MCP] ✅ StreamableHTTP connected: ${url}`);
+        this.reconnectAttempts.delete(url);
+        this._startHealthCheck();
+        return true;
+      }
     } catch (e1: any) {
       console.warn(`[MCP] StreamableHTTP failed for ${url}, trying SSE...`, e1.message);
     }
 
     // Fallback: legacy SSE transport
     try {
-      const transport = new SSEClientTransport(new URL(url));
-      const client = new Client({ name: 'wormgpt_ui', version: '2.2.0' }, { capabilities: {} });
-      await client.connect(transport);
-      this._registerServer(url, client, transport);
-      console.log(`[MCP] ✅ SSE connected: ${url}`);
-      this._startHealthCheck();
-      return true;
+      const connected = await connectWithTimeout(async () => {
+        const transport = new SSEClientTransport(new URL(url));
+        const client = new Client({ name: 'xgpt_ui', version: '2.3.0' }, { capabilities: {} });
+        await client.connect(transport);
+        this._registerServer(url, client, transport);
+        return true;
+      });
+      if (connected) {
+        console.log(`[MCP] ✅ SSE connected: ${url}`);
+        this.reconnectAttempts.delete(url);
+        this._startHealthCheck();
+        return true;
+      }
     } catch (e2: any) {
       console.error(`[MCP] ❌ Both transports failed for ${url}:`, e2.message);
       this._setStatus(url, 'error', e2.message);
       this._scheduleReconnect(url);
       return false;
     }
+    return false;
   }
 
   async connectMultiple(urls: string[]): Promise<void> {
@@ -569,11 +596,20 @@ export class MCPService {
 
   private _scheduleReconnect(url: string) {
     if (this.reconnectTimers.has(url)) return;
-    console.log(`[MCP] 🔄 Reconnecting ${url} in ${this.RECONNECT_DELAY / 1000}s...`);
+    const attempts = this.reconnectAttempts.get(url) ?? 0;
+    if (attempts >= this.MAX_RECONNECT_ATTEMPTS) {
+      console.warn(`[MCP] ⏹ Max reconnect attempts (${this.MAX_RECONNECT_ATTEMPTS}) reached for ${url}`);
+      this._setStatus(url, 'error', `Failed after ${this.MAX_RECONNECT_ATTEMPTS} attempts`);
+      return;
+    }
+    // Exponential backoff: 10s, 20s, 40s
+    const delay = this.RECONNECT_DELAY * Math.pow(2, attempts);
+    this.reconnectAttempts.set(url, attempts + 1);
+    console.log(`[MCP] 🔄 Reconnecting ${url} in ${delay / 1000}s (attempt ${attempts + 1}/${this.MAX_RECONNECT_ATTEMPTS})...`);
     const timer = setTimeout(async () => {
       this.reconnectTimers.delete(url);
       await this.connect(url);
-    }, this.RECONNECT_DELAY);
+    }, delay);
     this.reconnectTimers.set(url, timer);
   }
 

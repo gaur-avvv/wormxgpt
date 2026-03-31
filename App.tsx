@@ -838,7 +838,7 @@ const Sidebar: React.FC<{
           </div>
 
           {/* Chat History - Main Section (Takes available space) */}
-          <div className="flex-1 overflow-y-auto p-3" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', minHeight: '200px' }}>
+          <div className="flex-1 overflow-y-auto p-3 pb-16" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', minHeight: '120px' }}>
             <div className="text-[11px] font-black uppercase tracking-widest text-[#F120F0] mb-3 flex items-center gap-2" style={{ textShadow: '0 0 10px rgba(241,32,240,0.7)' }}>
               <span className="w-2 h-2 bg-[#F120F0] rounded-full animate-pulse shadow-[0_0_8px_#F120F0]"></span>
               Chat History ({sessions.length})
@@ -905,7 +905,7 @@ const Sidebar: React.FC<{
             </button>
 
             {settingsOpen && (
-              <div className="bg-black/40 max-h-[40vh] overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="bg-black/40 max-h-[55vh] overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 <div className="flex border-b border-[#F120F0]/20">
                   {(['params', 'keys', 'mcp', 'apps'] as const).map(tab => (
                     <button key={tab} onClick={() => setSettingsTab(tab)}
@@ -1122,10 +1122,6 @@ const Sidebar: React.FC<{
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
-            )}
-
                   {settingsTab === 'apps' && (
                     <div className="space-y-3">
                       {/* App Integrations Header */}
@@ -1200,8 +1196,19 @@ const Sidebar: React.FC<{
                                     </div>
                                   )}
 
-                                  {/* Links */}
+                                  {/* OAuth + Links */}
                                   <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {supabaseAuth.supportsOAuth(app.id) && (
+                                      <button onClick={() => {
+                                        const provider = supabaseAuth.getOAuthProvider(app.id);
+                                        if (provider) {
+                                          const scopes = supabaseAuth.getOAuthScopes(app.id);
+                                          supabaseAuth.signInWithOAuth(provider, scopes).catch(err => {
+                                            console.error('OAuth failed:', err);
+                                          });
+                                        }
+                                      }} className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-green-500/30 text-green-400 hover:border-green-400 hover:bg-green-900/20 transition-all">OAuth</button>
+                                    )}
                                     {app.docsUrl && (
                                       <a href={app.docsUrl} target="_blank" rel="noopener noreferrer" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-zinc-800 text-zinc-500 hover:border-[#F120F0] hover:text-[#F120F0] transition-all">Docs</a>
                                     )}
@@ -1230,6 +1237,9 @@ const Sidebar: React.FC<{
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer Actions */}
@@ -2402,7 +2412,11 @@ const App: React.FC = () => {
         const initialId = crypto.randomUUID();
         const initialSession: ChatSession = { id: initialId, messages: [], title: 'NEW_SESSION' };
         setSessions([initialSession]);
+        setActiveSessionId(initialId);
         localStorage.setItem(ACTIVE_ID_KEY, initialId);
+        setInput('');
+        setAttachments([]);
+        setSuggestions([]);
         setConfirmModal(null);
       }
     });

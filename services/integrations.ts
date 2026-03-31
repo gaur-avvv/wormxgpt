@@ -199,6 +199,129 @@ export const APP_INTEGRATIONS: AppIntegration[] = [
     features: ['Search tracks', 'Get playlists', 'Album info', 'Artist info', 'Recommendations']
   },
 
+  // ── Developer (additional) ──────────────────────────────────────────────
+  {
+    id: 'notion',
+    name: 'Notion',
+    icon: '📝',
+    svgIcon: 'M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L18.09 2.13c-.466-.373-.98-.7-2.055-.607L3.01 2.59c-.466.046-.56.28-.374.466l1.823 1.152zm.793 3.358v13.905c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.934-.56.934-1.166V6.63c0-.606-.233-.933-.747-.886l-15.177.887c-.56.046-.747.326-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.747 0-.934-.234-1.494-.934l-4.577-7.186v6.952l1.448.327s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.886.747-.933l3.222-.186zM2.877.466L16.269-.4c1.635-.14 2.055-.047 3.082.7l4.25 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.374 1.633-1.682 1.726l-15.458.934c-.98.046-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.192C1.195 1.166 1.568.56 2.877.466z',
+    category: 'productivity',
+    description: 'Access databases, pages, and manage content in Notion',
+    color: '#000000',
+    authType: 'token',
+    settingsKey: 'notionToken',
+    docsUrl: 'https://developers.notion.com/docs/getting-started',
+    getTokenUrl: 'https://www.notion.so/my-integrations',
+    features: ['Search pages', 'Read databases', 'Create pages', 'Update content', 'Query databases']
+  },
+  {
+    id: 'jira',
+    name: 'Jira',
+    icon: '🎯',
+    svgIcon: 'M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.487V1.005A1.005 1.005 0 0 0 23.013 0z',
+    category: 'developer',
+    description: 'Manage issues, sprints, and projects in Jira',
+    color: '#0052cc',
+    authType: 'api_key',
+    settingsKey: 'jiraApiKey',
+    docsUrl: 'https://developer.atlassian.com/cloud/jira/platform/rest/v3/',
+    getTokenUrl: 'https://id.atlassian.com/manage-profile/security/api-tokens',
+    features: ['Create issues', 'Search issues', 'Update status', 'Sprint management', 'Comments'],
+    extraSettings: [
+      { key: 'jiraDomain', label: 'Jira Domain', placeholder: 'your-domain.atlassian.net' },
+      { key: 'jiraEmail', label: 'Email', placeholder: 'your-email@example.com' }
+    ]
+  },
+  {
+    id: 'asana',
+    name: 'Asana',
+    icon: '🗂️',
+    svgIcon: 'M19.428 15.428a3.572 3.572 0 1 1-7.143 0 3.572 3.572 0 0 1 7.143 0zM11.714 15.428a3.572 3.572 0 1 1-7.143 0 3.572 3.572 0 0 1 7.143 0zM15.571 7.143a3.572 3.572 0 1 0 0-7.143 3.572 3.572 0 0 0 0 7.143z',
+    category: 'productivity',
+    description: 'Task and project management with Asana',
+    color: '#f06a6a',
+    authType: 'token',
+    settingsKey: 'asanaToken',
+    docsUrl: 'https://developers.asana.com/docs/overview',
+    getTokenUrl: 'https://app.asana.com/0/developer-console',
+    features: ['Create tasks', 'List projects', 'Update tasks', 'Assign members', 'Track progress']
+  },
+  {
+    id: 'todoist',
+    name: 'Todoist',
+    icon: '✅',
+    svgIcon: 'M22 5.18L10.59 16.6l-4.24-4.24-1.41 1.41 5.66 5.66L23.41 6.59 22 5.18zM12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z',
+    category: 'productivity',
+    description: 'Manage tasks, projects, and to-do lists',
+    color: '#e44232',
+    authType: 'token',
+    settingsKey: 'todoistToken',
+    docsUrl: 'https://developer.todoist.com/rest/v2/',
+    getTokenUrl: 'https://todoist.com/app/settings/integrations/developer',
+    features: ['Create tasks', 'Complete tasks', 'List projects', 'Set priorities', 'Due dates']
+  },
+
+  // ── Cloud Storage ──────────────────────────────────────────────────────
+  {
+    id: 'dropbox',
+    name: 'Dropbox',
+    icon: '📦',
+    svgIcon: 'M12 6.7l-7 4.5 7 4.5-7 4.5L12 24.7l7-4.5-7-4.5 7-4.5L12 6.7zM5 16.2l7 4.5 7-4.5-7-4.5-7 4.5zM12 2L5 6.5l7 4.5 7-4.5L12 2z',
+    category: 'utility',
+    description: 'Access, upload, and manage files in Dropbox',
+    color: '#0061ff',
+    authType: 'token',
+    settingsKey: 'dropboxToken',
+    docsUrl: 'https://www.dropbox.com/developers/documentation/http/overview',
+    getTokenUrl: 'https://www.dropbox.com/developers/apps',
+    features: ['List files', 'Upload files', 'Download files', 'Search files', 'Share links']
+  },
+
+  // ── Social / Media (additional) ────────────────────────────────────────
+  {
+    id: 'reddit',
+    name: 'Reddit',
+    icon: '🤖',
+    svgIcon: 'M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 0-.463.327.327 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z',
+    category: 'social',
+    description: 'Browse subreddits, posts, and comments on Reddit',
+    color: '#ff4500',
+    authType: 'token',
+    settingsKey: 'redditToken',
+    docsUrl: 'https://www.reddit.com/dev/api/',
+    getTokenUrl: 'https://www.reddit.com/prefs/apps',
+    features: ['Browse subreddits', 'Search posts', 'Read comments', 'Get trending', 'User profiles']
+  },
+  {
+    id: 'youtube',
+    name: 'YouTube',
+    icon: '🎬',
+    svgIcon: 'M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z',
+    category: 'media',
+    description: 'Search videos, get channel info, and manage playlists',
+    color: '#ff0000',
+    authType: 'api_key',
+    settingsKey: 'youtubeApiKey',
+    docsUrl: 'https://developers.google.com/youtube/v3/getting-started',
+    getTokenUrl: 'https://console.cloud.google.com/apis/credentials',
+    features: ['Search videos', 'Channel info', 'Playlist management', 'Video details', 'Trending']
+  },
+  {
+    id: 'twitch',
+    name: 'Twitch',
+    icon: '🎮',
+    svgIcon: 'M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z',
+    category: 'media',
+    description: 'Stream info, chat integration, and channel management',
+    color: '#9146ff',
+    authType: 'token',
+    settingsKey: 'twitchToken',
+    docsUrl: 'https://dev.twitch.tv/docs/api/',
+    getTokenUrl: 'https://dev.twitch.tv/console/apps',
+    features: ['Stream status', 'Chat messages', 'Channel info', 'User lookup', 'Game search'],
+    extraSettings: [{ key: 'twitchClientId', label: 'Client ID', placeholder: 'Twitch application Client ID' }]
+  },
+
   // ── Utility ─────────────────────────────────────────────────────────────
   {
     id: 'secmail',
