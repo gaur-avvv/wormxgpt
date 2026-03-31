@@ -1,6 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { cacheService } from './cache';
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -475,7 +476,19 @@ export class MCPService {
     return tools;
   }
 
-  async executeTool(name: string, args: any): Promise<string> {
+  async executeTool(name: string, args: any, options?: { useCache?: boolean }): Promise<string> {
+    const useCache = options?.useCache ?? false;
+    const argsStr = JSON.stringify(args || {});
+
+    // Only check cache when explicitly opted in (for read-only, idempotent tools)
+    if (useCache && cacheService.isConfigured) {
+      const cached = await cacheService.getCachedToolResult(name, argsStr);
+      if (cached) {
+        console.log(`[MCP] Cache hit for tool '${name}'`);
+        return cached;
+      }
+    }
+
     // Find which server has this tool
     for (const [url, tools] of this.toolCache.entries()) {
       if (tools.find((t: any) => t.name === name)) {
@@ -493,11 +506,20 @@ export class MCPService {
             state.client.callTool({ name, arguments: args }),
             timeout
           ]);
+          let resultStr: string;
           if (result?.content && Array.isArray(result.content)) {
-            return result.content.filter((c: any) => c.type === 'text').map((c: any) => c.text).join('\n')
+            resultStr = result.content.filter((c: any) => c.type === 'text').map((c: any) => c.text).join('\n')
               || JSON.stringify(result.content);
+          } else {
+            resultStr = typeof result === 'string' ? result : JSON.stringify(result);
           }
-          return typeof result === 'string' ? result : JSON.stringify(result);
+
+          // Only cache when explicitly opted in
+          if (useCache && cacheService.isConfigured) {
+            cacheService.cacheToolResult(name, argsStr, resultStr, 600).catch(() => {});
+          }
+
+          return resultStr;
         } catch (e: any) {
           console.error(`[MCP] Tool execution failed (${name} @ ${url}):`, e.message);
           this._setStatus(url, 'error', e.message);

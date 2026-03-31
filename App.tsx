@@ -21,7 +21,10 @@ import {
   validateAndFixToolArgs,
   TOOL_CATEGORIES,
   APP_INTEGRATIONS,
-  integrationRegistry
+  integrationRegistry,
+  supabaseAuth,
+  cacheService,
+  sessionSync
 } from './services';
 import { pluginRegistry } from './services/plugins';
 import { VoiceModeService } from './services/voiceMode';
@@ -1655,6 +1658,7 @@ const App: React.FC = () => {
   const [autocomplete, setAutocomplete] = useState<{ visible: boolean; type: 'model' | 'tool' | null; query: string; index: number }>({ visible: false, type: null, query: '', index: 0 });
 
   const voiceServiceRef = useRef<VoiceModeService | null>(null);
+  const isRemoteUpdateRef = useRef(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -1670,25 +1674,35 @@ const App: React.FC = () => {
 
   const activeAgentStatus = getAgentStatus(isStreaming, (activeSession.messages[activeSession.messages.length - 1] as any)?.toolInvocations);
 
-  // Sync Persistence Hooks
+  // Sync Persistence Hooks — debounced to prevent excessive writes
   useEffect(() => {
-    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
-  }, [sessions]);
+    sessionSync.debouncedSave(SESSIONS_KEY, sessions, 300);
+    // Broadcast to other tabs — skip if this update came from another tab
+    if (activeSessionId && !isRemoteUpdateRef.current) {
+      sessionSync.broadcastSessionUpdate(activeSessionId, sessions);
+    }
+    isRemoteUpdateRef.current = false;
+  }, [sessions, activeSessionId]);
 
   useEffect(() => {
     localStorage.setItem(ACTIVE_ID_KEY, activeSessionId);
+    sessionSync.broadcastSessionSwitch(activeSessionId);
   }, [activeSessionId]);
 
-  // MCP Connection Management
+  // MCP Connection Management with proper cleanup
   useEffect(() => {
+    let cancelled = false;
     if (settings.mcpEnabled && settings.mcpServerUrls && settings.mcpServerUrls.length > 0) {
       console.log(`[MCP] Attempting connection to ${settings.mcpServerUrls.length} servers...`);
       mcpService.connectMultiple(settings.mcpServerUrls).then(() => {
-        if (mcpService.isConnected) {
-          console.log("✅ MCP Services Synchronized");
+        if (!cancelled && mcpService.isConnected) {
+          console.log('[MCP] Services Synchronized');
         }
+      }).catch(err => {
+        if (!cancelled) console.warn('[MCP] Connection error:', err);
       });
     }
+    return () => { cancelled = true; };
   }, [settings.mcpEnabled, settings.mcpServerUrls]);
 
   useEffect(() => {
@@ -1805,6 +1819,40 @@ const App: React.FC = () => {
     // Init Voice Service
     voiceServiceRef.current = new VoiceModeService(savedPollinationsKey || '');
 
+    // Initialize session sync service for cross-tab communication
+    sessionSync.initialize();
+
+    // Listen for cross-tab session updates
+    const unsubSessionUpdate = sessionSync.on('session_update', (event) => {
+      if (event.data && Array.isArray(event.data)) {
+        isRemoteUpdateRef.current = true;
+        setSessions(event.data as ChatSession[]);
+      }
+    });
+    const unsubSessionDelete = sessionSync.on('session_delete', (event) => {
+      if (event.sessionId) {
+        setSessions(prev => prev.filter(s => s.id !== event.sessionId));
+      }
+    });
+    const unsubSettingsUpdate = sessionSync.on('settings_update', (event) => {
+      if (event.data) {
+        setSettings(event.data as AppSettings);
+      }
+    });
+
+    // Initialize cache service if configured
+    const savedRedisToken = localStorage.getItem('redisToken');
+    const savedRedisUrl = localStorage.getItem('redisUrl');
+    if (savedRedisToken) {
+      cacheService.configure(savedRedisToken, savedRedisUrl || undefined);
+    }
+
+    // Initialize Supabase auth
+    const savedAnonKey = localStorage.getItem('supabase_anon_key');
+    if (savedAnonKey) {
+      supabaseAuth.setAnonKey(savedAnonKey);
+    }
+
     // 2026 WebMCP Architecture Integration
     if ('modelContext' in navigator) {
       try {
@@ -1825,6 +1873,18 @@ const App: React.FC = () => {
         console.error('[WebMCP] Failed to register tools:', e);
       }
     }
+
+    // Cleanup on unmount — prevents WebRTC/WebSocket/timer leaks
+    return () => {
+      if (voiceServiceRef.current) {
+        voiceServiceRef.current.cleanup();
+      }
+      sessionSync.cleanup();
+      supabaseAuth.cleanup();
+      unsubSessionUpdate();
+      unsubSessionDelete();
+      unsubSettingsUpdate();
+    };
   }, []);
 
   // Auto-resize textarea
@@ -2720,6 +2780,22 @@ const App: React.FC = () => {
                               <div className="flex items-center gap-3 mt-3">
                                 <a href={app.docsUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black uppercase tracking-widest text-red-900 hover:text-red-500 transition-colors">Docs</a>
                                 <a href={app.getTokenUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black uppercase tracking-widest text-red-900 hover:text-red-500 transition-colors">Get Key</a>
+                                {supabaseAuth.supportsOAuth(app.id) && (
+                                  <button
+                                    onClick={() => {
+                                      const provider = supabaseAuth.getOAuthProvider(app.id);
+                                      if (provider) {
+                                        const scopes = supabaseAuth.getOAuthScopes(app.id);
+                                        supabaseAuth.signInWithOAuth(provider, scopes).catch(err => {
+                                          console.error('[OAuth] Sign-in failed:', err);
+                                        });
+                                      }
+                                    }}
+                                    className="text-[9px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors border border-blue-800/30 rounded px-2 py-0.5 hover:bg-blue-900/20"
+                                  >
+                                    OAuth
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );

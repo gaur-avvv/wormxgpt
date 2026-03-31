@@ -141,4 +141,10 @@ export interface AppSettings {
   linkedinToken?: string;
   spotifyToken?: string;
   connectedApps?: string[];
+  // Supabase OAuth
+  supabaseAnonKey?: string;
+  // Cache settings
+  cacheEnabled?: boolean;
+  redisUrl?: string;
+  redisToken?: string;
 }
