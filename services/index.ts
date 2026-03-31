@@ -20,3 +20,6 @@ export { mcpService } from './mcp';
 export { VoiceModeService } from './voiceMode';
 export { APP_INTEGRATIONS, integrationRegistry, secmailIntegration, autofillIntegration } from './integrations';
 export type { AppIntegration } from './integrations';
+export { supabaseAuth } from './supabaseAuth';
+export { cacheService } from './cache';
+export { sessionSync } from './sessionSync';
