@@ -37,7 +37,7 @@ class SiliconFlowService {
           'Authorization': 'Bearer ' + key
         },
         body: JSON.stringify({
-          model: 'deepseek-ai/DeepSeek-V3',
+          model: 'deepseek-ai/DeepSeek-V3.2',
           messages: [{ role: 'user', content: 'Hello' }],
           max_tokens: 1,
           stream: false
@@ -94,7 +94,7 @@ class SiliconFlowService {
     apiMessages.push(...historyMessages, lastMsgFormatted);
 
     const requestBody: any = {
-      model: settings.model || 'deepseek-ai/DeepSeek-V3',
+      model: settings.model || 'deepseek-ai/DeepSeek-V3.2',
       messages: apiMessages,
       temperature: settings.temperature,
       stream: true,

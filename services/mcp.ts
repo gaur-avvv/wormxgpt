@@ -458,7 +458,6 @@ export class MCPService {
       this._scheduleReconnect(url);
       return false;
     }
-    return false;
   }
 
   async connectMultiple(urls: string[]): Promise<void> {
