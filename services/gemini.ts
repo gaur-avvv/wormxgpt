@@ -1,6 +1,7 @@
 import { GoogleGenAI, GenerateContentResponse, Part } from "@google/genai";
 import { AppSettings, Message } from "../types";
 import { estimateTokens } from "../utils/tokenManager";
+import { promptCacheService } from "./promptCache";
 
 export interface StreamResponse {
   text: string;
@@ -146,6 +147,18 @@ export class GeminiService {
     const { validateAndFixToolArgs } = await import('../utils/toolHelpers');
     const { pruneToolResult } = await import('../utils/tokenManager');
 
+    // Prompt cache lookup — serve cached response if available
+    if (promptCacheService.enabled) {
+      const cached = promptCacheService.lookup(
+        settings.model, prompt, systemPrompt,
+        settings.temperature, settings.maxTokens ?? 4000
+      );
+      if (cached) {
+        yield { text: cached.response, images: cached.images || [] };
+        return;
+      }
+    }
+
     try {
       for (let turn = 0; turn < MAX_TURNS; turn++) {
         if (signal?.aborted) return;
@@ -282,6 +295,15 @@ export class GeminiService {
           accumulatedText += turnText;
           break;
         }
+      }
+
+      // Store completed response in prompt cache
+      if (promptCacheService.enabled && accumulatedText) {
+        promptCacheService.store(
+          settings.model, prompt, systemPrompt,
+          settings.temperature, settings.maxTokens ?? 4000,
+          accumulatedText, foundImages.length > 0 ? foundImages : undefined
+        );
       }
     } catch (error: any) {
       console.error("Gemini stream error:", error);

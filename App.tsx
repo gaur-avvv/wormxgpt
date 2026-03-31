@@ -24,7 +24,9 @@ import {
   integrationRegistry,
   supabaseAuth,
   cacheService,
-  sessionSync
+  sessionSync,
+  a2aService,
+  promptCacheService
 } from './services';
 import { pluginRegistry } from './services/plugins';
 import { VoiceModeService } from './services/voiceMode';
@@ -838,7 +840,7 @@ const Sidebar: React.FC<{
           </div>
 
           {/* Chat History - Main Section (Takes available space) */}
-          <div className="flex-1 overflow-y-auto p-3" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', minHeight: '200px' }}>
+          <div className="flex-1 overflow-y-auto p-3 pb-16" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', minHeight: '120px' }}>
             <div className="text-[11px] font-black uppercase tracking-widest text-[#F120F0] mb-3 flex items-center gap-2" style={{ textShadow: '0 0 10px rgba(241,32,240,0.7)' }}>
               <span className="w-2 h-2 bg-[#F120F0] rounded-full animate-pulse shadow-[0_0_8px_#F120F0]"></span>
               Chat History ({sessions.length})
@@ -905,7 +907,7 @@ const Sidebar: React.FC<{
             </button>
 
             {settingsOpen && (
-              <div className="bg-black/40 max-h-[40vh] overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="bg-black/40 max-h-[55vh] overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 <div className="flex border-b border-[#F120F0]/20">
                   {(['params', 'keys', 'mcp', 'apps'] as const).map(tab => (
                     <button key={tab} onClick={() => setSettingsTab(tab)}
@@ -975,6 +977,63 @@ const Sidebar: React.FC<{
                           <p className="text-[8px] text-[#F120F0]/30 font-mono leading-tight">Context usage % that triggers automatic compression</p>
                           <input type="range" min="50" max="95" step="5" value={(settings as any)?.compressionThreshold || 75} onChange={(e) => setSettings(prev => ({ ...prev, compressionThreshold: parseInt(e.target.value) }))} className="w-full accent-[#F120F0]" disabled={!(settings as any)?.useTokenOptimization} />
                         </div>
+                      </div>
+                      {/* Prompt Caching */}
+                      <div className="pt-2 border-t border-[#F120F0]/20 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Prompt Cache</label>
+                          <button onClick={() => { const next = !(settings as any)?.promptCachingEnabled; setSettings(prev => ({ ...prev, promptCachingEnabled: next })); promptCacheService.enabled = next; }} className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded transition-all ${(settings as any)?.promptCachingEnabled ? 'bg-[#F120F0]/20 border-[#F120F0] text-[#F120F0]' : 'border-[#F120F0]/30 text-[#F120F0]/50'}`}>{(settings as any)?.promptCachingEnabled ? 'ON' : 'OFF'}</button>
+                        </div>
+                        <p className="text-[8px] text-[#F120F0]/40 font-mono leading-tight">Cache identical prompts to save tokens and reduce latency (works best at low temperature)</p>
+                        <div className="space-y-1">
+                          <div className="flex justify-between"><label className="text-[9px] font-black uppercase text-[#F120F0]/80">Cache TTL</label><span className="text-[9px] text-[#F120F0] font-mono">{Math.round(((settings as any)?.promptCacheTTL || 3600) / 60)}m</span></div>
+                          <p className="text-[8px] text-[#F120F0]/30 font-mono leading-tight">How long cached responses remain valid</p>
+                          <input type="range" min="300" max="86400" step="300" value={(settings as any)?.promptCacheTTL || 3600} onChange={(e) => { const val = parseInt(e.target.value); setSettings(prev => ({ ...prev, promptCacheTTL: val })); promptCacheService.ttl = val; }} className="w-full accent-[#F120F0]" disabled={!(settings as any)?.promptCachingEnabled} />
+                        </div>
+                        {(settings as any)?.promptCachingEnabled && (() => { const s = promptCacheService.getStats(); return s.hits + s.misses > 0 ? (
+                          <div className="flex gap-2 text-[8px] font-mono text-[#F120F0]/60">
+                            <span>Hits: {s.hits}</span><span>Miss: {s.misses}</span><span>Rate: {s.hitRate}%</span><span>Saved: ~{s.totalTokensSaved} tok</span>
+                          </div>
+                        ) : null; })()}
+                      </div>
+                      {/* A2A Protocol */}
+                      <div className="pt-2 border-t border-[#F120F0]/20 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">A2A Protocol</label>
+                          <button onClick={() => { const next = !(settings as any)?.a2aEnabled; setSettings(prev => ({ ...prev, a2aEnabled: next })); a2aService.enabled = next; }} className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded transition-all ${(settings as any)?.a2aEnabled ? 'bg-[#F120F0]/20 border-[#F120F0] text-[#F120F0]' : 'border-[#F120F0]/30 text-[#F120F0]/50'}`}>{(settings as any)?.a2aEnabled ? 'ON' : 'OFF'}</button>
+                        </div>
+                        <p className="text-[8px] text-[#F120F0]/40 font-mono leading-tight">Agent-to-Agent protocol v0.3.0 — discover and communicate with other AI agents</p>
+                        {(settings as any)?.a2aEnabled && (
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-center">
+                              <label className="text-[9px] font-black uppercase text-[#F120F0]/80">Connected Agents</label>
+                              <span className="text-[9px] text-[#F120F0] font-mono">{a2aService.connectedAgents.length}</span>
+                            </div>
+                            <p className="text-[8px] text-[#F120F0]/30 font-mono leading-tight">Add agent URLs to discover and connect (one per line)</p>
+                            <textarea
+                              value={((settings as any)?.a2aAgentUrls || []).join('\n')}
+                              onChange={(e) => { const urls = e.target.value.split('\n').filter((u: string) => u.trim()); setSettings(prev => ({ ...prev, a2aAgentUrls: urls })); }}
+                              rows={2}
+                              placeholder="https://agent.example.com"
+                              className="w-full bg-black/80 border-2 border-[#F120F0]/40 rounded px-2 py-1.5 text-[10px] text-[#F120F0] outline-none focus:border-[#F120F0] transition-all font-bold resize-none"
+                              style={{ scrollbarWidth: 'none' }}
+                            />
+                            <button
+                              onClick={async () => { const urls = (settings as any)?.a2aAgentUrls || []; for (const url of urls) { if (url.trim()) await a2aService.discoverAgent(url.trim()); } }}
+                              className="w-full py-1 text-[9px] font-black uppercase text-[#F120F0] border-2 border-[#F120F0]/40 rounded hover:bg-[#F120F0]/20 hover:border-[#F120F0] transition-all"
+                            >Discover Agents</button>
+                            {a2aService.listAgents().length > 0 && (
+                              <div className="space-y-1 mt-1">
+                                {a2aService.listAgents().map(agent => (
+                                  <div key={agent.url} className="flex items-center justify-between bg-black/40 rounded px-2 py-1">
+                                    <span className="text-[8px] text-[#F120F0] font-mono truncate flex-1">{agent.name}</span>
+                                    <span className={`text-[7px] font-black uppercase ml-1 ${agent.status === 'connected' ? 'text-green-400' : agent.status === 'error' ? 'text-red-400' : 'text-yellow-400'}`}>{agent.status}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -1122,10 +1181,6 @@ const Sidebar: React.FC<{
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
-            )}
-
                   {settingsTab === 'apps' && (
                     <div className="space-y-3">
                       {/* App Integrations Header */}
@@ -1200,8 +1255,19 @@ const Sidebar: React.FC<{
                                     </div>
                                   )}
 
-                                  {/* Links */}
+                                  {/* OAuth + Links */}
                                   <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {supabaseAuth.supportsOAuth(app.id) && (
+                                      <button onClick={() => {
+                                        const provider = supabaseAuth.getOAuthProvider(app.id);
+                                        if (provider) {
+                                          const scopes = supabaseAuth.getOAuthScopes(app.id);
+                                          supabaseAuth.signInWithOAuth(provider, scopes).catch(err => {
+                                            console.error('OAuth failed:', err);
+                                          });
+                                        }
+                                      }} className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-green-500/30 text-green-400 hover:border-green-400 hover:bg-green-900/20 transition-all">OAuth</button>
+                                    )}
                                     {app.docsUrl && (
                                       <a href={app.docsUrl} target="_blank" rel="noopener noreferrer" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-zinc-800 text-zinc-500 hover:border-[#F120F0] hover:text-[#F120F0] transition-all">Docs</a>
                                     )}
@@ -1230,6 +1296,9 @@ const Sidebar: React.FC<{
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer Actions */}
@@ -2402,7 +2471,11 @@ const App: React.FC = () => {
         const initialId = crypto.randomUUID();
         const initialSession: ChatSession = { id: initialId, messages: [], title: 'NEW_SESSION' };
         setSessions([initialSession]);
+        setActiveSessionId(initialId);
         localStorage.setItem(ACTIVE_ID_KEY, initialId);
+        setInput('');
+        setAttachments([]);
+        setSuggestions([]);
         setConfirmModal(null);
       }
     });
