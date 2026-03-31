@@ -237,26 +237,58 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { label: 'Cerebras DeepSeek R1 (Full 671B)', value: 'deepseek-r1', provider: 'cerebras' },
   { label: 'Cerebras Scout 17B 16E (LLaMA4)', value: 'llama-4-scout-17b-16e', provider: 'cerebras' },
 
-  // ── SILICONFLOW ──────────────────────────────────────────────────────────
+  // ── SILICONFLOW (Updated March 2026) ────────────────────────────────────
+  // Flagship & Frontier
+  { label: 'SiliconFlow GLM-5 (744B MoE Flagship)', value: 'zai-org/GLM-5', provider: 'siliconflow' },
+  { label: 'SiliconFlow MiniMax M2.5 (229B MoE)', value: 'MiniMaxAI/MiniMax-M2.5', provider: 'siliconflow' },
+  { label: 'SiliconFlow Step 3.5 Flash (196B MoE Fast)', value: 'stepfun-ai/Step-3.5-Flash', provider: 'siliconflow' },
+  { label: 'SiliconFlow Kimi K2.5 (Multimodal Agent)', value: 'moonshotai/Kimi-K2.5', provider: 'siliconflow' },
+  { label: 'SiliconFlow GLM-4.7 (355B)', value: 'zai-org/GLM-4.7', provider: 'siliconflow' },
+  // DeepSeek Series
+  { label: 'SiliconFlow DeepSeek V3.2 (Reasoning Agent)', value: 'deepseek-ai/DeepSeek-V3.2', provider: 'siliconflow' },
+  { label: 'SiliconFlow DeepSeek V3.2 Exp', value: 'deepseek-ai/DeepSeek-V3.2-Exp', provider: 'siliconflow' },
+  { label: 'SiliconFlow DeepSeek V3.1 Terminus', value: 'deepseek-ai/DeepSeek-V3.1-Terminus', provider: 'siliconflow' },
+  { label: 'SiliconFlow DeepSeek V3.1 (Hybrid Think)', value: 'deepseek-ai/DeepSeek-V3.1', provider: 'siliconflow' },
   { label: 'SiliconFlow DeepSeek V3', value: 'deepseek-ai/DeepSeek-V3', provider: 'siliconflow' },
-  { label: 'SiliconFlow DeepSeek R1', value: 'deepseek-ai/DeepSeek-R1', provider: 'siliconflow' },
+  { label: 'SiliconFlow DeepSeek R1 (Reasoning)', value: 'deepseek-ai/DeepSeek-R1', provider: 'siliconflow' },
   { label: 'SiliconFlow DeepSeek R1 Distill Qwen 32B', value: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B', provider: 'siliconflow' },
-  { label: 'SiliconFlow DeepSeek R1 Distill LLaMA 70B', value: 'deepseek-ai/DeepSeek-R1-Distill-Llama-70B', provider: 'siliconflow' },
-  { label: 'SiliconFlow Qwen3 235B A22B (MoE)', value: 'Qwen/Qwen3-235B-A22B', provider: 'siliconflow' },
-  { label: 'SiliconFlow Qwen3 30B A3B (MoE)', value: 'Qwen/Qwen3-30B-A3B', provider: 'siliconflow' },
+  { label: 'SiliconFlow DeepSeek V3.1 Nex N1 (Agent)', value: 'NexAGI/DeepSeek-V3.1-Nex-N1', provider: 'siliconflow' },
+  // GLM Series
+  { label: 'SiliconFlow GLM-4.6V (Vision+Tools)', value: 'zai-org/GLM-4.6V', provider: 'siliconflow' },
+  { label: 'SiliconFlow GLM-4.6', value: 'zai-org/GLM-4.6', provider: 'siliconflow' },
+  { label: 'SiliconFlow GLM-4.5 Air (Fast)', value: 'zai-org/GLM-4.5-Air', provider: 'siliconflow' },
+  // Qwen3 Series
+  { label: 'SiliconFlow Qwen3 235B A22B Instruct', value: 'Qwen/Qwen3-235B-A22B-Instruct-2507', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen3 235B A22B Thinking', value: 'Qwen/Qwen3-235B-A22B-Thinking-2507', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen3 Coder 480B A35B', value: 'Qwen/Qwen3-Coder-480B-A35B-Instruct', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen3 Coder 30B A3B', value: 'Qwen/Qwen3-Coder-30B-A3B-Instruct', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen3 30B A3B Instruct', value: 'Qwen/Qwen3-30B-A3B-Instruct-2507', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen3 30B A3B Thinking', value: 'Qwen/Qwen3-30B-A3B-Thinking-2507', provider: 'siliconflow' },
   { label: 'SiliconFlow Qwen3 32B', value: 'Qwen/Qwen3-32B', provider: 'siliconflow' },
   { label: 'SiliconFlow Qwen3 14B', value: 'Qwen/Qwen3-14B', provider: 'siliconflow' },
   { label: 'SiliconFlow Qwen3 8B (Fast)', value: 'Qwen/Qwen3-8B', provider: 'siliconflow' },
-  { label: 'SiliconFlow GLM-4.7 Flash', value: 'zai-org/GLM-4.7-Flash', provider: 'siliconflow' },
-  { label: 'SiliconFlow GLM-4.7', value: 'zai-org/GLM-4.7', provider: 'siliconflow' },
-  { label: 'SiliconFlow Kimi K2.5', value: 'moonshotai/Kimi-K2.5', provider: 'siliconflow' },
-  { label: 'SiliconFlow Step 3.5 Flash', value: 'stepfun-ai/Step-3.5-Flash', provider: 'siliconflow' },
-  { label: 'SiliconFlow MiniMax M2.5', value: 'MiniMaxAI/MiniMax-M2.5', provider: 'siliconflow' },
-  { label: 'SiliconFlow MiniMax M2.7', value: 'MiniMaxAI/MiniMax-M2.7', provider: 'siliconflow' },
-  { label: 'SiliconFlow LLaMA 3.3 70B Instruct', value: 'meta-llama/Llama-3.3-70B-Instruct', provider: 'siliconflow' },
-  { label: 'SiliconFlow LLaMA 4 Maverick Instruct', value: 'meta-llama/Llama-4-Maverick-17B-128E-Instruct', provider: 'siliconflow' },
-  { label: 'SiliconFlow Gemma 3 27B IT', value: 'google/gemma-3-27b-it', provider: 'siliconflow' },
-  { label: 'SiliconFlow Mistral 7B Instruct', value: 'mistralai/Mistral-7B-Instruct-v0.3', provider: 'siliconflow' },
+  { label: 'SiliconFlow QwQ 32B (Thinking)', value: 'Qwen/QwQ-32B', provider: 'siliconflow' },
+  // Qwen3 Vision
+  { label: 'SiliconFlow Qwen3 VL 235B A22B Instruct', value: 'Qwen/Qwen3-VL-235B-A22B-Instruct', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen3 VL 235B A22B Thinking', value: 'Qwen/Qwen3-VL-235B-A22B-Thinking', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen3 VL 32B Instruct', value: 'Qwen/Qwen3-VL-32B-Instruct', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen3 VL 32B Thinking', value: 'Qwen/Qwen3-VL-32B-Thinking', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen3 VL 8B Instruct', value: 'Qwen/Qwen3-VL-8B-Instruct', provider: 'siliconflow' },
+  // Qwen2.5 Legacy
+  { label: 'SiliconFlow Qwen2.5 72B Instruct', value: 'Qwen/Qwen2.5-72B-Instruct', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen2.5 7B Instruct', value: 'Qwen/Qwen2.5-7B-Instruct', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen2.5 VL 72B Instruct', value: 'Qwen/Qwen2.5-VL-72B-Instruct', provider: 'siliconflow' },
+  { label: 'SiliconFlow Qwen2.5 VL 32B Instruct', value: 'Qwen/Qwen2.5-VL-32B-Instruct', provider: 'siliconflow' },
+  // Other Providers on SiliconFlow
+  { label: 'SiliconFlow GPT-OSS 120B (OpenAI Open)', value: 'openai/gpt-oss-120b', provider: 'siliconflow' },
+  { label: 'SiliconFlow GPT-OSS 20B (OpenAI Open)', value: 'openai/gpt-oss-20b', provider: 'siliconflow' },
+  { label: 'SiliconFlow Kimi K2 Instruct', value: 'moonshotai/Kimi-K2-Instruct', provider: 'siliconflow' },
+  { label: 'SiliconFlow Kimi K2 0905', value: 'moonshotai/Kimi-K2-Instruct-0905', provider: 'siliconflow' },
+  { label: 'SiliconFlow ERNIE 4.5 300B A47B', value: 'BAIDU/ERNIE-4.5-300B-A47B', provider: 'siliconflow' },
+  { label: 'SiliconFlow Hunyuan A13B', value: 'Tencent/Hunyuan-A13B-Instruct', provider: 'siliconflow' },
+  { label: 'SiliconFlow Seed OSS 36B', value: 'ByteDance/Seed-OSS-36B-Instruct', provider: 'siliconflow' },
+  { label: 'SiliconFlow Ling Flash 2.0', value: 'inclusionAI/Ling-flash-2.0', provider: 'siliconflow' },
+  { label: 'SiliconFlow Ring Flash 2.0', value: 'inclusionAI/Ring-flash-2.0', provider: 'siliconflow' },
 
   // ── TOGETHER AI ──────────────────────────────────────────────────────────
   { label: 'Together Qwen3.5 397B A17B (MoE)', value: 'qwen/qwen3.5-397b-a17b-instruct', provider: 'together' },
@@ -345,33 +377,38 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { label: 'Claude 3 Opus (Deep Reasoning)', value: 'claude-3-opus-latest', provider: 'anthropic' },
   { label: 'Claude 5 Preview (Next Gen)', value: 'claude-5-preview', provider: 'anthropic' },
 
-  // ── DEEPSEEK OFFICIAL (2026) ─────────────────────────────────────────────
-  { label: 'DeepSeek-V4 (Multimodal Flagship)', value: 'deepseek-v4', provider: 'deepseek' },
-  { label: 'DeepSeek-V3-0324 (Enhanced)', value: 'deepseek-v3-0324', provider: 'deepseek' },
-  { label: 'DeepSeek-V3 (Stable)', value: 'deepseek-chat', provider: 'deepseek' },
-  { label: 'DeepSeek-R2 (Next-Gen Reasoning)', value: 'deepseek-r2', provider: 'deepseek' },
-  { label: 'DeepSeek-R1 (Full Reasoning)', value: 'deepseek-reasoner', provider: 'deepseek' },
-  { label: 'DeepSeek-R1-0528 (Latest)', value: 'deepseek-r1-0528', provider: 'deepseek' },
-  { label: 'DeepSeek V3.1 Terminus (Thinking)', value: 'deepseek-v3.1-terminus', provider: 'deepseek' },
-  { label: 'DeepSeek Coder (Code Specialist)', value: 'deepseek-coder', provider: 'deepseek' },
+  // ── DEEPSEEK OFFICIAL (Updated March 2026) ─────────────────────────────────
+  { label: 'DeepSeek V3.2 (164K Flagship)', value: 'deepseek-chat', provider: 'deepseek' },
+  { label: 'DeepSeek V3.2 Reasoning (DeepThink)', value: 'deepseek-reasoner', provider: 'deepseek' },
+  { label: 'DeepSeek V3.1 (Output Heavy)', value: 'deepseek-v3.1', provider: 'deepseek' },
+  { label: 'DeepSeek V3 (Legacy Budget)', value: 'deepseek-v3-0324', provider: 'deepseek' },
+  { label: 'DeepSeek R1 (Full Reasoning 671B)', value: 'deepseek-r1', provider: 'deepseek' },
+  { label: 'DeepSeek R1-0528 (Improved)', value: 'deepseek-r1-0528', provider: 'deepseek' },
+  { label: 'DeepSeek Coder V2 (Code MoE)', value: 'deepseek-coder', provider: 'deepseek' },
   { label: 'DeepSeek Prover V2 (Math)', value: 'deepseek-prover-v2', provider: 'deepseek' },
 
-  // ── MISTRAL OFFICIAL (2026) ──────────────────────────────────────────────
-  { label: 'Mistral Large 2 (Latest Flagship)', value: 'mistral-large-latest', provider: 'mistral' },
-  { label: 'Mistral Large 2407 (Stable)', value: 'mistral-large-2407', provider: 'mistral' },
+  // ── MISTRAL OFFICIAL (Updated March 2026) ──────────────────────────────────
+  // Frontier Models
+  { label: 'Mistral Large 3 (675B MoE Flagship)', value: 'mistral-large-latest', provider: 'mistral' },
+  { label: 'Mistral Medium 3.1 (Multimodal)', value: 'mistral-medium-2508', provider: 'mistral' },
+  { label: 'Mistral Medium 3 (Multimodal)', value: 'mistral-medium-2505', provider: 'mistral' },
   { label: 'Mistral Small 4 (Hybrid Latest)', value: 'mistral-small-latest', provider: 'mistral' },
-  { label: 'Mistral Small 3.2 (Efficient)', value: 'mistral-small-2409', provider: 'mistral' },
-  { label: 'Mistral Nemo 12B (Edge)', value: 'open-mistral-nemo', provider: 'mistral' },
-  { label: 'Mistral 7B Instruct (Fast)', value: 'open-mistral-7b', provider: 'mistral' },
-  { label: 'Magistral 1.2 (Reasoning)', value: 'magistral-latest', provider: 'mistral' },
-  { label: 'Magistral Small 24B', value: 'magistral-small-latest', provider: 'mistral' },
-  { label: 'Devstral 2 123B (Coding Agent)', value: 'devstral-latest', provider: 'mistral' },
+  // Reasoning
+  { label: 'Magistral Medium 1.2 (Reasoning+Vision)', value: 'magistral-medium-2509', provider: 'mistral' },
+  { label: 'Magistral Small 24B (Reasoning)', value: 'magistral-small-latest', provider: 'mistral' },
+  // Coding
+  { label: 'Devstral 2 Medium (Coding Agent)', value: 'devstral-medium-2507', provider: 'mistral' },
   { label: 'Devstral Small 2 24B (Efficient)', value: 'devstral-small-2-latest', provider: 'mistral' },
+  { label: 'Codestral 2508 (256K Code)', value: 'codestral-2508', provider: 'mistral' },
+  // Multimodal & Vision
   { label: 'Pixtral Large (Multimodal)', value: 'pixtral-large-latest', provider: 'mistral' },
   { label: 'Pixtral 12B (Vision Fast)', value: 'pixtral-12b-2409', provider: 'mistral' },
-  { label: 'Codestral (Code Specialist)', value: 'codestral-latest', provider: 'mistral' },
+  { label: 'Mistral OCR (Document AI)', value: 'mistral-ocr-2505', provider: 'mistral' },
+  // Edge Models
   { label: 'Ministral 3B (Edge)', value: 'ministral-3b-latest', provider: 'mistral' },
   { label: 'Ministral 8B (Edge)', value: 'ministral-8b-latest', provider: 'mistral' },
+  // Audio
+  { label: 'Voxtral Mini (Transcription)', value: 'voxtral-mini-2507', provider: 'mistral' },
 
   // ── PERPLEXITY (2026) ────────────────────────────────────────────────────
   { label: 'Perplexity Sonar Reasoning Pro (Search)', value: 'sonar-reasoning-pro', provider: 'perplexity' },
@@ -380,15 +417,15 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { label: 'Perplexity Sonar (Fast Search)', value: 'sonar', provider: 'perplexity' },
   { label: 'Perplexity R1 1776 (Uncensored)', value: 'r1-1776', provider: 'perplexity' },
 
-  // ── XAI / GROK (2026) ─────────────────────────────────────────────────────
-  { label: 'Grok-5 (AGI Preview)', value: 'grok-5', provider: 'xai' },
+  // ── XAI / GROK (Updated March 2026) ─────────────────────────────────────────
+  { label: 'Grok-4.20 (Multi-Agent Flagship)', value: 'grok-4.20', provider: 'xai' },
+  { label: 'Grok-4.1 (3T MoE Current)', value: 'grok-4.1', provider: 'xai' },
+  { label: 'Grok-4.1 Mini (Fast 400B MoE)', value: 'grok-4.1-mini', provider: 'xai' },
+  { label: 'Grok-4.1 Fast (2M Context)', value: 'grok-4.1-fast', provider: 'xai' },
+  { label: 'Grok Code Fast (Coding Specialist)', value: 'grok-code-fast', provider: 'xai' },
   { label: 'Grok-4 (Colossus Reasoning)', value: 'grok-4', provider: 'xai' },
-  { label: 'Grok-4.20 (Quad-Agent)', value: 'grok-4.20', provider: 'xai' },
-  { label: 'Grok-3 (Flagship)', value: 'grok-3', provider: 'xai' },
-  { label: 'Grok-3 Mini (Thinking Fast)', value: 'grok-3-mini', provider: 'xai' },
-  { label: 'Grok-2-1212 (Stable)', value: 'grok-2-1212', provider: 'xai' },
-  { label: 'Grok-2 Vision (Multimodal)', value: 'grok-2-vision-1212', provider: 'xai' },
-  { label: 'Grok-2 Latest', value: 'grok-2-latest', provider: 'xai' },
+  { label: 'Grok-3 (Legacy)', value: 'grok-3', provider: 'xai' },
+  { label: 'Grok-3 Mini (Legacy Fast)', value: 'grok-3-mini', provider: 'xai' },
 
   // ── MOONSHOT AI (2026) ───────────────────────────────────────────────────
   { label: 'Kimi K2.5 (Flagship Agentic)', value: 'kimi-k2.5', provider: 'moonshot' },

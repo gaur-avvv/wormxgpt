@@ -12,6 +12,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@a2a-js/sdk": "^0.3.13",
     "@faker-js/faker": "^9.9.0",
     "@google/adk": "^0.5.0",
     "@google/genai": "^1.37.0",

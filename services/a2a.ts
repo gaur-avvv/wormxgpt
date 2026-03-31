@@ -1,32 +1,26 @@
 // ── A2A (Agent-to-Agent) Protocol Service ────────────────────────────────────
-// Implements A2A protocol support for agent-to-agent communication.
-// Allows xgpt to act as both an A2A client (discover & talk to other agents)
-// and expose itself as an A2A-compatible agent endpoint.
-// Reference: https://github.com/a2a-js/sdk
+// Implements A2A protocol support for agent-to-agent communication using the
+// official @a2a-js/sdk. Uses ClientFactory for automatic agent card discovery
+// and transport negotiation (JSON-RPC, HTTP+JSON, gRPC).
+// Reference: https://github.com/a2aproject/a2a-js
 
-export interface A2AAgentCard {
-  name: string;
-  description: string;
-  url: string;
-  protocolVersion: string;
-  version: string;
-  skills: { id: string; name: string; description: string; tags: string[] }[];
-  capabilities: {
-    streaming?: boolean;
-    pushNotifications?: boolean;
-    stateTransitionHistory?: boolean;
-  };
-  defaultInputModes: string[];
-  defaultOutputModes: string[];
-}
+import { ClientFactory } from '@a2a-js/sdk/client';
+import type { Client } from '@a2a-js/sdk/client';
+import type {
+  AgentCard,
+  Message,
+  MessageSendParams,
+  Task,
+  TaskStatusUpdateEvent,
+  TaskArtifactUpdateEvent,
+} from '@a2a-js/sdk';
 
-export interface A2AMessage {
-  messageId: string;
-  role: 'user' | 'agent';
-  parts: A2AMessagePart[];
-  kind: 'message';
-  contextId?: string;
-}
+// ── Re-exported types for backward compatibility ────────────────────────────
+// These map SDK types to the names used throughout the xgpt codebase.
+
+export type A2AAgentCard = AgentCard;
+
+export type A2AMessage = Message;
 
 export interface A2AMessagePart {
   kind: 'text' | 'data' | 'file';
@@ -35,18 +29,7 @@ export interface A2AMessagePart {
   file?: { name: string; mimeType: string; bytes: string };
 }
 
-export interface A2ATask {
-  kind: 'task';
-  id: string;
-  contextId: string;
-  status: {
-    state: 'submitted' | 'working' | 'completed' | 'failed' | 'canceled';
-    timestamp: string;
-    message?: A2AMessage;
-  };
-  artifacts?: A2AArtifact[];
-  history?: A2AMessage[];
-}
+export type A2ATask = Task;
 
 export interface A2AArtifact {
   artifactId: string;
@@ -55,15 +38,16 @@ export interface A2AArtifact {
 }
 
 export type A2AEvent =
-  | A2AMessage
-  | A2ATask
-  | { kind: 'status-update'; taskId: string; contextId: string; status: A2ATask['status']; final: boolean }
-  | { kind: 'artifact-update'; taskId: string; contextId: string; artifact: A2AArtifact };
+  | Message
+  | Task
+  | TaskStatusUpdateEvent
+  | TaskArtifactUpdateEvent;
 
 type A2AConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
 interface A2AAgentState {
-  card: A2AAgentCard;
+  card: AgentCard;
+  client: Client;
   status: A2AConnectionStatus;
   error?: string;
   lastPing?: number;
@@ -72,8 +56,7 @@ interface A2AAgentState {
 class A2AService {
   private agents: Map<string, A2AAgentState> = new Map();
   private _enabled = false;
-  private readonly DISCOVER_TIMEOUT = 10000;
-  private readonly SEND_TIMEOUT = 30000;
+  private factory: ClientFactory = new ClientFactory();
 
   get enabled(): boolean {
     return this._enabled;
@@ -86,7 +69,7 @@ class A2AService {
     }
   }
 
-  get connectedAgents(): A2AAgentCard[] {
+  get connectedAgents(): AgentCard[] {
     return Array.from(this.agents.values())
       .filter(a => a.status === 'connected')
       .map(a => a.card);
@@ -100,7 +83,7 @@ class A2AService {
     return this.agents.get(this.normalizeUrl(url))?.status ?? 'disconnected';
   }
 
-  getAgentCard(url: string): A2AAgentCard | undefined {
+  getAgentCard(url: string): AgentCard | undefined {
     return this.agents.get(this.normalizeUrl(url))?.card;
   }
 
@@ -117,205 +100,159 @@ class A2AService {
     }
   }
 
-  async discoverAgent(baseUrl: string): Promise<A2AAgentCard | null> {
+  /**
+   * Discover an A2A agent using the SDK's ClientFactory.
+   * createFromUrl automatically fetches /.well-known/agent-card.json
+   * and negotiates the best transport (JSON-RPC, HTTP+JSON, or gRPC).
+   */
+  async discoverAgent(baseUrl: string): Promise<AgentCard | null> {
     if (!this._enabled) return null;
 
     const normalizedUrl = this.normalizeUrl(baseUrl);
+
+    // Set connecting state
     this.agents.set(normalizedUrl, {
-      card: { name: '', description: '', url: normalizedUrl, protocolVersion: '', version: '', skills: [], capabilities: {}, defaultInputModes: [], defaultOutputModes: [] },
+      card: { name: '', description: '', url: normalizedUrl, protocolVersion: '', version: '', skills: [], capabilities: {}, defaultInputModes: [], defaultOutputModes: [] } as AgentCard,
+      client: null as unknown as Client,
       status: 'connecting',
     });
 
     try {
-      const cardUrl = `${normalizedUrl}/.well-known/agent-card.json`;
-      const response = await fetch(cardUrl, {
-        signal: AbortSignal.timeout(this.DISCOVER_TIMEOUT),
-        headers: { 'Accept': 'application/json' },
-      });
+      // SDK handles agent card discovery and transport selection automatically
+      const client = await this.factory.createFromUrl(baseUrl);
+      const card = await client.getAgentCard();
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const card: A2AAgentCard = await response.json();
       this.agents.set(normalizedUrl, {
-        card: { ...card, url: card.url || normalizedUrl },
+        card,
+        client,
         status: 'connected',
         lastPing: Date.now(),
       });
 
       console.log(`[A2A] Discovered agent: ${card.name} at ${normalizedUrl}`);
       return card;
-    } catch (err: any) {
-      console.error(`[A2A] Failed to discover agent at ${normalizedUrl}:`, err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[A2A] Failed to discover agent at ${normalizedUrl}:`, message);
       this.agents.set(normalizedUrl, {
-        card: { name: normalizedUrl, description: '', url: normalizedUrl, protocolVersion: '', version: '', skills: [], capabilities: {}, defaultInputModes: [], defaultOutputModes: [] },
+        card: { name: normalizedUrl, description: '', url: normalizedUrl, protocolVersion: '', version: '', skills: [], capabilities: {}, defaultInputModes: [], defaultOutputModes: [] } as AgentCard,
+        client: null as unknown as Client,
         status: 'error',
-        error: err.message,
+        error: message,
       });
       return null;
     }
   }
 
   /**
-   * Send a message to an A2A agent and get a response
+   * Send a message to an A2A agent using the SDK client.
+   * The SDK handles JSON-RPC framing, transport selection, and error handling.
    */
-  async sendMessage(agentUrl: string, text: string, contextId?: string): Promise<A2AMessage | A2ATask | null> {
+  async sendMessage(agentUrl: string, text: string, contextId?: string): Promise<Message | Task | null> {
     if (!this._enabled) return null;
 
     const state = this.agents.get(this.normalizeUrl(agentUrl));
-    if (!state || state.status !== 'connected') {
+    if (!state || state.status !== 'connected' || !state.client) {
       console.warn(`[A2A] Agent not connected: ${agentUrl}`);
       return null;
     }
 
-    const messageId = crypto.randomUUID();
-    const sendParams = {
-      jsonrpc: '2.0',
-      method: 'message/send',
-      id: messageId,
-      params: {
-        message: {
-          messageId,
-          role: 'user' as const,
-          parts: [{ kind: 'text' as const, text }],
-          kind: 'message' as const,
-          ...(contextId ? { contextId } : {}),
-        },
+    const sendParams: MessageSendParams = {
+      message: {
+        messageId: crypto.randomUUID(),
+        role: 'user',
+        parts: [{ kind: 'text', text }],
+        kind: 'message',
+        ...(contextId ? { contextId } : {}),
       },
     };
 
     try {
-      // Determine the JSON-RPC endpoint
-      const rpcUrl = state.card.url || `${agentUrl}/a2a/jsonrpc`;
-
-      const response = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sendParams),
-        signal: AbortSignal.timeout(this.SEND_TIMEOUT),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-
-      if (result.error) {
-        throw new Error(`JSON-RPC error ${result.error.code}: ${result.error.message}`);
-      }
-
+      const result = await state.client.sendMessage(sendParams);
       state.lastPing = Date.now();
-      return result.result as A2AMessage | A2ATask;
-    } catch (err: any) {
-      console.error(`[A2A] Send message failed for ${agentUrl}:`, err.message);
+      return result;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[A2A] Send message failed for ${agentUrl}:`, message);
       state.status = 'error';
-      state.error = err.message;
+      state.error = message;
       return null;
     }
   }
 
   /**
-   * Stream a message to an A2A agent using SSE
+   * Stream a message to an A2A agent using the SDK's streaming support.
+   * The SDK handles SSE parsing, transport fallback, and event deserialization.
    */
   async *streamMessage(agentUrl: string, text: string, contextId?: string): AsyncGenerator<A2AEvent> {
     if (!this._enabled) return;
 
     const state = this.agents.get(this.normalizeUrl(agentUrl));
-    if (!state || state.status !== 'connected') {
+    if (!state || state.status !== 'connected' || !state.client) {
       console.warn(`[A2A] Agent not connected: ${agentUrl}`);
       return;
     }
 
-    const messageId = crypto.randomUUID();
-    const sendParams = {
-      jsonrpc: '2.0',
-      method: 'message/stream',
-      id: messageId,
-      params: {
-        message: {
-          messageId,
-          role: 'user' as const,
-          parts: [{ kind: 'text' as const, text }],
-          kind: 'message' as const,
-          ...(contextId ? { contextId } : {}),
-        },
+    const sendParams: MessageSendParams = {
+      message: {
+        messageId: crypto.randomUUID(),
+        role: 'user',
+        parts: [{ kind: 'text', text }],
+        kind: 'message',
+        ...(contextId ? { contextId } : {}),
       },
     };
 
     try {
-      const rpcUrl = state.card.url || `${agentUrl}/a2a/jsonrpc`;
+      const stream = state.client.sendMessageStream(sendParams);
 
-      const response = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        },
-        body: JSON.stringify(sendParams),
-        signal: AbortSignal.timeout(this.SEND_TIMEOUT),
-      });
-
-      if (!response.ok || !response.body) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const event = JSON.parse(line.slice(6));
-              yield event as A2AEvent;
-            } catch {
-              // Skip malformed events
-            }
-          }
-        }
+      for await (const event of stream) {
+        yield event as A2AEvent;
       }
 
       state.lastPing = Date.now();
-    } catch (err: any) {
-      console.error(`[A2A] Stream failed for ${agentUrl}:`, err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[A2A] Stream failed for ${agentUrl}:`, message);
       state.status = 'error';
-      state.error = err.message;
+      state.error = message;
     }
   }
 
   /**
-   * Disconnect from an A2A agent
+   * Disconnect from an A2A agent, closing the underlying transport.
    */
   disconnect(url: string): void {
+    const state = this.agents.get(this.normalizeUrl(url));
+    if (state?.client) {
+      try { (state.client as any).close?.(); } catch (_) { /* best-effort */ }
+    }
     this.agents.delete(this.normalizeUrl(url));
   }
 
   /**
-   * Disconnect from all A2A agents
+   * Disconnect from all A2A agents, closing all transports.
    */
   disconnectAll(): void {
+    for (const state of this.agents.values()) {
+      if (state.client) {
+        try { (state.client as any).close?.(); } catch (_) { /* best-effort */ }
+      }
+    }
     this.agents.clear();
   }
 
   /**
-   * Get the xgpt agent card (for exposing as A2A server)
+   * Get the xgpt agent card (for exposing as A2A server).
+   * The SDK handles /.well-known/agent-card.json serving; the url field
+   * points to the base URL and the SDK appends the transport path automatically.
    */
-  getLocalAgentCard(): A2AAgentCard {
+  getLocalAgentCard(): AgentCard {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
     return {
       name: 'xgpt',
       description: 'AI chat agent with multi-provider LLM support, MCP tools, and app integrations',
-      url: `${baseUrl}/a2a/jsonrpc`,
+      url: baseUrl,
       protocolVersion: '0.3.0',
       version: '2.3.0',
       skills: [
@@ -330,7 +267,7 @@ class A2AService {
       },
       defaultInputModes: ['text'],
       defaultOutputModes: ['text'],
-    };
+    } as AgentCard;
   }
 
   /**
