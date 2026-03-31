@@ -1658,6 +1658,7 @@ const App: React.FC = () => {
   const [autocomplete, setAutocomplete] = useState<{ visible: boolean; type: 'model' | 'tool' | null; query: string; index: number }>({ visible: false, type: null, query: '', index: 0 });
 
   const voiceServiceRef = useRef<VoiceModeService | null>(null);
+  const isRemoteUpdateRef = useRef(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -1676,10 +1677,11 @@ const App: React.FC = () => {
   // Sync Persistence Hooks — debounced to prevent excessive writes
   useEffect(() => {
     sessionSync.debouncedSave(SESSIONS_KEY, sessions, 300);
-    // Broadcast to other tabs
-    if (activeSessionId) {
+    // Broadcast to other tabs — skip if this update came from another tab
+    if (activeSessionId && !isRemoteUpdateRef.current) {
       sessionSync.broadcastSessionUpdate(activeSessionId, sessions);
     }
+    isRemoteUpdateRef.current = false;
   }, [sessions, activeSessionId]);
 
   useEffect(() => {
@@ -1823,6 +1825,7 @@ const App: React.FC = () => {
     // Listen for cross-tab session updates
     const unsubSessionUpdate = sessionSync.on('session_update', (event) => {
       if (event.data && Array.isArray(event.data)) {
+        isRemoteUpdateRef.current = true;
         setSessions(event.data as ChatSession[]);
       }
     });

@@ -185,8 +185,12 @@ class SessionSyncService {
         console.warn('[SessionSync] Trimmed sessions due to storage quota');
       } catch (_e) {
         // If still failing, keep only last 5
-        const minimal = data.slice(-5);
-        localStorage.setItem(key, JSON.stringify(minimal));
+        try {
+          const minimal = data.slice(-5);
+          localStorage.setItem(key, JSON.stringify(minimal));
+        } catch (_e2) {
+          console.error('[SessionSync] Cannot save even minimal sessions — storage full');
+        }
       }
     }
   }

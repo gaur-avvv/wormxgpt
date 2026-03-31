@@ -33,7 +33,7 @@ class CacheService {
     this.redisToken = token;
     // Upstash REST API URL derived from token or explicit URL
     this.redisUrl = url || '';
-    this.initialized = !!token;
+    this.initialized = !!(token && this.redisUrl);
     if (this.initialized) {
       this.stats.provider = 'redis';
       console.log('[Cache] Redis cache configured');
