@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
+// rehypeRaw removed: was an XSS vector allowing raw HTML injection from untrusted LLM output
 import 'katex/dist/katex.min.css';
 import { Message, AppSettings, ChatSession } from './types';
 import { DEFAULT_SYSTEM_INSTRUCTION, SUGGESTED_PROMPTS, MODEL_OPTIONS, AUDIO_MODELS, IMAGE_MODELS, VIDEO_MODELS, DEFAULT_MCP_SERVERS } from './constants';
@@ -355,16 +355,17 @@ const DynamicStatusIndicators: React.FC<{
   // Red text colors  
   const textColors = ['#ff4444', '#ff5555', '#ff3333', '#ff6666'];
 
+  // Mount once — uptime should never reset
   useEffect(() => {
-    // Update uptime every second
     const uptimeInterval = setInterval(() => {
       setUptime(prev => prev + 1);
     }, 1000);
-
-    // Simulate data transfer based on messages
-    setDataTransferred(messageCount * 2.4 + Math.random() * 0.5);
-
     return () => clearInterval(uptimeInterval);
+  }, []);
+
+  // Separate data tracking effect (updates when messages change)
+  useEffect(() => {
+    setDataTransferred(messageCount * 2.4);
   }, [messageCount]);
 
   const formatUptime = (seconds: number) => {
@@ -779,6 +780,24 @@ const Sidebar: React.FC<{
                 <div className="p-3 space-y-3">
                   {settingsTab === 'params' && (
                     <>
+                      {/* Param Presets */}
+                      <div className="grid grid-cols-4 gap-1 mb-2">
+                        {[
+                          { label: 'PRECISE', color: '#60a5fa', values: { temperature: 0.2, topP: 0.3, presencePenalty: 0, frequencyPenalty: 0 } },
+                          { label: 'BALANCED', color: '#4ade80', values: { temperature: 0.7, topP: 0.9, presencePenalty: 0.1, frequencyPenalty: 0.1 } },
+                          { label: 'CREATIVE', color: '#F120F0', values: { temperature: 1.0, topP: 0.95, presencePenalty: 0.3, frequencyPenalty: 0.2 } },
+                          { label: 'CHAOTIC', color: '#f97316', values: { temperature: 1.3, topP: 1.0, presencePenalty: 0.5, frequencyPenalty: 0.5 } },
+                        ].map(preset => (
+                          <button
+                            key={preset.label}
+                            onClick={() => setSettings(prev => ({ ...prev, ...preset.values }))}
+                            className="py-1 text-[7px] font-black uppercase tracking-wider rounded border-2 transition-all hover:scale-105 hover:shadow-[0_0_10px_rgba(255,255,255,0.2)] active:scale-95"
+                            style={{ borderColor: preset.color + '80', color: preset.color, background: preset.color + '15' }}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
                       <div className="space-y-1">
                         <div className="flex justify-between"><label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Temp</label><span className="text-[10px] text-[#F120F0] font-mono">{((settings as any)?.temperature || 0.87).toFixed(1)}</span></div>
                         <p className="text-[8px] text-[#F120F0]/40 font-mono leading-tight">Controls randomness. Higher = more creative, lower = more focused</p>
@@ -1307,7 +1326,7 @@ const ChatMessage: React.FC<{ message: Message; settings: AppSettings }> = React
           <div className="markdown-content selection:bg-red-500 selection:text-black">
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeKatex, rehypeRaw]}
+              rehypePlugins={[rehypeKatex]}
               components={{
                 code({ node, className, children, ...props }: any) {
                   // Don't process math expressions (they're handled by KaTeX)
@@ -1902,13 +1921,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Auto-resize textarea
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.style.height = 'auto';
-      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 200)}px`;
-    }
-  }, [input]);
+  // NOTE: Duplicate auto-resize removed — handled at line 1834
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -2313,19 +2326,42 @@ const App: React.FC = () => {
         }
       }
     } catch (err: any) {
-      console.error('Chat error:', err);
-      const errorMsg = err?.response?.status === 429
-        ? 'Rate limited by API. Try again in a moment.'
-        : err?.response?.status === 401 || err?.code === 400
-          ? `Invalid ${settings.aiProvider.toUpperCase()} API key. Check your credentials in the AI Provider section.`
-          : err?.message || 'Failed to get response. Check API key, model selection, and network connection.';
+      // Sanitize error to never leak raw API keys
+      const status = err?.response?.status || err?.status;
+      const isAborted = err?.name === 'AbortError';
 
-      // Display error message in chat
+      let errorCode = 'UNKNOWN_ERROR';
+      let errorMsg = err?.message || 'Connection severed. Check your API key and network.';
+
+      if (isAborted) {
+        // User-initiated abort — show brief notice, not an error
+        errorMsg = '[STREAM_INTERRUPTED] Generation halted by user.';
+        errorCode = 'ABORT';
+      } else if (status === 401 || status === 403) {
+        errorMsg = `AUTH_ERROR — Invalid or expired ${(settings.aiProvider || 'API').toUpperCase()} key. Verify in Settings → API Keys.`;
+        errorCode = 'AUTH_FAILED';
+      } else if (status === 429) {
+        errorMsg = `RATE_LIMITED — ${(settings.aiProvider || 'API').toUpperCase()} quota exceeded. Retry in a moment.`;
+        errorCode = 'RATE_LIMIT';
+      } else if (status === 500 || status === 503) {
+        errorMsg = `PROVIDER_ERROR — ${(settings.aiProvider || 'Provider').toUpperCase()} server error (${status}). Try another model or wait.`;
+        errorCode = 'PROVIDER_DOWN';
+      } else if (errorMsg.toLowerCase().includes('context') || errorMsg.toLowerCase().includes('token')) {
+        errorMsg = `CONTEXT_OVERFLOW — Message history too long. Purge the session or reduce attached context.`;
+        errorCode = 'CTX_OVERFLOW';
+      } else if (errorMsg.toLowerCase().includes('key') || errorMsg.toLowerCase().includes('unauthorized')) {
+        errorMsg = `AUTH_ERROR — API key issue for ${(settings.aiProvider || 'provider').toUpperCase()}.`;
+        errorCode = 'AUTH_FAILED';
+      }
+
+      // Never log raw API keys or auth headers
+      console.error('[WGPT_ERROR]', errorCode, status || '');
+
       setSessions(prev => prev.map(s => s.id === activeSessionId ? {
         ...s,
         messages: s.messages.map((m, idx) => idx === s.messages.length - 1 ? {
           ...m,
-          content: `[SYSTEM ERROR] Connection to main terminal severed: ${errorMsg}`,
+          content: isAborted ? errorMsg : `\`\`\`\n[${errorCode}]\n>${errorMsg}\n\`\`\``,
         } : m)
       } : s));
     } finally {
