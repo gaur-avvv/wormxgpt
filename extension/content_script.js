@@ -123,16 +123,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   }
   
-  else if (request.action === 'ACTION' && currentAgentMode === 'AUTOPILOT') {
+  else if (request.action === 'ACTION') {
     // Intercepted interaction
-    const el = document.querySelector(request.selector) || actionMap[request.selector];
+    let el = document.querySelector(request.selector) || actionMap[request.selector];
+    
+    // Fallback: If it's an ID from actionMap, ensure it works.
+    if (!el && request.selector && request.selector.startsWith('act_')) {
+       el = actionMap[request.selector];
+    }
+    
     if (!el) {
       sendResponse({ status: 'element_not_found' });
       return;
     }
 
     if (request.type === 'click') {
-      el.click();
+      try { el.click(); } catch(e) {}
     } else if (request.type === 'fill') {
       el.value = request.value;
       el.dispatchEvent(new Event('input', { bubbles: true }));
