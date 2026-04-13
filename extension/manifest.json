@@ -9,7 +9,11 @@
     "storage",
     "sidePanel",
     "tabs",
-    "webNavigation"
+    "webNavigation",
+    "history",
+    "bookmarks",
+    "webRequest",
+    "clipboardWrite"
   ],
   "host_permissions": [
     "<all_urls>"

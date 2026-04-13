@@ -213,7 +213,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         await auditLog('AGENT_START', targetTab.url, { mode: request.mode });
 
-        const storage = await chrome.storage.local.get(['wgpt_ext_provider', 'wgpt_ext_model', 'wgpt_ext_apikey', 'wgpt_ext_prompt']);
+        const storage = await chrome.storage.local.get(['wgpt_ext_provider', 'wgpt_ext_model', 'wgpt_ext_model_override', 'wgpt_ext_apikey', 'wgpt_ext_prompt']);
         
         let customPrompt = storage.wgpt_ext_prompt ? `\n[CUSTOM DIRECTIVE: ${storage.wgpt_ext_prompt}]\n` : '';
 
@@ -258,15 +258,46 @@ Using the tools provided, analyze or interact with the page as requested. If usi
                properties: { url: { type: "string" } },
                required: ["url"]
              }
+          },
+          {
+             name: "get_windows_and_tabs",
+             description: "List all currently open browser windows and tabs.",
+             input_schema: { type: "object", properties: {} }
+          },
+          {
+             name: "chrome_close_tabs",
+             description: "Close specific tabs.",
+             input_schema: { type: "object", properties: { tabIds: { type: "array", items: { type: "number" } } } }
+          },
+          {
+             name: "chrome_switch_tab",
+             description: "Switch to a specific browser tab.",
+             input_schema: { type: "object", properties: { tabId: { type: "number" } }, required: ["tabId"] }
+          },
+          {
+             name: "chrome_history",
+             description: "Search browser history.",
+             input_schema: { type: "object", properties: { text: { type: "string" }, maxResults: { type: "number" } }, required: ["text"] }
+          },
+          {
+             name: "chrome_bookmark_search",
+             description: "Search bookmarks.",
+             input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] }
+          },
+          {
+             name: "chrome_screenshot",
+             description: "Take a screenshot of the active tab (returns base64).",
+             input_schema: { type: "object", properties: {} }
           }
         ];
 
         // Send to LLM Provider
+        const resolvedModel = storage.wgpt_ext_model_override || storage.wgpt_ext_model;
         const reply = await callLLMAPI(
            [{ role: 'user', content: request.userQuery }], 
            system, 
            tools,
-           { provider: storage.wgpt_ext_provider, model: storage.wgpt_ext_model, apiKey: storage.wgpt_ext_apikey }
+           { provider: storage.wgpt_ext_provider, model: resolvedModel, apiKey: storage.wgpt_ext_apikey }
         );
         
         let toolExecutions = [];
@@ -285,13 +316,30 @@ Using the tools provided, analyze or interact with the page as requested. If usi
                 chrome.tabs.sendMessage(targetTab.id, { action: 'ACTION', selector: tool.input.selector, type: tool.input.type, value: tool.input.value });
                 toolExecutions.push(`Tool 'action' (${tool.input.type}) dispatched.`);
              } else if (tool.name === 'browser_navigate') {
-                // Validate domain safety before blindly navigating
                 if (isSafeDomain(tool.input.url)) {
                    chrome.tabs.update(targetTab.id, { url: tool.input.url });
                    toolExecutions.push(`Tool 'navigate' to (${tool.input.url}) dispatched.`);
                 } else {
-                   toolExecutions.push(`Tool 'navigate' blocked (Unsafe URL: ${tool.input.url}).`);
+                   toolExecutions.push(`Tool 'navigate' blocked.`);
                 }
+             } else if (tool.name === 'get_windows_and_tabs') {
+                const windows = await chrome.windows.getAll({ populate: true });
+                toolExecutions.push(`Found ${windows.length} windows.`);
+             } else if (tool.name === 'chrome_switch_tab') {
+                await chrome.tabs.update(tool.input.tabId, { active: true });
+                toolExecutions.push(`Switched to tab ${tool.input.tabId}.`);
+             } else if (tool.name === 'chrome_close_tabs') {
+                await chrome.tabs.remove(tool.input.tabIds);
+                toolExecutions.push(`Closed tabs: ${tool.input.tabIds}`);
+             } else if (tool.name === 'chrome_history') {
+                const results = await chrome.history.search({ text: tool.input.text, maxResults: tool.input.maxResults || 20 });
+                toolExecutions.push(`Searched history: found ${results.length} matches.`);
+             } else if (tool.name === 'chrome_bookmark_search') {
+                const results = await chrome.bookmarks.search(tool.input.query);
+                toolExecutions.push(`Searched bookmarks: found ${results.length} matches.`);
+             } else if (tool.name === 'chrome_screenshot') {
+                const dataUrl = await chrome.tabs.captureVisibleTab(targetTab.windowId, { format: 'png' });
+                toolExecutions.push(`Captured screenshot base64 (${dataUrl.length} bytes).`);
              }
           }
         }
