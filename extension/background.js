@@ -73,15 +73,35 @@ async function callLLMAPI(messages, systemInstruction, toolDefinitions, config) 
   } else if (provider === 'gemini') {
     url = url.replace('{MODEL}', model || 'gemini-2.5-flash').replace('{KEY}', apiKey);
     let geminiMessages = messages.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] }));
-    geminiMessages.unshift({ role: 'user', parts: [{ text: `SYSTEM INSTRUCTION:\n${systemInstruction}` }]});
     
-    let geminiTools = toolDefinitions.map(t => ({
-      name: t.name,
-      description: t.description,
-      parameters: t.input_schema
-    }));
+    // Convert JSON schemas to Gemini OpenAPI strict format
+    let geminiTools = toolDefinitions.map(t => {
+      // Create deep clone
+      let parameters = JSON.parse(JSON.stringify(t.input_schema));
+      // Gemini REST parser requires type to be uppercase string for some older regions, but lowercase is valid in v1beta.
+      // E.g., type: "OBJECT"
+      if (parameters.type) parameters.type = parameters.type.toUpperCase();
+      if (parameters.properties) {
+         for (let key in parameters.properties) {
+            if (parameters.properties[key].type) {
+               parameters.properties[key].type = parameters.properties[key].type.toUpperCase();
+            }
+         }
+      }
+      return {
+         name: t.name,
+         description: t.description,
+         parameters: parameters
+      };
+    });
 
-    body = { contents: geminiMessages, tools: [{ functionDeclarations: geminiTools }] };
+    const agenticPrompt = systemInstruction + `\n\nCRITICAL INSTRUCTION: You must act as an autonomous browser agent. Use your Tools to accomplish the user's objective. YOU MUST output a step-by-step 'Chain of Thought' reasoning as plain text first before executing any function call!`;
+
+    body = { 
+      systemInstruction: { parts: [{ text: agenticPrompt }] },
+      contents: geminiMessages, 
+      tools: [{ functionDeclarations: geminiTools }] 
+    };
   } else {
     // Standard OpenAI compatible generic interface
     headers['Authorization'] = `Bearer ${apiKey}`;
@@ -104,7 +124,16 @@ async function callLLMAPI(messages, systemInstruction, toolDefinitions, config) 
   }
 
   const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-  if (!response.ok) throw new Error(`${provider} API Request failed: ${response.status}`);
+  if (!response.ok) {
+    const errorRaw = await response.text();
+    let errorSummary = errorRaw;
+    try {
+      const parsed = JSON.parse(errorRaw);
+      errorSummary = parsed.error?.message || errorRaw;
+    } catch(e) {}
+    throw new Error(`${provider} API Request failed: ${response.status} - ${errorSummary}`);
+  }
+  
   const data = await response.json();
 
   // Normalize generic response parser
@@ -220,6 +249,15 @@ Using the tools provided, analyze or interact with the page as requested. If usi
                properties: { selector: { type: "string" }, type: { type: "string", enum: ["click", "fill"] }, value: { type: "string" } },
                required: ["selector", "type"]
              }
+          },
+          {
+             name: "browser_navigate",
+             description: "Navigate the current active tab to a new URL.",
+             input_schema: {
+               type: "object",
+               properties: { url: { type: "string" } },
+               required: ["url"]
+             }
           }
         ];
 
@@ -246,6 +284,14 @@ Using the tools provided, analyze or interact with the page as requested. If usi
                 // Execute natively through MV3 bridge 
                 chrome.tabs.sendMessage(targetTab.id, { action: 'ACTION', selector: tool.input.selector, type: tool.input.type, value: tool.input.value });
                 toolExecutions.push(`Tool 'action' (${tool.input.type}) dispatched.`);
+             } else if (tool.name === 'browser_navigate') {
+                // Validate domain safety before blindly navigating
+                if (isSafeDomain(tool.input.url)) {
+                   chrome.tabs.update(targetTab.id, { url: tool.input.url });
+                   toolExecutions.push(`Tool 'navigate' to (${tool.input.url}) dispatched.`);
+                } else {
+                   toolExecutions.push(`Tool 'navigate' blocked (Unsafe URL: ${tool.input.url}).`);
+                }
              }
           }
         }

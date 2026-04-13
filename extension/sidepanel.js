@@ -20,9 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Broadcast to current tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab) {
-      chrome.tabs.sendMessage(tab.id, { action: 'SET_MODE', mode }, () => {
-         if (chrome.runtime.lastError) console.warn(chrome.runtime.lastError);
-      });
+      try {
+         chrome.tabs.sendMessage(tab.id, { action: 'SET_MODE', mode }, () => {
+            const err = chrome.runtime.lastError; // Accessing it suppresses unhandled rejection
+         });
+      } catch(e) {}
     }
   });
 
