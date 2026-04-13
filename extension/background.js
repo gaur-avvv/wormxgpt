@@ -151,14 +151,36 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Run active tab context gather
         const [targetTab] = await chrome.tabs.query({ active: true, currentWindow: true });
         
+        if (!targetTab || !targetTab.url) {
+          sendResponse({ error: "No valid active tab detected. Ensure you are viewing a standard webpage." });
+          return;
+        }
+
         if (!isSafeDomain(targetTab.url)) {
           sendResponse({ error: "Domain blocked by WormGPT security heuristics." });
           return;
         }
 
-        const pageContextResponse = await new Promise(res => {
-          chrome.tabs.sendMessage(targetTab.id, { action: 'GET_PAGE_CONTEXT' }, res);
+        let pageContextResponse = await new Promise(res => {
+          chrome.tabs.sendMessage(targetTab.id, { action: 'GET_PAGE_CONTEXT' }, (response) => {
+            if (chrome.runtime.lastError) {
+               // Usually means content script isn't injected on restricted pages
+               res(null);
+            } else {
+               res(response);
+            }
+          });
         });
+
+        if (!pageContextResponse) {
+          // Provide fallback context if content script fails
+          pageContextResponse = {
+             url: targetTab.url,
+             title: targetTab.title,
+             content_text: "[Content Script Injection Blocked - Cannot observe underlying page DOM. This may be due to browser restrictive policies e.g., on chrome:// URLs.]",
+             action_map: {}
+          };
+        }
 
         await auditLog('AGENT_START', targetTab.url, { mode: request.mode });
 
