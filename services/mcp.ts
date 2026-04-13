@@ -99,7 +99,7 @@ export class MCPService {
   // ── Timeouts & Delays ────────────────────────────────────────────────────
   private readonly TOOL_CALL_TIMEOUT = 45_000;
   private readonly RECONNECT_DELAY   = 10_000;
-  private readonly HEALTH_INTERVAL   = 60_000;
+  private readonly HEALTH_INTERVAL   = 30_000;  // 30s — detects stale connections faster
   private readonly MAX_RETRIES       = 3;
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -741,24 +741,46 @@ export class MCPService {
   private _startHealthCheck() {
     if (this.healthTimer) return;
     this.healthTimer = setInterval(async () => {
+      const now = Date.now();
       for (const [url, state] of this.servers.entries()) {
+
+        // Auto-recover degraded servers after CB_RECOVERY_DELAY
+        if (state.status === 'degraded' && state.degradedSince) {
+          if (now - state.degradedSince >= this.CB_RECOVERY_DELAY) {
+            console.log(`[MCP] 🔁 Auto-recovering degraded server: ${url}`);
+            state.consecutiveFailures = 0;
+            state.degradedSince = undefined;
+            await this.disconnect(url);
+            this._scheduleReconnect(url);
+          }
+          continue;
+        }
+
         if (state.status !== 'connected') continue;
+
         const start = Date.now();
         try {
-          // Lightweight HEAD ping instead of full listTools() — saves bandwidth
+          // Use a lightweight HEAD ping — 405 is fine (server reachable, no HEAD support)
           const origin = new URL(url).origin;
           const resp = await fetch(origin, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
           const latency = Date.now() - start;
           this._recordLatency(url, latency);
           if (!resp.ok && resp.status !== 405) {
-            // 405 Method Not Allowed is acceptable — server is reachable but doesn't support HEAD
             throw new Error(`Health check HTTP ${resp.status}`);
           }
-          console.log(`[MCP] 💓 Health OK: ${url} (${latency}ms)`);
+          // Reset consecutive failures on successful ping
+          state.consecutiveFailures = 0;
         } catch (e: any) {
-          console.warn(`[MCP] Health check failed for ${url} — reconnecting`);
-          await this.disconnect(url);
-          this._scheduleReconnect(url);
+          state.consecutiveFailures++;
+          console.warn(`[MCP] 💔 Health failed for ${url} (failures: ${state.consecutiveFailures})`);
+          if (state.consecutiveFailures >= this.CB_FAILURE_THRESHOLD) {
+            console.error(`[MCP] 🔴 Server ${url} — circuit breaker tripped`);
+            state.status = 'degraded';
+            state.degradedSince = Date.now();
+          } else {
+            await this.disconnect(url);
+            this._scheduleReconnect(url);
+          }
         }
       }
     }, this.HEALTH_INTERVAL);

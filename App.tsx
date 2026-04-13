@@ -6,6 +6,7 @@ import rehypeKatex from 'rehype-katex';
 // rehypeRaw removed: was an XSS vector allowing raw HTML injection from untrusted LLM output
 import 'katex/dist/katex.min.css';
 import { Message, AppSettings, ChatSession } from './types';
+import { countTokensForRequest } from './utils/tokenManager';
 import { DEFAULT_SYSTEM_INSTRUCTION, SUGGESTED_PROMPTS, MODEL_OPTIONS, AUDIO_MODELS, IMAGE_MODELS, VIDEO_MODELS, DEFAULT_MCP_SERVERS } from './constants';
 import {
   geminiService, groqService, pollinationsService, cerebrasService,
@@ -1617,6 +1618,9 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const agentMenuRef = useRef<HTMLDivElement>(null);
+  // Send-lock: prevents double-submit race condition (audit B3)
+  const sendLockRef = useRef(false);
+  const lastSentAt = useRef(0);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -2009,6 +2013,12 @@ const App: React.FC = () => {
     const textToSend = forcedText || input;
     if ((!textToSend.trim() && attachments.length === 0) || isStreaming) return;
 
+    // Debounce: max 1 send per 500ms to prevent double-fire (audit B3)
+    const now = Date.now();
+    if (sendLockRef.current || now - lastSentAt.current < 500) return;
+    sendLockRef.current = true;
+    lastSentAt.current = now;
+
     // --- Phase 1: Pre-processing Filters ---
     const filteredInput = await pluginRegistry.runFilters(textToSend, 'PRE');
 
@@ -2368,6 +2378,7 @@ const App: React.FC = () => {
       // Reset openaiService baseUrl in case it was overridden for a custom provider
       (openaiService as any).baseUrl = 'https://api.openai.com/v1/chat/completions';
       setIsStreaming(false);
+      sendLockRef.current = false;  // Release send lock
       // Populate suggestions after stream ends
       if (activeSessionId) {
         setSuggestions([
@@ -2724,6 +2735,29 @@ const App: React.FC = () => {
               <div className="hidden sm:block px-2 sm:px-4 py-1 sm:py-1.5 border-2 border-red-600/50 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-red-500 hover:border-red-600 hover:shadow-[0_0_15px_rgba(220,38,38,0.3)] transition-all duration-300 bg-red-950/10 backdrop-blur">
                 {settings.model}
               </div>
+              {/* Live Context Window Indicator */}
+              {(() => {
+                const ctx = countTokensForRequest(activeSession.messages, settings.systemInstruction || '', settings.model);
+                const pct = Math.min(ctx.pct, 1.0);
+                const pctDisp = Math.round(pct * 100);
+                const ctxColor = pct >= 0.95 ? '#ff0000' : pct >= 0.8 ? '#f97316' : pct >= 0.6 ? '#eab308' : '#22c55e';
+                const ctxLabel = (ctx.total / 1000).toFixed(1) + 'k';
+                return activeSession.messages.length > 0 ? (
+                  <div
+                    className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all duration-500"
+                    style={{ borderColor: `${ctxColor}40`, background: `${ctxColor}10` }}
+                    title={`Context: ${pctDisp}% used — ${ctx.total.toLocaleString()} / ${ctx.contextLimit.toLocaleString()} tokens`}
+                  >
+                    <div className="w-10 h-1 bg-zinc-900 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${pctDisp}%`, background: ctxColor, boxShadow: pct >= 0.6 ? `0 0 4px ${ctxColor}` : 'none' }} />
+                    </div>
+                    <span className="text-[8px] font-black font-mono uppercase" style={{ color: ctxColor }}>
+                      {ctxLabel}{ctx.shouldSummarize ? ' ⚠' : ''}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </header>
 
@@ -3009,7 +3043,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                activeSession.messages.slice(-50).map((msg, i) => <ChatMessage key={msg.timestamp} message={msg} settings={settings} />)
+                activeSession.messages.slice(-100).map((msg, i) => <ChatMessage key={`${i}-${msg.timestamp}`} message={msg} settings={settings} />)
               )}
             </div>
           </div>

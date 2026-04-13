@@ -164,12 +164,21 @@ if (document.readyState === 'complete') {
   window.addEventListener('load', injectWatermark);
 }
 
-// Send background context hash continuously when URL hash pushes (for SPA)
-let lastUrl = location.href; 
-new MutationObserver(() => {
+// SPA URL change tracker — stored so it can be disconnected on suspend (audit B9)
+let lastUrl = location.href;
+const _urlObserver = new MutationObserver(() => {
   const url = location.href;
   if (url !== lastUrl) {
     lastUrl = url;
-    chrome.runtime.sendMessage({ action: 'URL_CHANGED', url: url });
+    // Guard against context invalidation on page unload
+    try {
+      chrome.runtime.sendMessage({ action: 'URL_CHANGED', url });
+    } catch (_) {}
   }
-}).observe(document, {subtree: true, childList: true});
+});
+_urlObserver.observe(document, { subtree: true, childList: true });
+
+// Cleanup on extension context invalidation (tab close, extension reload, etc.)
+window.addEventListener('pagehide', () => {
+  _urlObserver.disconnect();
+});
