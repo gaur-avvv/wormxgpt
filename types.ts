@@ -1,7 +1,7 @@
 declare module '@google/adk';
 
 export interface Message {
-  role: 'user' | 'model';
+  role: 'user' | 'model' | 'assistant' | 'tool';
   content: string;
   thinking?: string;
   timestamp: number;
@@ -27,6 +27,7 @@ export interface ChatSession {
 }
 
 export interface AppSettings {
+  thinkingEnabled?: boolean;
   temperature: number;
   model: string;
   systemInstruction: string;
