@@ -32,7 +32,9 @@ import {
 } from './services';
 import { pluginRegistry } from './services/plugins';
 import { VoiceModeService } from './services/voiceMode';
+import { sessionStore } from './services/sessionStore';
 import { getAgentStatus } from './utils/get-agent-status';
+import { pruneStaleToolResults, summarizeToolResults, countTokensForRequest as _checkCtx } from './utils/tokenManager';
 import { ToolInvocation } from './types';
 
 const CodeBlock = lazy(() => import('./components/CodeBlock'));
@@ -1482,15 +1484,16 @@ const ChatMessage: React.FC<{ message: Message; settings: AppSettings }> = React
 // --- Main Application ---
 
 const App: React.FC = () => {
-  // 1. Initialize Sessions from LocalStorage
+  // 1. Initialize Sessions — try localStorage first (sync), then hydrate from IndexedDB async
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
+    // Synchronous bootstrap from localStorage (fast first paint)
     const saved = localStorage.getItem(SESSIONS_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (e) {
-        console.error("SESSION_LOAD_FAILED", e);
+        console.error('SESSION_LOAD_FAILED', e);
       }
     }
     return [{ id: crypto.randomUUID(), messages: [], title: 'NEW_SESSION' }];
@@ -1630,9 +1633,12 @@ const App: React.FC = () => {
 
   const activeAgentStatus = getAgentStatus(isStreaming, (activeSession.messages[activeSession.messages.length - 1] as any)?.toolInvocations);
 
-  // Sync Persistence Hooks — debounced to prevent excessive writes
+  // Sync Persistence Hooks — dual-write to both LS and IndexedDB
   useEffect(() => {
+    // localStorage (fast, legacy fallback)
     sessionSync.debouncedSave(SESSIONS_KEY, sessions, 300);
+    // IndexedDB (large-session-safe, primary going forward)
+    sessionStore.debouncedSave(sessions, 350);
     // Broadcast to other tabs — skip if this update came from another tab
     if (activeSessionId && !isRemoteUpdateRef.current) {
       sessionSync.broadcastSessionUpdate(activeSessionId, sessions);
@@ -1777,6 +1783,20 @@ const App: React.FC = () => {
 
     // Initialize session sync service for cross-tab communication
     sessionSync.initialize();
+
+    // IndexedDB Migration: one-time move from localStorage to IDB
+    if (sessionStore.isAvailable()) {
+      sessionStore.migrateFromLocalStorage(SESSIONS_KEY).then(migrated => {
+        if (migrated) {
+          // Load enriched sessions from IDB (may have more messages than 5MB LS allowed)
+          sessionStore.getAll().then(idbSessions => {
+            if (idbSessions.length > 0) {
+              setSessions(idbSessions);
+            }
+          });
+        }
+      }).catch(() => {}); // Migration failure is non-fatal
+    }
 
     // Listen for cross-tab session updates
     const unsubSessionUpdate = sessionSync.on('session_update', (event) => {
@@ -2253,8 +2273,8 @@ const App: React.FC = () => {
         };
         const apiKey = providerKeyMap[settings.aiProvider];
         if (!apiKey) throw new Error(`${settings.aiProvider} API key not set. Add it in Settings → Security.`);
-        // Temporarily override openaiService base URL and key
-        (openaiService as any).baseUrl = providerBaseUrls[settings.aiProvider];
+        // Use the new setBaseUrl() method — no direct property mutation (audit B4)
+        openaiService.setBaseUrl(providerBaseUrls[settings.aiProvider]);
         openaiService.setApiKey(apiKey);
         serviceToUse = openaiService;
       } else {
@@ -2266,6 +2286,43 @@ const App: React.FC = () => {
       }
 
       let accumulatedThinking = '';
+
+      // ── Context Auto-Compress ──────────────────────────────────────────────
+      // When session approaches 80% of model context limit, auto-prune stale tool
+      // results to stay within budget before the ReAct loop fires.
+      const ctxPreCheck = _checkCtx(processedMessages, settings.systemInstruction || '', settings.model);
+      if (ctxPreCheck.shouldSummarize) {
+        console.info(`[CTX] Context at ${Math.round(ctxPreCheck.pct * 100)}% — auto-compressing tool results...`);
+        // 1. Prune old tool result messages, keep last 3
+        processedMessages = pruneStaleToolResults(processedMessages, 3);
+        // 2. If still over budget, summarize the tool results we kept
+        const afterPrune = _checkCtx(processedMessages, settings.systemInstruction || '', settings.model);
+        if (afterPrune.shouldSummarize) {
+          const toolResults = processedMessages
+            .filter(m => m.role === 'model' && m.toolInvocations && m.toolInvocations.length > 0)
+            .flatMap(m => (m.toolInvocations || [])
+              .filter((ti: any) => ti.state === 'result')
+              .map((ti: any) => ({ tool: ti.toolName, content: String(ti.result || '') }))
+            );
+          if (toolResults.length > 0) {
+            const summary = summarizeToolResults(toolResults);
+            // Inject compact summary as a system note at the start
+            processedMessages = [
+              { role: 'user', content: summary, timestamp: Date.now() - 1, images: [] },
+              ...processedMessages.filter(m => !(m.role === 'model' && m.toolInvocations?.length))
+            ];
+            console.info(`[CTX] Summarized ${toolResults.length} tool results → context reduced`);
+          }
+        }
+        // Notify user in chat
+        setSessions(prev => prev.map(s => s.id === activeSessionId ? {
+          ...s,
+          messages: s.messages.map((m, idx) => idx === s.messages.length - 1 ? {
+            ...m,
+            content: '**[CTX_COMPRESS]** Context window near limit — auto-compressing tool history to stay within budget...\n\n'
+          } : m)
+        } : s));
+      }
 
       // Engage ReAct loop and multi-agent coordination instead of raw streamChat
       for await (const chunk of agentEngine.runReActLoop({
@@ -2375,8 +2432,8 @@ const App: React.FC = () => {
         } : m)
       } : s));
     } finally {
-      // Reset openaiService baseUrl in case it was overridden for a custom provider
-      (openaiService as any).baseUrl = 'https://api.openai.com/v1/chat/completions';
+      // Reset openaiService baseUrl via the proper API method (audit B4)
+      openaiService.setBaseUrl();
       setIsStreaming(false);
       sendLockRef.current = false;  // Release send lock
       // Populate suggestions after stream ends
@@ -2454,6 +2511,8 @@ const App: React.FC = () => {
         setSessions([initialSession]);
         setActiveSessionId(initialId);
         localStorage.setItem(ACTIVE_ID_KEY, initialId);
+        // Clear both localStorage and IndexedDB so reset is complete
+        sessionStore.clear().catch(() => {});
         setInput('');
         setAttachments([]);
         setSuggestions([]);
@@ -3976,9 +4035,11 @@ const SettingsModal: React.FC<{
         </div>
 
           <div className="p-6 border-t border-red-900/30 bg-black flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-zinc-700">
-            <div>Settings_v4.5.0_Defensive</div>
+            <div>Settings_v4.7.0 // IDB+CTX_Compress</div>
             <button
-              onClick={() => { if (confirm("REBOOT?")) { localStorage.clear(); window.location.reload(); } }}
+              onClick={() => { if (confirm('PURGE ALL DATA INCLUDING INDEXEDDB?')) {
+                import('./services/sessionStore').then(m => m.sessionStore.clear().finally(() => { localStorage.clear(); window.location.reload(); }));
+              } }}
               className="text-red-900 hover:text-red-500 transition-colors"
             >
               [ PURGE_ALL_DATA ]

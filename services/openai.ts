@@ -5,9 +5,15 @@ import { ATTACHED_TOOLS, validateAndFixToolArgs } from './tools';
 class OpenAIService {
   private apiKey: string | null = null;
   private baseUrl = 'https://api.openai.com/v1/chat/completions';
+  private readonly DEFAULT_BASE_URL = 'https://api.openai.com/v1/chat/completions';
 
   setApiKey(key: string) {
     this.apiKey = key;
+  }
+
+  /** Set a custom base URL for OpenAI-compatible providers. Pass undefined to reset to default. */
+  setBaseUrl(url?: string) {
+    this.baseUrl = url ?? this.DEFAULT_BASE_URL;
   }
 
   async *generateContentStream(
