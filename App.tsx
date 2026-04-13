@@ -8,8 +8,6 @@ import { SettingsModal } from './components/SettingsModal/SettingsModal';
 import { ConfirmModal, Toast } from './components/Modals';
 
 // Global styles (inherited from legacy)
-import './index.css';
-
 const WormGPTApp: React.FC = () => {
   const { 
     isSidebarOpen, setIsSidebarOpen,
