@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WormGPT Sidepanel</title>
+  <style>
+    body {
+      background-color: #0a0505;
+      color: #ef4444; /* red-500 */
+      font-family: monospace;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .header {
+      padding: 12px;
+      border-bottom: 2px solid rgba(220, 38, 38, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #000;
+      box-shadow: 0 4px 15px rgba(220, 38, 38, 0.1);
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .select-mode {
+      background: #18181b;
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      padding: 4px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 10px;
+    }
+    .chat-area {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #ef4444 #18181b;
+    }
+    .message {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+    .user { background: #18181b; border: 1px solid #3f3f46; color: #e4e4e7; }
+    .agent { background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.3); color: #fca5a5; }
+    
+    .input-area {
+      padding: 12px;
+      background: #000;
+      border-top: 1px solid rgba(220, 38, 38, 0.3);
+      display: flex;
+      gap: 8px;
+    }
+    input[type="text"] {
+      flex: 1;
+      background: #18181b;
+      border: 1px solid #dc2626;
+      color: #fff;
+      padding: 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      outline: none;
+    }
+    button {
+      background: #dc2626;
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: 900;
+      font-family: monospace;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+    }
+    button:hover { background: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>WormGPT Link</h1>
+    <select class="select-mode" id="modeSelect">
+      <option value="OBSERVE">Observe Mode</option>
+      <option value="ASSIST">Assist Mode</option>
+      <option value="AUTOPILOT">Autopilot Mode</option>
+    </select>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="message agent">Terminal initialized. Connected to active tab context.</div>
+  </div>
+  <div class="input-area">
+    <input type="text" id="userInput" placeholder="Command agent..." />
+    <button id="sendBtn">Execute</button>
+  </div>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 280px;
+      padding: 15px;
+      font-family: monospace;
+      background: #0a0505;
+      color: #ef4444;
+      margin: 0;
+    }
+    h2 { font-size: 14px; text-transform: uppercase; margin-top: 0; letter-spacing: 1px; border-bottom: 1px solid #dc2626; padding-bottom: 5px; }
+    .input-group { margin-bottom: 12px; display: flex; flex-direction: column; }
+    label { font-size: 10px; margin-bottom: 4px; font-weight: bold; color: #fca5a5; }
+    input, select, textarea { 
+      background: #18181b; 
+      border: 1px solid #dc2626; 
+      color: white; 
+      padding: 6px; 
+      font-family: monospace;
+      font-size: 11px;
+      border-radius: 4px;
+    }
+    textarea { resize: vertical; min-height: 50px; }
+    input:focus, select:focus, textarea:focus { outline: 1px solid #ef4444; }
+    button { 
+      width: 100%; 
+      background: #dc2626; 
+      color: black; 
+      border: none; 
+      padding: 8px; 
+      font-weight: 900; 
+      cursor: pointer; 
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    button:hover { background: #ef4444; }
+    #openSidebar { background: #18181b; color: #f59e0b; border: 1px solid #f59e0b; }
+    #openSidebar:hover { background: #f59e0b; color: black; }
+    .status { font-size: 10px; color: #4ade80; font-weight: bold; text-align: center; height: 12px; }
+  </style>
+</head>
+<body>
+  <h2>Extension Settings</h2>
+  
+  <div class="input-group">
+    <label>AI Provider</label>
+    <select id="provider">
+      <option value="openai">OpenAI</option>
+      <option value="anthropic" selected>Anthropic</option>
+      <option value="gemini">Google Gemini</option>
+      <option value="groq">Groq</option>
+      <option value="openrouter">OpenRouter</option>
+      <option value="deepseek">DeepSeek</option>
+      <option value="together">Together AI</option>
+      <option value="xai">xAI</option>
+      <option value="mistral">Mistral</option>
+      <option value="perplexity">Perplexity</option>
+      <option value="ollama">Ollama (Local)</option>
+    </select>
+  </div>
+
+  <div class="input-group">
+    <label>Model ID</label>
+    <input type="text" id="modelId" placeholder="e.g. claude-3-7-sonnet-20250219" />
+  </div>
+
+  <div class="input-group">
+    <label>API Key (For selected provider)</label>
+    <input type="password" id="apiKey" placeholder="sk-..." />
+  </div>
+
+  <div class="input-group">
+    <label>Prompt Injection / Custom System</label>
+    <textarea id="promptInjection" placeholder="Inject custom agent personas here... Leave blank for default."></textarea>
+  </div>
+
+  <button id="saveBtn">Save Config</button>
+  <div class="status" id="status"></div>
+  <button id="openSidebar" style="margin-top:5px;">Launch Agent UI</button>
+
+  <script src="popup.js"></script>
+</body>
+</html>
