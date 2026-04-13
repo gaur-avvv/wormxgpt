@@ -141,8 +141,16 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
         timestamp: Date.now()
       };
 
+      let shouldInject = false;
       if (settings.promptInjectionEnabled && settings.customPromptPrefix?.trim()) {
-        userMessage.content = `${settings.customPromptPrefix.trim()}\n\n${userMessage.content}`;
+        const mode = (settings as any).promptInjectionMode || 'always';
+        if (mode === 'always') shouldInject = true;
+        else if (mode === 'once' && activeSession.messages.length === 0) shouldInject = true;
+        // if mode === 'manual', shouldInject remains false for automatic flow
+      }
+
+      if (shouldInject) {
+        userMessage.content = `${settings.customPromptPrefix!.trim()}\n\n${userMessage.content}`;
       }
 
       const updatedMessages = [...activeSession.messages, userMessage];
