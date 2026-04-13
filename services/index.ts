@@ -27,3 +27,5 @@ export { a2aService } from './a2a';
 export type { A2AAgentCard, A2AMessage, A2ATask, A2AEvent } from './a2a';
 export { promptCacheService } from './promptCache';
 export type { PromptCacheStats } from './promptCache';
+export { agentEngine } from './agent_engine';
+export { memoryService } from './memory';

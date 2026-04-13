@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { StyleProvider } from './context/StyleContext';
+import { GlobalErrorBoundary } from './components/GlobalErrorBoundary';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -13,7 +14,9 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <StyleProvider enableAntiFingerprint={true}>
-      <App />
+      <GlobalErrorBoundary>
+        <App />
+      </GlobalErrorBoundary>
     </StyleProvider>
   </React.StrictMode>
 );
