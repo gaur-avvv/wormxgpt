@@ -11,7 +11,7 @@ import {
 import { ATTACHED_TOOLS, TOOL_CATEGORIES, APP_INTEGRATIONS } from '../../services';
 import { DEFAULT_SYSTEM_INSTRUCTION, MODEL_OPTIONS } from '../../constants';
 
-type SettingsTab = 'system' | 'security' | 'connection' | 'apps';
+type SettingsTab = 'system' | 'security' | 'connection' | 'apps' | 'tools';
 
 export const SettingsModal: React.FC<{ 
   initialTab?: SettingsTab; 
@@ -156,10 +156,11 @@ export const SettingsModal: React.FC<{
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-[#F120F0]/20 px-4 gap-4 bg-black/40">
+        <div className="flex border-b border-[#F120F0]/20 px-4 gap-4 bg-black/40 overflow-x-auto custom-scrollbar">
           {[
             { id: 'system', label: 'SYSTEM_PARAM' },
             { id: 'security', label: 'SECURITY_VAULT' },
+            { id: 'tools', label: 'AGENT_TOOLS' },
             { id: 'connection', label: 'NET_INTERFACE' },
             { id: 'apps', label: 'APP_CONNECT' }
           ].map(tab => (
@@ -453,6 +454,67 @@ export const SettingsModal: React.FC<{
                     ));
                   })()}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'tools' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-2 border-b border-[#F120F0]/20">
+                <div className="text-xs font-black uppercase tracking-[0.2em] text-[#F120F0]">Module Arsenal</div>
+                <div className="text-[10px] font-mono text-[#F120F0]/50 px-2 py-1 bg-black rounded-lg border border-[#F120F0]/20">
+                  {settings.enabledTools?.length || 0} ACTIVE
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="text-[10px] text-yellow-500/80 p-3 bg-yellow-950/20 rounded-lg border border-yellow-900/30">
+                  AGENTIC_NOTE: Select which built-in tools should be provided to the AI. Some tools may require API keys configured in the SECURITY_VAULT.
+                </div>
+                {TOOL_CATEGORIES.map(category => (
+                  <div key={category.id} className="space-y-3">
+                    <div className="flex items-center gap-2 border-b border-zinc-800 pb-1">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color, boxShadow: `0 0 8px ${category.color}` }} />
+                      <h3 className="text-[11px] font-black uppercase tracking-widest text-[#F120F0]">
+                        {category.title}
+                      </h3>
+                      <span className="text-[9px] text-zinc-500 ml-2 normal-case tracking-normal">{category.description}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {category.tools.map(toolName => {
+                        const isEnabled = (settings.enabledTools || []).includes(toolName);
+                        return (
+                          <div 
+                            key={toolName}
+                            onClick={() => {
+                              const current = settings.enabledTools || [];
+                              setSettings(prev => ({
+                                ...prev,
+                                enabledTools: isEnabled 
+                                  ? current.filter(t => t !== toolName)
+                                  : [...current, toolName]
+                              }));
+                            }}
+                            className={`p-2 rounded-lg border cursor-pointer transition-all duration-300 flex items-center justify-between group ${
+                              isEnabled 
+                                ? 'bg-[#F120F0]/10 border-[#F120F0]/50 shadow-[0_0_10px_rgba(241,32,240,0.1)]' 
+                                : 'bg-black/60 border-zinc-800 hover:border-[#F120F0]/30'
+                            }`}
+                          >
+                            <span className={`text-[10px] font-mono truncate mr-2 ${isEnabled ? 'text-[#F120F0]' : 'text-zinc-400 group-hover:text-zinc-300'}`}>
+                              {toolName}
+                            </span>
+                            <div className={`w-3 h-3 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
+                              isEnabled ? 'bg-[#F120F0] border-[#F120F0]' : 'border-zinc-700 bg-transparent group-hover:border-[#F120F0]/50'
+                            }`}>
+                              {isEnabled && <svg className="w-2 h-2 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
