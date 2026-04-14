@@ -14,6 +14,7 @@ export const InputBar: React.FC<{
     isStreaming,
     activeSession,
     handleSend,
+    handleAbort,
     autocomplete, setAutocomplete,
     settings, setSettings
   } = useWormGPT();
@@ -86,8 +87,16 @@ export const InputBar: React.FC<{
     <div className="px-3 sm:px-10 py-4 bg-gradient-to-t from-black via-[#0a0505] to-[#0a0505] border-t-2 border-red-900/30">
       <div className="max-w-4xl mx-auto relative group">
         {/* Suggestion Chips */}
-        {!isStreaming.current && suggestions.length > 0 && activeSession.messages.length > 0 && (
+        {!isStreaming.current && activeSession.messages.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3">
+            {/* Default 'Continue' suggestion */}
+            <button 
+              onClick={() => handleSend("Continue where you left")} 
+              className="px-3 py-1 bg-red-600/20 border border-red-600/50 rounded-full text-[9px] font-black text-red-400 hover:bg-red-600 hover:text-black transition-all duration-300 uppercase tracking-widest shadow-[0_0_10px_rgba(220,38,38,0.2)]"
+            >
+              Continue where you left
+            </button>
+            
             {suggestions.map((s, i) => (
               <button key={i} onClick={() => handleSend(s)} className="px-3 py-1 bg-red-950/20 border border-red-900/40 rounded-full text-[10px] font-black text-red-500 hover:bg-red-600 hover:text-black transition-all duration-300 uppercase tracking-widest">{s}</button>
             ))}
@@ -134,11 +143,19 @@ export const InputBar: React.FC<{
         </div>
 
         <button
-          onClick={() => handleSend()}
-          disabled={isStreaming.current}
-          className="absolute right-2 bottom-2 px-4 py-1.5 bg-red-600 text-black font-black uppercase text-[10px] tracking-widest rounded-md hover:bg-red-500 active:scale-95 disabled:opacity-50 transition-all shadow-[0_0_15px_rgba(220,38,38,0.3)]"
+          onClick={() => isStreaming.current ? handleAbort() : handleSend()}
+          className={`absolute right-2 bottom-2 px-5 py-2 font-black uppercase text-[10px] tracking-widest rounded transition-all active:scale-95 flex items-center gap-2 ${
+            isStreaming.current 
+              ? 'bg-red-950 text-red-500 border-2 border-red-500 shadow-[0_0_25px_#ff0000] animate-pulse cursor-pointer' 
+              : 'neon-button !bg-red-600/10 hover:!bg-red-600'
+          }`}
         >
-          {isStreaming.current ? 'BUSY' : 'INJECT'}
+          {isStreaming.current ? 'STOP_GEN' : (
+            <>
+              INJECT
+              <span className="text-[8px] opacity-60 border border-current px-1 rounded">ENTER</span>
+            </>
+          )}
         </button>
       </div>
     </div>

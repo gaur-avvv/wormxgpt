@@ -1,6 +1,7 @@
 import { Message, AppSettings } from '../types';
 import { pruneHistory } from '../utils/tokenManager';
 import { ATTACHED_TOOLS, validateAndFixToolArgs } from './tools';
+import { getEffectiveSystemInstruction } from '../utils/promptUtils';
 
 class MistralService {
   private apiKey: string | null = null;
@@ -96,7 +97,7 @@ class MistralService {
     const requestBody = {
       model: settings.model,
       messages: [
-        { role: 'system', content: settings.systemInstruction },
+        { role: 'system', content: getEffectiveSystemInstruction(settings, messages) },
         ...formattedMessages
       ],
       temperature: settings.temperature,

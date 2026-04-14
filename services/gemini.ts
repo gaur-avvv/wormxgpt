@@ -1,6 +1,7 @@
 import { GoogleGenAI, GenerateContentResponse, Part } from "@google/genai";
 import { AppSettings, Message } from "../types";
 import { estimateTokens } from "../utils/tokenManager";
+import { getEffectiveSystemInstruction } from "../utils/promptUtils";
 import { promptCacheService } from "./promptCache";
 
 export interface StreamResponse {
@@ -54,7 +55,7 @@ export class GeminiService {
     const responseBudget = 4000;
 
     // Truncate system instruction if extremely long
-    let systemPrompt = settings.systemInstruction;
+    let systemPrompt = getEffectiveSystemInstruction(settings, messages);
     if (!(settings.injectSystemPrompts ?? true)) {
       systemPrompt = '';
     } else if (estimateTokens(systemPrompt) > 2000) {

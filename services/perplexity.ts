@@ -1,4 +1,5 @@
 import { Message, AppSettings } from '../types';
+import { getEffectiveSystemInstruction } from '../utils/promptUtils';
 import { pruneHistory } from '../utils/tokenManager';
 
 class PerplexityService {
@@ -54,7 +55,7 @@ class PerplexityService {
     const requestBody = {
       model: settings.model,
       messages: [
-        { role: 'system', content: settings.systemInstruction },
+        { role: 'system', content: getEffectiveSystemInstruction(settings, messages) },
         ...formattedMessages
       ],
       temperature: settings.temperature,

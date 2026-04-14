@@ -1,6 +1,7 @@
 import { Message, AppSettings } from '../types';
 import { pruneHistory } from '../utils/tokenManager';
 import { ATTACHED_TOOLS, validateAndFixToolArgs } from './tools';
+import { getEffectiveSystemInstruction } from '../utils/promptUtils';
 
 class OpenAIService {
   private apiKey: string | null = null;
@@ -82,7 +83,7 @@ class OpenAIService {
     const requestBody = {
       model: settings.model,
       messages: [
-        { role: 'system', content: settings.systemInstruction },
+        { role: 'system', content: getEffectiveSystemInstruction(settings, messages) },
         ...formattedMessages
       ],
       temperature: settings.temperature,

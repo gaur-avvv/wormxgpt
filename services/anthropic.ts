@@ -1,6 +1,7 @@
 import { Message, AppSettings } from '../types';
 import { pruneHistory } from '../utils/tokenManager';
 import { ATTACHED_TOOLS, validateAndFixToolArgs } from './tools';
+import { getEffectiveSystemInstruction } from '../utils/promptUtils';
 
 class AnthropicService {
   private apiKey: string | null = null;
@@ -84,7 +85,7 @@ class AnthropicService {
 
     const requestBody = {
       model: settings.model,
-      system: settings.systemInstruction,
+      system: getEffectiveSystemInstruction(settings, messages),
       messages: anthropicMessages,
       max_tokens: settings.maxTokens || 4096,
       temperature: settings.temperature,

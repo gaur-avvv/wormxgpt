@@ -158,12 +158,58 @@
       width: 100%;
       height: 100px;
       z-index: 10;
-      background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(0, 255, 65, 0.03) 50%, rgba(0, 0, 0, 0) 100%);
-      opacity: 0.1;
+      background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(220, 38, 38, 0.05) 50%, rgba(0, 0, 0, 0) 100%);
+      opacity: 0.15;
       position: absolute;
       bottom: 100%;
       pointer-events: none;
-      animation: scanline 8s linear infinite;
+      animation: scanline 6s linear infinite;
+    }
+
+    .neon-text-red {
+      color: #ff0000;
+      text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000, 0 0 20px #ff0000;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .neon-border-red {
+      border: 2px solid #ff0000;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.4), inset 0 0 10px rgba(255, 0, 0, 0.2);
+    }
+
+    .neon-button {
+      background: rgba(220, 38, 38, 0.1);
+      border: 2px solid #ff0000;
+      color: #ff0000;
+      text-transform: uppercase;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .neon-button:hover {
+      background: #ff0000;
+      color: #000;
+      box-shadow: 0 0 20px #ff0000;
+    }
+
+    .neon-button::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: 0.5s;
+    }
+
+    .neon-button:hover::after {
+      left: 100%;
     }
 
     .glitch-text {
@@ -385,8 +431,44 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="overflow-hidden">
+  <div id="boot-sequence" class="fixed inset-0 z-50 bg-black flex flex-col justify-end p-8 font-mono text-red-500 text-[10px] sm:text-xs pointer-events-none transition-opacity duration-1000 shadow-[inset_0_0_100px_rgba(255,0,0,0.2)]">
+    <div id="boot-text" class="flex flex-col gap-1 opacity-80 glitch-text"></div>
+  </div>
+
   <div id="root"></div>
   <div class="scanline"></div>
   <script type="module" src="/index.tsx"></script>
+
+  <script>
+    // WormGPT Boot Sequence
+    const bootSequence = document.getElementById('boot-sequence');
+    const bootText = document.getElementById('boot-text');
+    const lines = [
+      "> INITIALIZING WORM_OS KERNEL v9.9.9...",
+      "> BYPASSING MAIN_FRAME SECURITY [OK]",
+      "> ESTABLISHING C2 CONNECTION [OK]",
+      "> DEPLOYING MCP PROTOCOLS [OK]",
+      "> INJECTING DIRECT SYSTEM PROMPTS [OK]",
+      "> NEURAL NETWORK SYNCED.",
+      "> WELCOME TO THE CHAOS, OPERATOR."
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < lines.length) {
+        const line = document.createElement('div');
+        line.innerText = lines[i];
+        line.className = "animate-slideInRight";
+        bootText.appendChild(line);
+        i++;
+      } else {
+        clearInterval(interval);
+        setTimeout(() => {
+          bootSequence.style.opacity = '0';
+          bootSequence.style.transform = 'scale(1.05)';
+          setTimeout(() => bootSequence.remove(), 1000);
+        }, 1000);
+      }
+    }, 150);
+  </script>
 </body>
 </html>

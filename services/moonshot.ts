@@ -1,5 +1,5 @@
-import { AppSettings, Message } from "../types";
 import { validateAndFixToolArgs } from "../utils/toolHelpers";
+import { getEffectiveSystemInstruction } from "../utils/promptUtils";
 
 export class MoonshotService {
   private apiKey: string = "";
@@ -44,7 +44,7 @@ export class MoonshotService {
       body: JSON.stringify({
         model: settings.model || "kimi-k2.5",
         messages: [
-          { role: 'system', content: settings.systemInstruction },
+          { role: 'system', content: getEffectiveSystemInstruction(settings, history) },
           ...(() => {
             const attachedCount = settings.attachedMessagesCount || 8;
             let recentMessages = history.slice(-attachedCount);

@@ -33,6 +33,7 @@ interface WormGPTContextType {
   autocomplete: { visible: boolean; type: 'model' | 'tool' | null; query: string; index: number };
   setAutocomplete: React.Dispatch<React.SetStateAction<{ visible: boolean; type: 'model' | 'tool' | null; query: string; index: number }>>;
   handleSend: (overrideInput?: string) => void;
+  handleAbort: () => void;
   removeAttachment: (index: number) => void;
 }
 
@@ -144,18 +145,6 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
         timestamp: Date.now()
       };
 
-      let shouldInject = false;
-      if (settings.promptInjectionEnabled && settings.customPromptPrefix?.trim()) {
-        const mode = (settings as any).promptInjectionMode || 'always';
-        if (mode === 'always') shouldInject = true;
-        else if (mode === 'once' && activeSession.messages.length === 0) shouldInject = true;
-        // if mode === 'manual', shouldInject remains false for automatic flow
-      }
-
-      if (shouldInject) {
-        userMessage.content = `${settings.customPromptPrefix!.trim()}\n\n${userMessage.content}`;
-      }
-
       const updatedMessages = [...activeSession.messages, userMessage];
       setSessions(prev => prev.map(s => s.id === activeSessionId ? {
         ...s,
@@ -240,6 +229,33 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
     }
   }, [input, attachments, activeSession, activeSessionId, settings, setSessions]);
 
+  // 3. Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Enter: Send (global backup)
+      if (e.ctrlKey && e.key === 'Enter') {
+        handleSend();
+      }
+      // Escape: Abort
+      if (e.key === 'Escape' && isStreaming.current) {
+        handleAbort();
+      }
+      // Ctrl+K: Clear current session buffer
+      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: [] } : s));
+      }
+      // Ctrl+/: Focus input (if it exists)
+      if (e.ctrlKey && e.key === '/') {
+        e.preventDefault();
+        document.querySelector('textarea')?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeSessionId, handleSend, handleAbort]); // Dependencies are now initialized before use
+
   const removeAttachment = (index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
@@ -255,7 +271,7 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
     isSidebarOpen, setIsSidebarOpen,
     isSettingsOpen, setIsSettingsOpen,
     autocomplete, setAutocomplete,
-    handleSend, removeAttachment
+    handleSend, handleAbort, removeAttachment
   };
 
   return <WormGPTContext.Provider value={value}>{children}</WormGPTContext.Provider>;

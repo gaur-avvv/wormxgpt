@@ -65,9 +65,9 @@ export const Header: React.FC<{
           </svg>
         </button>
 
-        <div className="flex items-center gap-1 sm:gap-2 group cursor-pointer hover:scale-105 transition-transform duration-300" onClick={onNewSession}>
-          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-600 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.6)] animate-pulse"></div>
-          <h1 className="text-base sm:text-xl md:text-2xl font-black italic uppercase tracking-[-0.05em] bg-gradient-to-r from-red-600 via-red-400 to-red-600 bg-clip-text text-transparent">WormGPT_Terminal</h1>
+        <div className="flex items-center gap-1 sm:gap-2 group cursor-pointer hover:scale-105 transition-all duration-300" onClick={onNewSession}>
+          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-600 rounded-full shadow-[0_0_20px_#ff0000] animate-pulse"></div>
+          <h1 className="text-base sm:text-xl md:text-2xl font-black italic uppercase tracking-[-0.05em] bg-gradient-to-r from-red-600 via-red-400 to-red-600 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(220,38,38,0.8)]">WormGPT_Terminal</h1>
         </div>
 
         <div className="hidden sm:block h-4 w-px bg-red-900/30 mx-2"></div>

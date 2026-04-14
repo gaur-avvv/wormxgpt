@@ -34,25 +34,30 @@ export const ChatWindow: React.FC = () => {
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col relative bg-[#050000]">
+      {/* Background Watermark */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none z-0">
+        <h1 className="text-[20vw] font-black italic tracking-tighter text-red-600 rotate-[-15deg]">WormGPT</h1>
+      </div>
+
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 sm:p-8 md:p-12 scroll-smooth custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 sm:p-8 md:p-12 scroll-smooth custom-scrollbar relative z-10"
       >
         <div className="max-w-4xl mx-auto min-h-full flex flex-col">
           {messages.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center py-20 animate-fadeIn">
               <div className="mb-8 relative">
-                <div className="w-20 h-20 bg-red-600/10 border-2 border-red-600/40 rounded-full animate-pulse flex items-center justify-center">
-                  <div className="w-12 h-12 bg-red-600/20 border-2 border-red-600 rounded-full flex items-center justify-center">
-                    <span className="text-red-500 text-2xl font-black">W</span>
+                <div className="w-24 h-24 bg-red-600/10 border-2 border-red-600/60 rounded-full animate-pulse flex items-center justify-center shadow-[0_0_30px_#ff000033]">
+                  <div className="w-14 h-14 bg-red-600/20 border-2 border-red-600 rounded-full flex items-center justify-center">
+                    <span className="text-red-500 text-3xl font-black italic drop-shadow-[0_0_8px_#ff0000]">W</span>
                   </div>
                 </div>
-                <div className="absolute -inset-4 border border-red-900/20 rounded-full animate-ping opacity-20" />
+                <div className="absolute -inset-6 border-2 border-red-600/20 rounded-full animate-ping opacity-10" />
               </div>
               
-              <h2 className="text-3xl font-black uppercase tracking-[0.3em] text-red-600 mb-2">Terminal_Ready</h2>
-              <p className="text-[10px] text-red-900/60 font-mono uppercase tracking-widest mb-12">Waiting for command injection...</p>
+              <h2 className="text-4xl font-black uppercase tracking-[0.4em] text-red-600 mb-2 drop-shadow-[0_0_15px_#ff0000]">Terminal_Ready</h2>
+              <p className="text-[11px] text-red-500/50 font-mono uppercase tracking-[0.5em] mb-12">System.Wait(Command_Injection)...</p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl px-4">
                 {SUGGESTED_PROMPTS.map((p, i) => (

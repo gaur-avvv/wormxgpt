@@ -1,4 +1,5 @@
 import { AppSettings, Message } from '../types';
+import { getEffectiveSystemInstruction } from '../utils/promptUtils';
 import { pruneHistory } from '../utils/tokenManager';
 import { validateAndFixToolArgs } from '../utils/toolHelpers';
 
@@ -61,7 +62,7 @@ class CerebrasService {
     const tokenBudget = maxTokens - responseBudget;
     let usedTokens = 0;
     
-    let systemInstruction = settings.systemInstruction || '';
+    let systemInstruction = getEffectiveSystemInstruction(settings, messages);
     if (estimateTokens(systemInstruction) > 1000) {
       systemInstruction = systemInstruction.substring(0, 4000);
     }

@@ -41,11 +41,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         className={`fixed inset-y-0 left-0 z-50 bg-[#050000] border-r-2 border-red-900/40 flex flex-col transition-all duration-500 ease-in-out ${effectiveOpen ? 'w-72' : 'w-16'} overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.2)]`}
       >
         {/* Header / Brand */}
-        <div className="p-4 border-b border-red-900/30 bg-gradient-to-b from-red-900/10 to-transparent flex items-center justify-between h-16 shrink-0">
+        <div className="p-4 border-b-2 border-red-600/30 bg-gradient-to-b from-red-600/10 via-black to-black flex items-center justify-between h-20 shrink-0">
           {effectiveOpen ? (
             <div className="flex flex-col animate-fadeIn">
-              <h1 className="text-lg font-black text-red-600 tracking-widest italic">SESSIONS</h1>
-              <span className="text-[8px] text-red-900/60 font-bold uppercase tracking-widest leading-none">Matrix_V4.7</span>
+              <h1 className="text-xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_0_8px_#ff0000]">WormGPT_OS</h1>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1 h-1 bg-red-500 rounded-full animate-pulse"></span>
+                <span className="text-[7px] text-red-500/60 font-black uppercase tracking-[0.2em] leading-none">TERMINAL.MATRIX.4.7</span>
+              </div>
             </div>
           ) : (
             <div className="w-full flex justify-center">
@@ -58,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3 shrink-0">
           <button
             onClick={onNewSession}
-            className={`w-full py-3 bg-red-600/10 border-2 border-red-600/40 text-red-500 font-black uppercase text-[10px] tracking-widest rounded-lg flex items-center justify-center gap-2 hover:bg-red-600 hover:text-black transition-all group ${!effectiveOpen ? 'px-0' : 'px-4'}`}
+            className={`w-full py-3 neon-button !bg-red-600/10 hover:!bg-red-600 transition-all group ${!effectiveOpen ? 'px-0' : 'px-4'}`}
           >
             <span className="text-lg">+</span>
             {effectiveOpen && <span className="animate-fadeIn">NEW_CHAT</span>}

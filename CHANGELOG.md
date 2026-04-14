@@ -1,6 +1,11 @@
 # WormGPT Changelog
 
-## [1.2.0] - 2026-04-13
+## [1.2.1] - 2026-04-14
+### Added & Fixed
+- **System Instruction Compliance**: Enforced provider-specific injection patterns. Fixed DeepSeek system prompt formatting to explicitly inject instructions within the first user message instead of a distinct 'system' role.
+- **WormGPT Zero-Day Boot Sequence**: Added a high-performance Hacker-aesthetic startup overlay animation with a sequenced terminal boot inside `index.html`.
+- **Chrome MCP Finalization**: Formally documented and synchronized Chrome MCP MV3 connection pathways.
+
 ### Added (Task 6: Browser Extension)
 - **Manifest V3 Core**: Deployed `/extension` architecture containing `manifest.json`, `background.js`, `content_script.js`, and sidepanel overlays.
 - **Mozilla Readability**: Bundled `Readability.js` to automatically extract clean semantics from active pages.

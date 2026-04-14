@@ -64,12 +64,13 @@ CMD ["npm", "run", "preview"]
 
 - 📝 **Session Management** - Save and switch between chat sessions
 - 🔒 **Secure API Key Handling** - Keys stored in browser localStorage
-- 🎨 **Terminal Design** - Modern dark theme with syntax highlighting
+- 🎨 **Terminal Design** - Dynamic Hacker-themed boot sequences, matrix scanlines, and glitch effects
+- 🤖 **Provider Compliance** - Guaranteed system instruction injection across OpenAI, Anthropic, Gemini, DeepSeek, and Groq
 - 📱 **Responsive Layout** - Works on desktop and tablet
 - 🖼️ **Image Support** - Send images with your messages
 - ⚙️ **Model Selection** - Choose from available Gemini models
 - 📊 **Advanced Settings** - Control temperature, thinking budget, system prompts
-- 🔌 **MCP Integration** - Model Context Protocol bridge with 50+ server-side tools
+- 🔌 **MCP Integration** - Model Context Protocol bridge with 50+ server-side tools and full MV3 Chrome extension support
 - 🛠️ **150+ Tools** - Search, OSINT, coding, crypto, text processing, browser automation & more
 
 ## MCP Integration

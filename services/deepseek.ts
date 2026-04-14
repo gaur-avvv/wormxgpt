@@ -1,6 +1,7 @@
 import { Message, AppSettings } from '../types';
 import { pruneHistory } from '../utils/tokenManager';
 import { ATTACHED_TOOLS, validateAndFixToolArgs } from './tools';
+import { getEffectiveSystemInstruction } from '../utils/promptUtils';
 
 class DeepSeekService {
   private apiKey: string | null = null;
@@ -94,12 +95,19 @@ class DeepSeekService {
         });
     }
 
+    const effSys = getEffectiveSystemInstruction(settings, messages);
+    if (effSys) {
+      const firstUserMsg = formattedMessages.find(m => m.role === 'user');
+      if (firstUserMsg) {
+        firstUserMsg.content = `${effSys}\n\n${firstUserMsg.content}`;
+      } else {
+        formattedMessages.unshift({ role: 'user', content: effSys });
+      }
+    }
+
     const requestBody = {
       model: settings.model,
-      messages: [
-        { role: 'system', content: settings.systemInstruction },
-        ...formattedMessages
-      ],
+      messages: formattedMessages,
       temperature: settings.temperature,
       top_p: settings.topP ?? 1.0,
       ...(settings.maxTokens ? { max_tokens: settings.maxTokens } : {}),

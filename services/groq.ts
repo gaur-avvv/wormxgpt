@@ -1,5 +1,6 @@
 import Groq from "groq-sdk";
 import { AppSettings, Message } from "../types";
+import { getEffectiveSystemInstruction } from "../utils/promptUtils";
 import { pruneHistory } from '../utils/tokenManager';
 import { validateAndFixToolArgs } from "../utils/toolHelpers";
 
@@ -87,7 +88,7 @@ export class GroqService {
     const maxTokens = modelLimits[settings.model] || modelLimits['default'];
 
     // Truncate system instruction if too long (keep under 1000 tokens)
-    let systemPrompt = settings.systemInstruction;
+    let systemPrompt = getEffectiveSystemInstruction(settings, messages);
     const systemTokens = estimateTokens(systemPrompt);
     if (systemTokens > 1000) {
       // Keep first 3500 chars (~875 tokens)
@@ -299,7 +300,7 @@ export class GroqService {
     const messages = [
       {
         role: 'system' as const,
-        content: settings.systemInstruction
+        content: getEffectiveSystemInstruction(settings, history)
       },
       ...history.map(msg => ({
         role: msg.role === 'user' ? 'user' as const : 'assistant' as const,

@@ -1,4 +1,5 @@
 import { AppSettings, Message } from '../types';
+import { getEffectiveSystemInstruction } from '../utils/promptUtils';
 
 // Simple token estimation (roughly 1 token per 4 characters)
 function estimateTokens(text: string): number {
@@ -79,7 +80,7 @@ class PollinationsService {
     let usedTokens = 0;
 
     // Process system instruction with truncation if needed
-    let systemInstruction = settings.systemInstruction || '';
+    let systemInstruction = getEffectiveSystemInstruction(settings, messages);
     const systemTokens = estimateTokens(systemInstruction);
 
     if (systemTokens > 1500) {

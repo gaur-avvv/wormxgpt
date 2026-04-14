@@ -1,4 +1,5 @@
 import { AppSettings, Message, ToolInvocation } from '../types';
+import { getEffectiveSystemInstruction } from '../utils/promptUtils';
 
 export const ollamaService = {
   apiKey: '',
@@ -90,18 +91,22 @@ export const ollamaService = {
     const dynamicTools = await getDynamicTools(settings);
 
     // Prune history to avoid context overflow (Ollama works best with ~32k context for agents)
+    const effectiveSystem = getEffectiveSystemInstruction(settings, messages);
     const prunedMessages = pruneHistory(
       messages, 
-      settings.systemInstruction, 
+      effectiveSystem, 
       settings.maxTokens || 32000, 
       4000
     );
 
-    const formattedMessages = prunedMessages.map(m => ({
-      role: m.role === 'model' ? 'assistant' : 'user',
-      content: m.content,
-      images: m.images?.map(img => img.split(',')[1] || img)
-    }));
+    const formattedMessages = [
+      { role: 'system', content: effectiveSystem },
+      ...prunedMessages.map(m => ({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.content,
+        images: m.images?.map(img => img.split(',')[1] || img)
+      }))
+    ];
 
     const headers = this._getHeaders(settings, apiKey);
 
