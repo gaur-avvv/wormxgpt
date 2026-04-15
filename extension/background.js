@@ -1,10 +1,164 @@
 /**
  * background.js
- * Service Worker orchestrating AI LLM streams and MV3 Security constraints.
+ * Service Worker orchestrating AI LLM streams, MV3 Security constraints,
+ * and the Chrome MCP Relay — handles tool calls dispatched from the MCP server.
  */
 
 // Global Configuration
 const BLOCKLIST_REGEX = /bank|medical|health|gov|secure|auth/i;
+const MCP_SERVER = 'http://localhost:3002';
+
+// ─── Chrome MCP Relay Listener ────────────────────────────────────────────────
+// Listens to the MCP server's SSE stream and executes chrome tool calls,
+// posting results back to /chrome-relay so they resolve in the AI's pipeline.
+let relayEventSource = null;
+
+function startChromeRelay() {
+  if (relayEventSource) relayEventSource.close();
+  
+  try {
+    relayEventSource = new EventSource(`${MCP_SERVER}/sse`);
+    
+    relayEventSource.onmessage = async (event) => {
+      let msg;
+      try { msg = JSON.parse(event.data); } catch { return; }
+      if (msg.type !== 'CHROME_TOOL_CALL') return;
+      
+      const { requestId, toolName, args } = msg;
+      let result = null;
+      let error = null;
+      
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        switch (toolName) {
+          case 'chrome_navigate': {
+            await chrome.tabs.update(tab?.id, { url: args.url });
+            await new Promise(r => setTimeout(r, args.wait_time || 2000));
+            result = `Navigated to ${args.url}`;
+            break;
+          }
+          case 'chrome_screenshot': {
+            const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
+            result = dataUrl;
+            break;
+          }
+          case 'chrome_extract_text': {
+            const [inj] = await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: () => {
+                ['nav','footer','aside','script','style','noscript','iframe','header'].forEach(s =>
+                  document.querySelectorAll(s).forEach(el => el.remove())
+                );
+                return document.body?.innerText?.substring(0, 50000) || '';
+              }
+            });
+            result = inj?.result || '';
+            break;
+          }
+          case 'chrome_extract_links': {
+            const [inj] = await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: () => JSON.stringify(
+                Array.from(document.querySelectorAll('a[href]'))
+                  .map(a => ({ text: a.innerText.trim(), href: a.href }))
+                  .filter(a => a.text && a.href)
+                  .slice(0, 200)
+              )
+            });
+            result = inj?.result || '[]';
+            break;
+          }
+          case 'chrome_click': {
+            await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: (sel) => document.querySelector(sel)?.click(),
+              args: [args.selector]
+            });
+            await new Promise(r => setTimeout(r, 500));
+            result = `Clicked: ${args.selector}`;
+            break;
+          }
+          case 'chrome_fill': {
+            await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: (sel, val) => {
+                const el = document.querySelector(sel);
+                if (el) { el.value = val; el.dispatchEvent(new Event('input', {bubbles:true})); }
+              },
+              args: [args.selector, args.value]
+            });
+            result = `Filled ${args.selector} with value`;
+            break;
+          }
+          case 'chrome_execute_js': {
+            const [inj] = await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: (code) => { try { return String(eval(code)); } catch(e) { return 'Error: ' + e.message; } },
+              args: [args.script]
+            });
+            result = inj?.result ?? '';
+            break;
+          }
+          case 'get_windows_and_tabs': {
+            const windows = await chrome.windows.getAll({ populate: true });
+            result = JSON.stringify(windows.map(w => ({
+              windowId: w.id, focused: w.focused,
+              tabs: (w.tabs || []).map(t => ({ tabId: t.id, title: t.title, url: t.url, active: t.active }))
+            })));
+            break;
+          }
+          case 'chrome_switch_tab': {
+            await chrome.tabs.update(args.tabId, { active: true });
+            result = `Switched to tab ${args.tabId}`;
+            break;
+          }
+          case 'chrome_close_tabs': {
+            await chrome.tabs.remove(args.tabIds);
+            result = `Closed tabs: ${args.tabIds}`;
+            break;
+          }
+          case 'chrome_history': {
+            const items = await chrome.history.search({ text: args.text, maxResults: args.maxResults || 20 });
+            result = JSON.stringify(items.map(i => ({ url: i.url, title: i.title, visitCount: i.visitCount })));
+            break;
+          }
+          case 'chrome_bookmark_search': {
+            const items = await chrome.bookmarks.search(args.query);
+            result = JSON.stringify(items.map(i => ({ title: i.title, url: i.url })));
+            break;
+          }
+          default:
+            error = `Unknown chrome tool: ${toolName}`;
+        }
+      } catch (e) {
+        error = e.message;
+      }
+      
+      // POST result back to MCP server relay
+      fetch(`${MCP_SERVER}/chrome-relay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, result, error })
+      }).catch(console.error);
+    };
+    
+    relayEventSource.onerror = () => {
+      // Retry connection after 5s if MCP server is not running yet
+      setTimeout(startChromeRelay, 5000);
+    };
+    
+    console.log('[WormGPT Extension] Chrome MCP relay connected');
+  } catch (e) {
+    console.warn('[WormGPT Extension] Chrome relay failed to start:', e.message);
+    setTimeout(startChromeRelay, 5000);
+  }
+}
+
+// Start relay when service worker starts
+startChromeRelay();
+
+
 
 // Audit Logging
 async function auditLog(actionType, targetUrl, details) {

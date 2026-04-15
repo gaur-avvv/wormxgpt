@@ -92,30 +92,51 @@ class PersistentConfig {
 }
 const config = new PersistentConfig();
 
-// ─── Child MCP Server Proxy (stdio) ───────────────────────────────────────────
-let chromeClient: Client | null = null;
-let chromeToolsCache: any[] = [];
+// ─── Chrome Extension Relay ────────────────────────────────────────────────
+// Instead of spawning an external mcp-chrome-stdio process (unreliable),
+// we use a lightweight HTTP relay: the Chrome extension POSTs results here,
+// and pending tool call promises resolve against them.
+let chromeClient: null = null; // kept for legacy compat check
+const chromeToolsCache: any[] = []; // no external tools needed
 
-async function initializeChromeBridge() {
-  try {
-    const isWin = process.platform === "win32";
-    // We launch the mcp-chrome-stdio process. In WSL or Linux it's usually in PATH mapping or via npx
-    const transport = new StdioClientTransport({
-      command: isWin ? "npx.cmd" : "npx",
-      args: ["-y", "mcp-chrome-bridge", "mcp-chrome-stdio"]
-    });
-    const client = new Client({ name: "wormgpt-bridge-proxy", version: "1.0.0" }, { capabilities: {} });
-    await client.connect(transport);
-    const toolsResult = await client.listTools();
-    chromeToolsCache = toolsResult.tools || [];
-    chromeClient = client;
-    console.log(`[MCP] 🔌 Connected to proxy: mcp-chrome-stdio (${chromeToolsCache.length} tools)`);
-  } catch (e: any) {
-    console.warn(`[MCP] ⚠️ Chrome bridge proxy failed to initialize (is it installed?):`, e.message);
+const pendingChromeRequests = new Map<string, { resolve: (v: any) => void; reject: (e: any) => void }>();
+
+/** Called by chrome_mcp_integration.ts / extension to return tool results */
+app.post("/chrome-relay", express.json(), (req, res) => {
+  const { requestId, result, error } = req.body;
+  const pending = pendingChromeRequests.get(requestId);
+  if (!pending) {
+    return res.status(404).json({ error: "No pending request with that ID" });
   }
+  pendingChromeRequests.delete(requestId);
+  if (error) pending.reject(new Error(error));
+  else pending.resolve(result);
+  res.json({ ok: true });
+});
+
+/** Queue a chrome tool call and wait for extension to deliver the result */
+async function dispatchChromeTool(toolName: string, args: any, timeoutMs = 15000): Promise<string> {
+  const requestId = crypto.randomUUID();
+  // Broadcast to any connected SSE client so the front-end can forward to extension
+  const payload = JSON.stringify({ type: 'CHROME_TOOL_CALL', requestId, toolName, args });
+  for (const [, transport] of transports) {
+    try { (transport as any).res?.write(`data: ${payload}\n\n`); } catch (_) { }
+  }
+  return new Promise<string>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      pendingChromeRequests.delete(requestId);
+      reject(new Error(`Chrome tool '${toolName}' timed out after ${timeoutMs}ms. Is the WormGPT extension active?`));
+    }, timeoutMs);
+    pendingChromeRequests.set(requestId, {
+      resolve: (v) => { clearTimeout(timer); resolve(typeof v === 'string' ? v : JSON.stringify(v)); },
+      reject: (e) => { clearTimeout(timer); reject(e); }
+    });
+  });
 }
-// Start initialization in background
-initializeChromeBridge();
+
+// No external process to spawn — Chrome bridge is handled natively above
+console.log('[MCP] ✅ Chrome relay endpoint ready at POST /chrome-relay');
+
 
 // ─── WormGPT Tools Manifest ────────────────────────────────────────────────────
 const memoryStore: Record<string, string> = {};
@@ -375,14 +396,21 @@ const callToolHandler = async (request: any) => {
   };
   const txterr = (t: string) => { _isError = true; return txt(t); };
 
-  // Proxy to chrome client if the tool belongs to it
-  if (chromeClient && chromeToolsCache.some(t => t.name === name)) {
+  // Chrome tools: dispatch to connected extension via relay
+  const CHROME_SERVER_TOOLS = new Set([
+    'chrome_navigate', 'chrome_screenshot', 'chrome_extract_text', 'chrome_extract_links',
+    'chrome_click', 'chrome_fill', 'chrome_execute_js',
+    'get_windows_and_tabs', 'chrome_switch_tab', 'chrome_close_tabs',
+    'chrome_history', 'chrome_bookmark_search'
+  ]);
+
+  if (CHROME_SERVER_TOOLS.has(name)) {
     try {
-      const result: any = await chromeClient.callTool(request.params);
+      const result = await dispatchChromeTool(name, a);
       recordToolCall(name, Date.now() - _callStart, false);
-      return result;
+      return { content: [{ type: 'text', text: result }] };
     } catch (e: any) {
-      return txterr(`Chrome Bridge Proxy Error: ${e.message}`);
+      return txterr(`Chrome tool error: ${e.message}`);
     }
   }
 

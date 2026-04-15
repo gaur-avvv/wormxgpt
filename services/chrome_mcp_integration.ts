@@ -1,3 +1,16 @@
+/**
+ * chrome_mcp_integration.ts
+ * 
+ * Bridges the MCP server's chrome tool calls to the actual Chrome Extension.
+ * 
+ * Flow:
+ *   1. AI calls chrome_navigate / chrome_click / etc.
+ *   2. executeToolCall() in tools.ts calls chromeBridge.page_navigate() etc.
+ *   3. chromeBridge delegates to mcpService.executeTool() which goes to the MCP server.
+ *   4. The MCP server dispatches via the SSE relay channel.
+ *   5. The Chrome Extension receives the call, executes it, POSTs result to /chrome-relay.
+ *   6. The pending promise resolves and the result comes back to the AI.
+ */
 import { mcpService } from "./mcp";
 
 // ── Security Constraints ───────────────────────────────────────────────────
