@@ -88,7 +88,7 @@ export class GroqService {
     const maxTokens = modelLimits[settings.model] || modelLimits['default'];
 
     // Truncate system instruction if too long (keep under 1000 tokens)
-    let systemPrompt = getEffectiveSystemInstruction(settings, messages);
+    let systemPrompt = getEffectiveSystemInstruction(settings, history);
     const systemTokens = estimateTokens(systemPrompt);
     if (systemTokens > 1000) {
       // Keep first 3500 chars (~875 tokens)

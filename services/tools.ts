@@ -7171,7 +7171,150 @@ export const getDynamicTools = async (settings: any) => {
     }
   } catch (e) { console.error("Error loading MCP tools:", e); }
 
-  const combinedTools = [...localTools, ...mappedMcpTools].map((t: any) => {
+  // ── Chrome MCP Tools ─────────────────────────────────────────────────────
+  // These are always injected when mcpEnabled is true, regardless of enabledTools.
+  // They allow any provider/model to control the user's browser via the Chrome extension.
+  const chromeMcpTools: any[] = settings.mcpEnabled ? [
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_navigate',
+        description: 'Navigate the active browser tab to a URL and wait for the page to load.',
+        parameters: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', description: 'The full URL to navigate to (must include https://)' },
+            wait_time: { type: 'number', description: 'Milliseconds to wait after navigation (default: 2000)' }
+          },
+          required: ['url']
+        }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_screenshot',
+        description: 'Take a screenshot of the current browser tab and return it as a base64 image.',
+        parameters: { type: 'object', properties: { selector: { type: 'string', description: 'Optional CSS selector to capture only that element' } } }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_extract_text',
+        description: 'Extract the visible text content from the current browser tab (strips navs, ads, footers).',
+        parameters: { type: 'object', properties: {} }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_extract_links',
+        description: 'Extract all hyperlinks (text + href) from the current browser tab.',
+        parameters: { type: 'object', properties: {} }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_click',
+        description: 'Click on an element in the browser tab using a CSS selector.',
+        parameters: {
+          type: 'object',
+          properties: { selector: { type: 'string', description: 'CSS selector of the element to click' } },
+          required: ['selector']
+        }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_fill',
+        description: 'Fill an input field in the browser tab with a value.',
+        parameters: {
+          type: 'object',
+          properties: {
+            selector: { type: 'string', description: 'CSS selector of the input field' },
+            value: { type: 'string', description: 'Text value to fill in' }
+          },
+          required: ['selector', 'value']
+        }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_execute_js',
+        description: 'Execute arbitrary JavaScript in the browser tab. Runs in a sandboxed context (no fetch/XHR). Returns the result.',
+        parameters: {
+          type: 'object',
+          properties: { script: { type: 'string', description: 'JavaScript code to execute' } },
+          required: ['script']
+        }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'get_windows_and_tabs',
+        description: 'List all currently open browser windows and their tabs (title, url, tabId).',
+        parameters: { type: 'object', properties: {} }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_switch_tab',
+        description: 'Switch the browser focus to a specific tab by its tabId.',
+        parameters: {
+          type: 'object',
+          properties: { tabId: { type: 'number', description: 'The numeric tab ID to switch to' } },
+          required: ['tabId']
+        }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_close_tabs',
+        description: 'Close one or more browser tabs by their tab IDs.',
+        parameters: {
+          type: 'object',
+          properties: { tabIds: { type: 'array', items: { type: 'number' }, description: 'Array of tab IDs to close' } },
+          required: ['tabIds']
+        }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_history',
+        description: 'Search the browser history for visited URLs matching a text query.',
+        parameters: {
+          type: 'object',
+          properties: {
+            text: { type: 'string', description: 'Search query text' },
+            maxResults: { type: 'number', description: 'Maximum results to return (default: 20)' }
+          },
+          required: ['text']
+        }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'chrome_bookmark_search',
+        description: 'Search saved browser bookmarks.',
+        parameters: {
+          type: 'object',
+          properties: { query: { type: 'string', description: 'Search query for bookmarks' } },
+          required: ['query']
+        }
+      }
+    }
+  ] : [];
+
+  const combinedTools = [...localTools, ...mappedMcpTools, ...chromeMcpTools].map((t: any) => {
     // Ensure all tools have a valid parameters schema to prevent Bedrock "empty inputSchema" errors.
     // Some providers reject completely missing parameters or empty properties.
     if (!t.function.parameters || !t.function.parameters.properties || Object.keys(t.function.parameters.properties).length === 0) {
@@ -7193,12 +7336,71 @@ export const executeToolCall = async (toolCall: ToolCall) => {
   let args;
   try { args = JSON.parse(toolCall.function.arguments); } catch (e) { args = toolCall.function.arguments || {}; }
 
+  // ── Chrome MCP tool routing ──────────────────────────────────────────────
+  // Route all chrome_* tools + browser tab tools through the chromeBridge,
+  // making them universally available to any provider/model.
+  const CHROME_TOOL_NAMES = new Set([
+    'chrome_navigate', 'chrome_screenshot', 'chrome_extract_text',
+    'chrome_extract_links', 'chrome_click', 'chrome_fill',
+    'chrome_execute_js', 'chrome_switch_tab', 'chrome_close_tabs',
+    'chrome_history', 'chrome_bookmark_search', 'get_windows_and_tabs'
+  ]);
+
+  if (CHROME_TOOL_NAMES.has(name)) {
+    try {
+      const { chromeBridge } = await import('./chrome_mcp_integration');
+      chromeBridge.onTurnStart();
+
+      let result: any;
+      switch (name) {
+        case 'chrome_navigate':
+          result = await chromeBridge.page_navigate(args.url, args.wait_time);
+          break;
+        case 'chrome_screenshot':
+          result = await chromeBridge.page_screenshot(args.selector);
+          break;
+        case 'chrome_extract_text':
+          result = await chromeBridge.page_extract_text();
+          break;
+        case 'chrome_extract_links':
+          result = await chromeBridge.page_extract_links();
+          break;
+        case 'chrome_click':
+          result = await chromeBridge.page_click(args.selector);
+          break;
+        case 'chrome_fill':
+          result = await chromeBridge.page_fill(args.selector, args.value);
+          break;
+        case 'chrome_execute_js':
+          result = await chromeBridge.page_execute_js(args.script);
+          break;
+        case 'get_windows_and_tabs':
+        case 'chrome_switch_tab':
+        case 'chrome_close_tabs':
+        case 'chrome_history':
+        case 'chrome_bookmark_search': {
+          // These are native Chrome extension APIs — delegate through MCP
+          const { mcpService } = await import('./mcp');
+          result = await mcpService.executeTool(name, args);
+          break;
+        }
+        default:
+          throw new Error(`Unhandled chrome tool: ${name}`);
+      }
+      return typeof result === 'string' ? result : JSON.stringify(result);
+    } catch (e: any) {
+      return JSON.stringify({ error: `Chrome MCP error: ${e.message}`, tool: name });
+    }
+  }
+
+  // ── Static tool lookup ───────────────────────────────────────────────────
   const tool = ATTACHED_TOOLS[name];
   if (tool) {
     const result = await tool.execute(args);
     return typeof result === 'string' ? result : JSON.stringify(result);
   }
 
+  // ── MCP server fallback ──────────────────────────────────────────────────
   try {
     const { mcpService } = await import('./mcp');
     if (mcpService.isConnected) {
