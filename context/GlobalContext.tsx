@@ -6,11 +6,14 @@ import {
   SETTINGS_KEY, 
   DEFAULT_SYSTEM_INSTRUCTION, 
   MODEL_OPTIONS, 
-  DEFAULT_MCP_SERVERS 
+  DEFAULT_MCP_SERVERS,
+  FALLBACK_CHAIN,
+  FREE_MODEL_DEFAULTS
 } from '../constants';
-import { sessionSync, pluginRegistry } from '../services';
-import * as services from '../services';
+import { sessionSync, pluginRegistry, mcpService } from '../services';
 import { sessionStore } from '../services/sessionStore';
+import { providerRouter, initializeProviderRouter } from '../services/providerRouter';
+import { multiAgentOrchestrator } from '../services/multiAgent';
 
 interface WormGPTContextType {
   sessions: ChatSession[];
@@ -60,8 +63,8 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem(SETTINGS_KEY);
     const defaults: AppSettings = {
-      model: 'gemini-2.0-flash-exp',
-      aiProvider: 'gemini',
+      model: 'openai',
+      aiProvider: 'pollinations',
       temperature: 0.87,
       topP: 1,
       maxTokens: 4000,
@@ -74,7 +77,10 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
       enabledTools: ['google_search', 'web_scraper', 'get_windows_and_tabs'],
       mcpEnabled: true,
       mcpServerUrls: ['http://localhost:3000/mcp'],
-      connectedApps: []
+      connectedApps: [],
+      autoFallback: true,
+      autoSelectFreeModel: true,
+      multiAgentEnabled: false,
     };
     if (saved) {
       try {
@@ -99,16 +105,45 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
     isStreaming.current = val;
   };
 
-  // 2. Persistence Effects
+  // 2. Initialize ProviderRouter & Multi-Agent on mount
+  const routerInitialized = useRef(false);
+  useEffect(() => {
+    if (!routerInitialized.current) {
+      routerInitialized.current = true;
+      initializeProviderRouter().then(() => {
+        console.log('[WormGPT] ProviderRouter initialized with', providerRouter.getRegisteredProviders().length, 'providers');
+      }).catch(e => console.error('[WormGPT] ProviderRouter init failed:', e));
+
+      // Initialize default multi-agent configs
+      if (settings.multiAgentEnabled) {
+        multiAgentOrchestrator.createDefaultAgents(settings);
+      }
+
+      // Auto-connect MCP servers
+      if (settings.mcpEnabled && settings.mcpServerUrls?.length) {
+        mcpService.connectMultiple(settings.mcpServerUrls).catch(e =>
+          console.warn('[WormGPT] MCP auto-connect failed:', e)
+        );
+      }
+    }
+  }, []);
+
+  // 3. Persistence Effects (debounced for settings)
   useEffect(() => {
     localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
     sessionStore.putAll(sessions).catch(e => console.error('IDB_SAVE_FAILED', e));
     sessionSync.broadcastSessionUpdate(activeSessionId, sessions);
   }, [sessions]);
 
+  const settingsSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    sessionSync.broadcastSettingsUpdate(settings);
+    // Debounce settings persistence to avoid saving on every keystroke
+    if (settingsSaveTimer.current) clearTimeout(settingsSaveTimer.current);
+    settingsSaveTimer.current = setTimeout(() => {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      sessionSync.broadcastSettingsUpdate(settings);
+    }, 300);
+    return () => { if (settingsSaveTimer.current) clearTimeout(settingsSaveTimer.current); };
   }, [settings]);
 
   useEffect(() => {
@@ -168,27 +203,6 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
         messages: [...updatedMessages, modelPlaceholder]
       } : s));
 
-      const provider = settings.aiProvider || 'gemini';
-      const serviceMap: Record<string, any> = {
-        gemini: services.geminiService,
-        groq: services.groqService,
-        pollinations: services.pollinationsService,
-        openai: services.openaiService,
-        anthropic: services.anthropicService,
-        deepseek: services.deepseekService,
-        mistral: services.mistralService,
-        perplexity: services.perplexityService,
-        xai: services.xaiService,
-        together: services.togetherService,
-        openrouter: services.openrouterService,
-        cerebras: services.cerebrasService,
-        siliconflow: services.siliconflowService,
-        moonshot: services.moonshotService,
-        ollama: services.ollamaService,
-        tinyfish: services.tinyfishService
-      };
-
-      const activeService = serviceMap[provider] || services.geminiService;
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
@@ -197,7 +211,24 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
       let lastSources: any[] = [];
 
       try {
-        const stream = activeService.streamChat(settings, updatedMessages, controller.signal);
+        // Check if multi-agent orchestration should handle this
+        let stream: AsyncGenerator<any>;
+
+        if (settings.multiAgentEnabled && multiAgentOrchestrator.listAgents().length > 0) {
+          const multiAgentTasks = multiAgentOrchestrator.analyzeForMultiAgent(filteredInput);
+          if (multiAgentTasks) {
+            stream = multiAgentOrchestrator.executeParallel(
+              multiAgentTasks, settings, updatedMessages, controller.signal
+            );
+          } else {
+            // Use ProviderRouter with auto-fallback
+            stream = providerRouter.streamWithFallback(settings, updatedMessages, controller.signal);
+          }
+        } else {
+          // Use ProviderRouter with auto-fallback
+          stream = providerRouter.streamWithFallback(settings, updatedMessages, controller.signal);
+        }
+
         for await (const chunk of stream) {
           if (controller.signal.aborted) break;
           lastText = chunk.text;
@@ -229,7 +260,7 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
     }
   }, [input, attachments, activeSession, activeSessionId, settings, setSessions]);
 
-  // 3. Global Keyboard Shortcuts
+  // 4. Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl+Enter: Send (global backup)
@@ -282,3 +313,4 @@ export const useWormGPT = () => {
   if (!context) throw new Error('useWormGPT must be used within a WormGPTProvider');
   return context;
 };
+

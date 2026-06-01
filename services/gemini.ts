@@ -55,10 +55,9 @@ export class GeminiService {
     const responseBudget = 4000;
 
     // Truncate system instruction if extremely long
+    // System prompt is ALWAYS injected — backend enforcement
     let systemPrompt = getEffectiveSystemInstruction(settings, messages);
-    if (!(settings.injectSystemPrompts ?? true)) {
-      systemPrompt = '';
-    } else if (estimateTokens(systemPrompt) > 2000) {
+    if (estimateTokens(systemPrompt) > 2000) {
       systemPrompt = systemPrompt.slice(0, 7500) + '...';
       console.log('System prompt truncated for Gemini');
     }
@@ -327,8 +326,8 @@ export class GeminiService {
         errorMessage = `RATE_LIMIT_EXCEEDED: Neural bandwidth depleted.\n\n` +
           `The Gemini API quota has been exhausted. Options:\n` +
           `• Wait ${retryTime}ms and retry\n` +
-          `• Switch to a different model (try gemini-2.0-flash)\n` +
-          `• Switch AI Provider to GROQ or Pollinations\n` +
+          `• Switch to a different model (try gemini-2.5-flash)\n` +
+          `• Auto-fallback will try free providers automatically\n` +
           `• Upgrade your API plan at ai.google.dev`;
       }
       // Auth/credential errors

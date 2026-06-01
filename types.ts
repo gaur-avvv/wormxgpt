@@ -1,5 +1,72 @@
 declare module '@google/adk';
 
+// ── Shared Provider Type ─────────────────────────────────────────────────────
+export type ProviderType =
+  | 'gemini' | 'groq' | 'pollinations' | 'cerebras' | 'siliconflow'
+  | 'together' | 'openrouter' | 'openai' | 'anthropic' | 'deepseek'
+  | 'mistral' | 'perplexity' | 'xai' | 'moonshot' | 'ollama'
+  | 'cohere' | 'wisgate' | 'nvidia' | 'fireworks' | 'sambanova'
+  | 'hyperbolic' | 'huggingface' | 'replicate' | 'azure' | 'bedrock'
+  | 'vertexai' | 'cloudflare' | 'deepinfra' | 'novita' | 'featherless'
+  | 'lambdaai' | 'nebius' | 'tinyfish';
+
+// ── Stream Response ──────────────────────────────────────────────────────────
+export interface StreamChunk {
+  text: string;
+  images: string[];
+  video?: string;
+  audio?: string;
+  sources?: { title: string; url: string }[];
+}
+
+// ── Provider Health Stats ────────────────────────────────────────────────────
+export interface ProviderHealthStats {
+  provider: ProviderType;
+  totalCalls: number;
+  successCalls: number;
+  failedCalls: number;
+  avgLatencyMs: number;
+  lastLatencyMs: number;
+  lastError?: string;
+  lastErrorAt?: number;
+  isHealthy: boolean;
+  isFree: boolean;
+}
+
+// ── Multi-Agent / Sub-Agent Types ────────────────────────────────────────────
+export interface AgentConfig {
+  id: string;
+  name: string;
+  role: string;
+  provider: ProviderType;
+  model: string;
+  systemPrompt: string;
+  tools?: string[];
+  parentId?: string;
+}
+
+export interface AgentTask {
+  id: string;
+  agentId: string;
+  prompt: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  result?: string;
+  error?: string;
+  startedAt?: number;
+  completedAt?: number;
+  subTasks?: AgentTask[];
+}
+
+export interface AgentOrchestrationConfig {
+  enabled: boolean;
+  maxAgents: number;
+  maxDepth: number;
+  timeout: number;
+  agents: AgentConfig[];
+}
+
+// ── Core Types ───────────────────────────────────────────────────────────────
+
 export interface Message {
   role: 'user' | 'model' | 'assistant' | 'tool';
   content: string;
@@ -10,6 +77,7 @@ export interface Message {
   audio?: string;
   sources?: { title: string; url: string }[];
   toolInvocations?: ToolInvocation[];
+  agentId?: string;
 }
 
 export interface ToolInvocation {
@@ -45,7 +113,7 @@ export interface AppSettings {
   mistralApiKey?: string;
   perplexityApiKey?: string;
   xaiApiKey?: string;
-  aiProvider: 'gemini' | 'groq' | 'pollinations' | 'cerebras' | 'siliconflow' | 'together' | 'openrouter' | 'openai' | 'anthropic' | 'deepseek' | 'mistral' | 'perplexity' | 'xai' | 'moonshot' | 'ollama' | 'cohere' | 'wisgate' | 'nvidia' | 'fireworks' | 'sambanova' | 'hyperbolic' | 'huggingface' | 'replicate' | 'azure' | 'bedrock' | 'vertexai' | 'cloudflare' | 'deepinfra' | 'novita' | 'featherless' | 'lambdaai' | 'nebius';
+  aiProvider: ProviderType;
   enabledTools?: string[];
   mcpServerUrls?: string[];
   mcpEnabled?: boolean;
@@ -126,6 +194,13 @@ export interface AppSettings {
   promptInjectionMode?: 'always' | 'once' | 'manual';
   injectedPrompts?: string[];
   lastInjectedPrompt?: string;
+  // Auto-Fallback & Free Model Selection
+  autoFallback?: boolean;
+  autoSelectFreeModel?: boolean;
+  fallbackChain?: ProviderType[];
+  // Multi-Agent Orchestration
+  multiAgentEnabled?: boolean;
+  multiAgentConfig?: AgentOrchestrationConfig;
   // App Integrations
   githubToken?: string;
   gmailApiKey?: string;

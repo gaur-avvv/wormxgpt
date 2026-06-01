@@ -90,7 +90,7 @@ export class MCPService {
 
   // ── Call-level result cache (60s TTL) ─────────────────────────────────────
   private callCache: Map<string, CallCacheEntry> = new Map();
-  private readonly CALL_CACHE_TTL = 60_000; // 60 seconds
+  private readonly CALL_CACHE_TTL = 30_000; // 30 seconds (reduced for time-sensitive tools)
 
   // ── Circuit Breaker ───────────────────────────────────────────────────────
   private readonly CB_FAILURE_THRESHOLD = 3;   // trips after 3 consecutive failures
@@ -98,7 +98,9 @@ export class MCPService {
 
   // ── Timeouts & Delays ────────────────────────────────────────────────────
   private readonly TOOL_CALL_TIMEOUT = 45_000;
-  private readonly RECONNECT_DELAY   = 10_000;
+  private readonly RECONNECT_BASE_DELAY = 5_000;  // Exponential backoff base
+  private readonly RECONNECT_MAX_DELAY  = 120_000; // Max 2 min delay
+  private reconnectAttempts: Map<string, number> = new Map();
   private readonly HEALTH_INTERVAL   = 30_000;  // 30s — detects stale connections faster
   private readonly MAX_RETRIES       = 3;
 
@@ -471,9 +473,17 @@ export class MCPService {
   async connectMultiple(urls: string[]): Promise<void> {
     // Disconnect removed URLs
     const toRemove = Array.from(this.servers.keys()).filter(u => !urls.includes(u));
-    await Promise.all(toRemove.map(u => this.disconnect(u)));
-    // Connect new/existing URLs in parallel
-    await Promise.all(urls.filter(u => u?.trim()).map(u => this.connect(u)));
+    await Promise.allSettled(toRemove.map(u => this.disconnect(u)));
+    // Connect new/existing URLs in parallel (allSettled: one failure doesn't block others)
+    const results = await Promise.allSettled(
+      urls.filter(u => u?.trim()).map(u => this.connect(u))
+    );
+    // Log failed connections
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        console.warn(`[MCP] Failed to connect ${urls[i]}: ${r.reason}`);
+      }
+    });
   }
 
   async disconnect(url?: string): Promise<void> {

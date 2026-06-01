@@ -6,10 +6,12 @@ import {
   deepseekService, mistralService, xaiService, perplexityService,
   togetherService, openrouterService, cerebrasService, siliconflowService,
   moonshotService, ollamaService, pollinationsService, tinyfishService,
-  mcpService, integrationRegistry, promptCacheService, a2aService, supabaseAuth
+  mcpService, integrationRegistry, promptCacheService, a2aService, supabaseAuth,
+  providerRouter
 } from '../../services';
+import { multiAgentOrchestrator } from '../../services/multiAgent';
 import { ATTACHED_TOOLS, TOOL_CATEGORIES, APP_INTEGRATIONS } from '../../services';
-import { DEFAULT_SYSTEM_INSTRUCTION, MODEL_OPTIONS } from '../../constants';
+import { DEFAULT_SYSTEM_INSTRUCTION, MODEL_OPTIONS, FALLBACK_CHAIN, FREE_MODEL_DEFAULTS, FREE_PROVIDERS } from '../../constants';
 
 type SettingsTab = 'system' | 'security' | 'connection' | 'apps' | 'tools';
 
@@ -19,6 +21,8 @@ export const SettingsModal: React.FC<{
   const { isSettingsOpen, setIsSettingsOpen, settings, setSettings } = useWormGPT();
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab || 'system');
   const [verificationStatuses, setVerificationStatuses] = useState<Record<string, 'idle' | 'verifying' | 'valid' | 'invalid'>>({});
+  const [modelSearch, setModelSearch] = useState('');
+  const healthStats = useMemo(() => providerRouter.getHealthStats(), [isSettingsOpen]);
   
   useEffect(() => {
     if (isSettingsOpen) setActiveTab(initialTab || 'system');
@@ -70,6 +74,12 @@ export const SettingsModal: React.FC<{
   const currentModelOption = MODEL_OPTIONS.find(m => m.value === settings.model);
   const effectiveProvider = (settings.aiProvider || currentModelOption?.provider || providerOptions[0]) as any;
   const modelsForProvider = MODEL_OPTIONS.filter(m => m.provider === effectiveProvider);
+  const filteredModels = modelSearch.trim()
+    ? modelsForProvider.filter(m => 
+        m.label.toLowerCase().includes(modelSearch.toLowerCase()) ||
+        m.value.toLowerCase().includes(modelSearch.toLowerCase())
+      )
+    : modelsForProvider;
   const selectedModelValue = modelsForProvider.some(m => m.value === settings.model)
     ? settings.model
     : (modelsForProvider[0]?.value || '');
@@ -199,17 +209,78 @@ export const SettingsModal: React.FC<{
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]/80">Active Model</label>
+                  <input
+                    type="text"
+                    value={modelSearch}
+                    onChange={e => setModelSearch(e.target.value)}
+                    placeholder="🔍 Search models..."
+                    className="w-full bg-black/80 border-2 border-[#F120F0]/30 rounded-lg px-3 py-1.5 text-[10px] text-[#F120F0] outline-none focus:border-[#F120F0] font-mono placeholder-[#F120F0]/30 mb-1"
+                  />
                   <select
                     value={selectedModelValue}
                     onChange={(e) => setSettings(prev => ({ ...prev, model: e.target.value }))}
                     className="w-full bg-black/80 border-2 border-[#F120F0]/50 rounded-lg px-3 py-2 text-[11px] text-[#F120F0] outline-none focus:border-[#F120F0] focus:shadow-[0_0_12px_rgba(241,32,240,0.4)] font-bold transition-all"
+                    size={Math.min(filteredModels.length, 6)}
                   >
-                    {modelsForProvider.map(m => (
-                      <option key={m.value} value={m.value} className="bg-black">{m.label || m.value}</option>
+                    {filteredModels.map(m => (
+                      <option key={m.value} value={m.value} className="bg-black">
+                        {m.isFree ? '🆓 ' : ''}{m.label || m.value}
+                      </option>
                     ))}
                   </select>
+                  <div className="text-[8px] text-[#F120F0]/40 font-mono">{filteredModels.length} models • 🆓 = Free</div>
                 </div>
               </div>
+
+              {/* Auto-Fallback & Free Model Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-black/40 p-4 border border-green-900/30 rounded-lg">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-green-400">⚡ Auto-Fallback</label>
+                    <button onClick={() => setSettings(prev => ({ ...prev, autoFallback: !prev.autoFallback }))} className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded transition-all ${(settings as any)?.autoFallback ? 'bg-green-900/20 border-green-500 text-green-400' : 'border-zinc-700 text-zinc-500'}`}>{(settings as any)?.autoFallback ? 'ON' : 'OFF'}</button>
+                  </div>
+                  <div className="text-[9px] text-zinc-500">Auto-switch to free providers on failure</div>
+                  <div className="text-[8px] text-zinc-600 font-mono">Chain: {FALLBACK_CHAIN.join(' → ')}</div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-400">🤖 Multi-Agent</label>
+                    <button onClick={() => {
+                      const next = !(settings as any)?.multiAgentEnabled;
+                      setSettings(prev => ({ ...prev, multiAgentEnabled: next }));
+                      if (next) multiAgentOrchestrator.createDefaultAgents(settings);
+                    }} className={`text-[9px] font-black uppercase px-2 py-0.5 border rounded transition-all ${(settings as any)?.multiAgentEnabled ? 'bg-blue-900/20 border-blue-500 text-blue-400' : 'border-zinc-700 text-zinc-500'}`}>{(settings as any)?.multiAgentEnabled ? 'ON' : 'OFF'}</button>
+                  </div>
+                  <div className="text-[9px] text-zinc-500">Spawn sub-agents for complex tasks</div>
+                  {(settings as any)?.multiAgentEnabled && (
+                    <div className="space-y-1 mt-1">
+                      {multiAgentOrchestrator.listAgents().map(agent => (
+                        <div key={agent.id} className="flex items-center justify-between bg-black/40 rounded px-2 py-1 border border-blue-900/20">
+                          <span className="text-[8px] text-blue-400 font-mono">{agent.name}</span>
+                          <span className="text-[7px] text-zinc-600 font-mono">{agent.provider}/{agent.model}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Provider Health Dashboard */}
+              {healthStats.length > 0 && (
+                <div className="space-y-2 bg-black/40 p-3 border border-[#F120F0]/20 rounded-lg">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]/50">Provider Health</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {healthStats.filter(h => h.totalCalls > 0).slice(0, 6).map(h => (
+                      <div key={h.provider} className={`p-2 rounded border text-center ${h.isHealthy ? 'border-green-900/30 bg-green-950/10' : 'border-red-900/30 bg-red-950/10'}`}>
+                        <div className="text-[9px] font-black uppercase text-[#F120F0]">{h.provider}{h.isFree ? ' 🆓' : ''}</div>
+                        <div className={`text-[8px] font-mono ${h.isHealthy ? 'text-green-400' : 'text-red-400'}`}>
+                          {h.successCalls}/{h.totalCalls} OK • {h.avgLatencyMs}ms
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Param Presets */}
               <div className="grid grid-cols-4 gap-2 mb-4">
@@ -462,8 +533,15 @@ export const SettingsModal: React.FC<{
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-2 border-b border-[#F120F0]/20">
                 <div className="text-xs font-black uppercase tracking-[0.2em] text-[#F120F0]">Module Arsenal</div>
-                <div className="text-[10px] font-mono text-[#F120F0]/50 px-2 py-1 bg-black rounded-lg border border-[#F120F0]/20">
-                  {settings.enabledTools?.length || 0} ACTIVE
+                <div className="flex items-center gap-2">
+                  <button onClick={() => {
+                    const allTools = TOOL_CATEGORIES.flatMap(c => c.tools);
+                    setSettings(prev => ({ ...prev, enabledTools: allTools }));
+                  }} className="text-[8px] font-black uppercase px-2 py-0.5 border border-green-500/30 text-green-400 rounded hover:bg-green-900/20 transition-all">ALL ON</button>
+                  <button onClick={() => setSettings(prev => ({ ...prev, enabledTools: [] }))} className="text-[8px] font-black uppercase px-2 py-0.5 border border-red-500/30 text-red-400 rounded hover:bg-red-900/20 transition-all">ALL OFF</button>
+                  <div className="text-[10px] font-mono text-[#F120F0]/50 px-2 py-1 bg-black rounded-lg border border-[#F120F0]/20">
+                    {settings.enabledTools?.length || 0} ACTIVE
+                  </div>
                 </div>
               </div>
 
@@ -479,6 +557,15 @@ export const SettingsModal: React.FC<{
                         {category.title}
                       </h3>
                       <span className="text-[9px] text-zinc-500 ml-2 normal-case tracking-normal">{category.description}</span>
+                      <button onClick={() => {
+                        const current = settings.enabledTools || [];
+                        const allInCat = category.tools.every(t => current.includes(t));
+                        if (allInCat) {
+                          setSettings(prev => ({ ...prev, enabledTools: current.filter(t => !category.tools.includes(t)) }));
+                        } else {
+                          setSettings(prev => ({ ...prev, enabledTools: [...new Set([...current, ...category.tools])] }));
+                        }
+                      }} className="text-[7px] font-black uppercase px-1.5 py-0.5 border border-[#F120F0]/20 text-[#F120F0]/50 rounded hover:text-[#F120F0] hover:border-[#F120F0]/50 transition-all ml-auto">TOGGLE ALL</button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {category.tools.map(toolName => {
@@ -645,7 +732,7 @@ export const SettingsModal: React.FC<{
         </div>
 
         <div className="p-6 border-t border-[#F120F0]/30 bg-[#050000] flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-[#F120F0]/50">
-          <div>Settings_v4.8.0 // TERMINAL_GUI_MODULARIZED</div>
+          <div>Settings_v5.0.0 // AUTO-FALLBACK + MULTI-AGENT</div>
           <button
             onClick={() => { if (confirm('SYSTEM CRITICAL: Purging all stored data. Proceed?')) { localStorage.clear(); window.location.reload(); } }}
             className="text-red-900 hover:text-red-500 transition-colors bg-red-950/10 px-3 py-1.5 rounded-lg border border-red-900/30"

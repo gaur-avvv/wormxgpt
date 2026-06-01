@@ -29,3 +29,23 @@ export { promptCacheService } from './promptCache';
 export type { PromptCacheStats } from './promptCache';
 export { agentEngine } from './agent_engine';
 export { memoryService } from './memory';
+
+// ── New Provider Services ────────────────────────────────────────────────────
+export { OpenAICompatibleService } from './openaiCompatible';
+export { cohereService } from './cohere';
+export { nvidiaService } from './nvidia';
+export { fireworksService } from './fireworks';
+export { sambanovaService } from './sambanova';
+export { hyperbolicService } from './hyperbolic';
+export { huggingfaceService } from './huggingface';
+export { deepinfraService } from './deepinfra';
+export { novitaService } from './novita';
+export { featherlessService } from './featherless';
+export { lambdaaiService } from './lambdaai';
+export { nebiusService } from './nebius';
+export { wisGateService } from './wisgate';
+
+// ── Core Infrastructure ──────────────────────────────────────────────────────
+export { providerRouter, initializeProviderRouter } from './providerRouter';
+export type { ProviderService } from './providerRouter';
+export { multiAgentOrchestrator } from './multiAgent';

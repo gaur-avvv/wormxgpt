@@ -1,8 +1,34 @@
+import { ProviderType } from './types';
+
 export interface ModelOption {
   label: string;
   value: string;
-  provider?: 'gemini' | 'groq' | 'pollinations' | 'cerebras' | 'siliconflow' | 'together' | 'openrouter' | 'openai' | 'anthropic' | 'deepseek' | 'mistral' | 'perplexity' | 'xai' | 'moonshot' | 'ollama' | 'cohere' | 'wisgate' | 'nvidia' | 'fireworks' | 'sambanova' | 'hyperbolic' | 'huggingface' | 'replicate' | 'azure' | 'bedrock' | 'vertexai' | 'cloudflare' | 'deepinfra' | 'novita' | 'featherless' | 'lambdaai' | 'nebius';
+  provider?: ProviderType;
+  isFree?: boolean;
+  contextWindow?: number;
+  capabilities?: ('chat' | 'tools' | 'vision' | 'image' | 'video' | 'audio' | 'code' | 'reasoning')[];
 }
+
+// ── Auto-Fallback Configuration ──────────────────────────────────────────────
+export const FALLBACK_CHAIN: ProviderType[] = [
+  'pollinations', 'groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface', 'wisgate'
+];
+
+export const FREE_MODEL_DEFAULTS: Partial<Record<ProviderType, string>> = {
+  pollinations: 'openai',
+  groq: 'llama-3.3-70b-versatile',
+  cerebras: 'llama-3.3-70b',
+  sambanova: 'Meta-Llama-3.3-70B-Instruct',
+  siliconflow: 'Qwen/Qwen3-8B',
+  huggingface: 'meta-llama/Llama-3.3-70B-Instruct',
+  wisgate: 'gemini-3-flash',
+};
+
+// ── Provider API Key Requirements ────────────────────────────────────────────
+export const FREE_PROVIDERS: ProviderType[] = ['pollinations', 'wisgate'];
+export const FREE_TIER_PROVIDERS: ProviderType[] = ['groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface'];
+
+
 
 export const DEFAULT_MCP_SERVERS = [
   'http://localhost:3002/sse',
@@ -166,25 +192,17 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { label: 'Groq Orpheus V1 English (TTS)', value: 'canopylabs/orpheus-v1-english', provider: 'groq' },
   { label: 'Groq Orpheus Arabic Saudi (TTS)', value: 'canopylabs/orpheus-arabic-saudi', provider: 'groq' },
 
-  // Pollinations Models - Text (Updated Feb 2026)
+  // Pollinations Models - Text (Updated Feb 2026) - ALL FREE, no API key needed
 
   // Premium / Specialized Reasoning
-  { label: ' OpenAI GPT-5.2 (Reasoning)', value: 'openai-large', provider: 'pollinations' },
-  { label: ' Claude Opus 4.6 (Most Intelligent)', value: 'claude-large', provider: 'pollinations' },
-  { label: ' Gemini 3.1 Pro (1M Context)', value: 'gemini-large', provider: 'pollinations' },
-  { label: ' DeepSeek V3.2 (Reasoning)', value: 'deepseek', provider: 'pollinations' },
-  { label: ' Kimi K2.5 (Flagship Agentic)', value: 'kimi', provider: 'pollinations' },
-  { label: ' GLM-5 (744B MoE Long Context)', value: 'glm', provider: 'pollinations' },
+  { label: ' OpenAI GPT-5.2 (Reasoning)', value: 'openai-large', provider: 'pollinations', isFree: true },
+  { label: ' Claude Opus 4.6 (Most Intelligent)', value: 'claude-large', provider: 'pollinations', isFree: true },
+  { label: ' Gemini 3.1 Pro (1M Context)', value: 'gemini-large', provider: 'pollinations', isFree: true },
+  { label: ' DeepSeek V3.2 (Reasoning)', value: 'deepseek', provider: 'pollinations', isFree: true },
+  { label: ' Kimi K2.5 (Flagship Agentic)', value: 'kimi', provider: 'pollinations', isFree: true },
+  { label: ' GLM-5 (744B MoE Long Context)', value: 'glm', provider: 'pollinations', isFree: true },
 
   // Fast & Balanced
-  { label: ' OpenAI GPT-5 Mini (Balanced)', value: 'openai', provider: 'pollinations' },
-  { label: ' OpenAI GPT-5 Nano (Ultra Fast)', value: 'openai-fast', provider: 'pollinations' },
-  { label: ' Claude Sonnet 4.6 (Balanced)', value: 'claude', provider: 'pollinations' },
-  { label: ' Claude Haiku 4.5 (Fast)', value: 'claude-fast', provider: 'pollinations' },
-  { label: ' Claude Airforce (Military Grade)', value: 'claude-airforce', provider: 'pollinations' },
-  { label: ' OpenAI Seraphyn (Elite Agent)', value: 'openai-seraphyn', provider: 'pollinations' },
-  { label: ' Gemini 3 Flash (Pro Reasoning)', value: 'gemini', provider: 'pollinations' },
-  { label: ' Gemini 2.5 Flash Lite (Fast)', value: 'gemini-fast', provider: 'pollinations' },
   { label: ' Mistral Small 3.2 (Efficient)', value: 'mistral', provider: 'pollinations' },
   { label: ' Nova Micro (Ultra Cheap)', value: 'nova-fast', provider: 'pollinations' },
   { label: ' MiniMax M2.5 (Multi-Lang)', value: 'minimax', provider: 'pollinations' },
