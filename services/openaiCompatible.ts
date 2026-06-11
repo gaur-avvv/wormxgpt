@@ -127,15 +127,20 @@ export abstract class OpenAICompatibleService {
     const tokenBudget = maxTokenBudget - responseBudget;
     let usedTokens = 0;
 
-    // System prompt - always injected, truncate if too long
+    // System prompt — fully user-controlled via Settings
     let systemPrompt = getEffectiveSystemInstruction(settings, messages);
-    if (estimateTokens(systemPrompt) > 1500) {
+    // Truncate only if extremely long (over ~1500 tokens / ~6000 chars)
+    if (systemPrompt && estimateTokens(systemPrompt) > 1500) {
       systemPrompt = systemPrompt.substring(0, 6000) + '\n[System prompt truncated for token limit]';
     }
     usedTokens += estimateTokens(systemPrompt);
 
-    // Build API messages
-    const apiMessages: any[] = [{ role: 'system', content: systemPrompt }];
+    // Build API messages — only include system message if non-empty
+    const apiMessages: any[] = [];
+    if (systemPrompt.trim()) {
+      apiMessages.push({ role: 'system', content: systemPrompt });
+    }
+
 
     // Always include the last message
     const lastMsg = messages[messages.length - 1];

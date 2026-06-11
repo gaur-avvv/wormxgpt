@@ -46,11 +46,20 @@ export default defineConfig(({ mode }) => {
       build: {
         outDir: 'dist',
         sourcemap: false,
+        chunkSizeWarningLimit: 3000,
+        minify: 'terser',
+        terserOptions: {
+          compress: {
+            drop_console: false,
+            drop_debugger: true,
+          }
+        },
         rollupOptions: {
           output: {
             manualChunks: {
               vendor: ['react', 'react-dom'],
-              gemini: ['@google/genai']
+              gemini: ['@google/genai'],
+              markdown: ['react-markdown', 'remark-gfm', 'rehype-raw', 'remark-math', 'rehype-katex'],
             }
           }
         }
