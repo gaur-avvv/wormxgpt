@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AppSettings } from '../../types';
 import { useWormGPT } from '../../context/GlobalContext';
 import { 
@@ -6,14 +6,142 @@ import {
   deepseekService, mistralService, xaiService, perplexityService,
   togetherService, openrouterService, cerebrasService, siliconflowService,
   moonshotService, ollamaService, pollinationsService, tinyfishService,
+  cohereService, nvidiaService, fireworksService, sambanovaService,
+  hyperbolicService, huggingfaceService, deepinfraService, novitaService,
+  featherlessService, lambdaaiService, nebiusService, wisGateService,
   mcpService, integrationRegistry, promptCacheService, a2aService, supabaseAuth,
   providerRouter
 } from '../../services';
 import { multiAgentOrchestrator } from '../../services/multiAgent';
-import { ATTACHED_TOOLS, TOOL_CATEGORIES, APP_INTEGRATIONS } from '../../services';
-import { DEFAULT_SYSTEM_INSTRUCTION, MODEL_OPTIONS, FALLBACK_CHAIN, FREE_MODEL_DEFAULTS, FREE_PROVIDERS } from '../../constants';
+import { TOOL_CATEGORIES, APP_INTEGRATIONS } from '../../services';
+import { DEFAULT_SYSTEM_INSTRUCTION, MODEL_OPTIONS, FALLBACK_CHAIN, FREE_PROVIDERS } from '../../constants';
 
 type SettingsTab = 'system' | 'security' | 'connection' | 'apps' | 'tools';
+
+// ── Provider Labels (moved OUTSIDE component to prevent re-creation) ───────────
+const PROVIDER_LABELS: Record<string, string> = {
+  gemini: 'Google Gemini',
+  groq: 'Groq Cloud',
+  pollinations: 'Pollinations (Free)',
+  cerebras: 'Cerebras',
+  siliconflow: 'SiliconFlow',
+  together: 'Together AI',
+  openrouter: 'OpenRouter',
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+  deepseek: 'DeepSeek',
+  mistral: 'Mistral',
+  perplexity: 'Perplexity',
+  xai: 'xAI Grok',
+  moonshot: 'Moonshot Kimi',
+  ollama: 'Ollama Local',
+  cohere: 'Cohere',
+  wisgate: 'WisGate AI',
+  nvidia: 'NVIDIA NIM',
+  fireworks: 'Fireworks AI',
+  sambanova: 'SambaNova',
+  hyperbolic: 'Hyperbolic',
+  huggingface: 'HuggingFace',
+  deepinfra: 'DeepInfra',
+  novita: 'Novita AI',
+  featherless: 'Featherless AI',
+  lambdaai: 'Lambda AI',
+  nebius: 'Nebius Studio',
+  tinyfish: 'TinyFish',
+  ai21: 'AI21 Labs',
+};
+
+// ── API Key provider config (OUTSIDE component to prevent infinite debounce loop)
+type ProviderGroup = 'AI Models' | 'Search APIs' | 'Tools';
+interface ProviderConfig {
+  key: keyof AppSettings;
+  label: string;
+  group: ProviderGroup;
+}
+
+const PROVIDER_CONFIGS: ProviderConfig[] = [
+  // AI Models
+  { key: 'geminiApiKey', label: 'Google Gemini', group: 'AI Models' },
+  { key: 'groqApiKey', label: 'Groq Cloud', group: 'AI Models' },
+  { key: 'openaiApiKey', label: 'OpenAI', group: 'AI Models' },
+  { key: 'anthropicApiKey', label: 'Anthropic Claude', group: 'AI Models' },
+  { key: 'deepseekApiKey', label: 'DeepSeek', group: 'AI Models' },
+  { key: 'mistralApiKey', label: 'Mistral', group: 'AI Models' },
+  { key: 'xaiApiKey', label: 'xAI Grok', group: 'AI Models' },
+  { key: 'openRouterApiKey', label: 'OpenRouter', group: 'AI Models' },
+  { key: 'togetherApiKey', label: 'Together AI', group: 'AI Models' },
+  { key: 'cerebrasApiKey', label: 'Cerebras', group: 'AI Models' },
+  { key: 'siliconFlowApiKey', label: 'SiliconFlow', group: 'AI Models' },
+  { key: 'perplexityApiKey', label: 'Perplexity', group: 'AI Models' },
+  { key: 'pollinationsApiKey', label: 'Pollinations', group: 'AI Models' },
+  { key: 'moonshotApiKey', label: 'Moonshot Kimi', group: 'AI Models' },
+  { key: 'ollamaApiKey', label: 'Ollama Local', group: 'AI Models' },
+  { key: 'wisGateApiKey', label: 'WisGate AI', group: 'AI Models' },
+  { key: 'cohereApiKey', label: 'Cohere', group: 'AI Models' },
+  { key: 'nvidiaApiKey', label: 'NVIDIA NIM', group: 'AI Models' },
+  { key: 'fireworksApiKey', label: 'Fireworks AI', group: 'AI Models' },
+  { key: 'sambanovaApiKey', label: 'SambaNova', group: 'AI Models' },
+  { key: 'hyperbolicApiKey', label: 'Hyperbolic', group: 'AI Models' },
+  { key: 'huggingfaceApiKey', label: 'HuggingFace', group: 'AI Models' },
+  { key: 'deepinfraApiKey', label: 'DeepInfra', group: 'AI Models' },
+  { key: 'novitaApiKey', label: 'Novita AI', group: 'AI Models' },
+  { key: 'featherlessApiKey', label: 'Featherless AI', group: 'AI Models' },
+  { key: 'lambdaaiApiKey', label: 'Lambda AI', group: 'AI Models' },
+  { key: 'nebiusApiKey', label: 'Nebius Studio', group: 'AI Models' },
+  { key: 'tinyfishApiKey', label: 'TinyFish WebAgent', group: 'AI Models' },
+  // Search APIs
+  { key: 'witAiServerToken', label: 'Wit.AI Server Token', group: 'Search APIs' },
+  { key: 'tavilyApiKey', label: 'Tavily Search', group: 'Search APIs' },
+  { key: 'braveApiKey', label: 'Brave Search', group: 'Search APIs' },
+  { key: 'kagiApiKey', label: 'Kagi Search', group: 'Search APIs' },
+  { key: 'mojeekApiKey', label: 'Mojeek Search', group: 'Search APIs' },
+  { key: 'serperApiKey', label: 'Serper Search', group: 'Search APIs' },
+  { key: 'serpapiApiKey', label: 'SerpAPI Search', group: 'Search APIs' },
+  // Tools
+  { key: 'firecrawlApiKey', label: 'Firecrawl', group: 'Tools' },
+];
+
+// ── Verify API key for a given config key ──────────────────────────────────────
+async function verifyKey(providerKey: keyof AppSettings, key: string): Promise<boolean> {
+  const k = String(providerKey).toLowerCase();
+  try {
+    if (k.includes('gemini')) return await geminiService.verifyApiKey(key);
+    if (k.includes('groq')) return await groqService.verifyApiKey(key);
+    if (k.includes('anthropic')) return await anthropicService.verifyApiKey(key);
+    if (k.includes('openai')) return await openaiService.verifyApiKey(key);
+    if (k.includes('deepseek')) return await deepseekService.verifyApiKey(key);
+    if (k.includes('mistral')) return await mistralService.verifyApiKey(key);
+    if (k.includes('xai')) return await xaiService.verifyApiKey(key);
+    if (k.includes('perplexity')) return await perplexityService.verifyApiKey(key);
+    if (k.includes('together')) return await togetherService.verifyApiKey(key);
+    if (k.includes('openrouter')) return await openrouterService.verifyApiKey(key);
+    if (k.includes('cerebras')) return await cerebrasService.verifyApiKey(key);
+    if (k.includes('siliconflow')) return await siliconflowService.verifyApiKey(key);
+    if (k.includes('moonshot')) return await moonshotService.verifyApiKey(key);
+    if (k.includes('ollama')) return await ollamaService.verifyApiKey(key);
+    if (k.includes('pollinations')) return await pollinationsService.verifyApiKey(key);
+    if (k.includes('tinyfish')) return await tinyfishService.verifyApiKey(key);
+    if (k.includes('cohere')) return await cohereService.verifyApiKey(key);
+    if (k.includes('nvidia')) return await nvidiaService.verifyApiKey(key);
+    if (k.includes('fireworks')) return await fireworksService.verifyApiKey(key);
+    if (k.includes('sambanova')) return await sambanovaService.verifyApiKey(key);
+    if (k.includes('hyperbolic')) return await hyperbolicService.verifyApiKey(key);
+    if (k.includes('huggingface')) return await huggingfaceService.verifyApiKey(key);
+    if (k.includes('deepinfra')) return await deepinfraService.verifyApiKey(key);
+    if (k.includes('novita')) return await novitaService.verifyApiKey(key);
+    if (k.includes('featherless')) return await featherlessService.verifyApiKey(key);
+    if (k.includes('lambdaai')) return await lambdaaiService.verifyApiKey(key);
+    if (k.includes('nebius')) return await nebiusService.verifyApiKey(key);
+    if (k.includes('wisgate')) return await wisGateService.verifyApiKey(key);
+    // Search/tool keys: just check non-empty
+    return key.length > 8;
+  } catch {
+    return false;
+  }
+}
+
+// ── Provider options (pre-computed OUTSIDE component) ─────────────────────────
+const ALL_PROVIDER_OPTIONS = Array.from(new Set(MODEL_OPTIONS.map(m => m.provider).filter(Boolean)));
 
 export const SettingsModal: React.FC<{ 
   initialTab?: SettingsTab; 
@@ -23,132 +151,72 @@ export const SettingsModal: React.FC<{
   const [verificationStatuses, setVerificationStatuses] = useState<Record<string, 'idle' | 'verifying' | 'valid' | 'invalid'>>({});
   const [modelSearch, setModelSearch] = useState('');
   const healthStats = useMemo(() => providerRouter.getHealthStats(), [isSettingsOpen]);
-  
+
   useEffect(() => {
     if (isSettingsOpen) setActiveTab(initialTab || 'system');
   }, [isSettingsOpen, initialTab]);
 
-  const providers: { key: keyof AppSettings; label: string }[] = [
-    { key: 'geminiApiKey', label: 'Google_Gemini' },
-    { key: 'groqApiKey', label: 'Groq_Cloud' },
-    { key: 'openaiApiKey', label: 'OpenAI_Elite' },
-    { key: 'anthropicApiKey', label: 'Anthropic_Claude' },
-    { key: 'deepseekApiKey', label: 'DeepSeek_V3' },
-    { key: 'mistralApiKey', label: 'Mistral_Large' },
-    { key: 'xaiApiKey', label: 'xAI_Grok' },
-    { key: 'openRouterApiKey', label: 'OpenRouter_Omni' },
-    { key: 'togetherApiKey', label: 'Together_AI' },
-    { key: 'cerebrasApiKey', label: 'Cerebras_CS3' },
-    { key: 'siliconFlowApiKey', label: 'SiliconFlow' },
-    { key: 'perplexityApiKey', label: 'Perplexity_Labs' },
-    { key: 'pollinationsApiKey', label: 'Pollinations_Gen' },
-    { key: 'moonshotApiKey', label: 'Moonshot_Kimi' },
-    { key: 'ollamaApiKey', label: 'Ollama_Cloud' },
-    { key: 'wisGateApiKey', label: 'WisGate_AI' },
-    { key: 'cohereApiKey', label: 'Cohere' },
-    { key: 'witAiServerToken', label: 'WitAI_Server_Token' },
-    { key: 'tavilyApiKey', label: 'Tavily_Search' },
-    { key: 'braveApiKey', label: 'Brave_Search' },
-    { key: 'kagiApiKey', label: 'Kagi_Search' },
-    { key: 'mojeekApiKey', label: 'Mojeek_Search' },
-    { key: 'serperApiKey', label: 'Serper_Search' },
-    { key: 'serpapiApiKey', label: 'SerpAPI_Search' },
-    { key: 'firecrawlApiKey', label: 'Firecrawl' },
-    { key: 'tinyfishApiKey', label: 'TinyFish_WebAgent' },
-    { key: 'nvidiaApiKey', label: 'NVIDIA_NIM' },
-    { key: 'fireworksApiKey', label: 'Fireworks_AI' },
-    { key: 'sambanovaApiKey', label: 'SambaNova' },
-    { key: 'hyperbolicApiKey', label: 'Hyperbolic' },
-    { key: 'huggingfaceApiKey', label: 'HuggingFace' },
-    { key: 'deepinfraApiKey', label: 'DeepInfra' },
-    { key: 'novitaApiKey', label: 'Novita_AI' },
-    { key: 'featherlessApiKey', label: 'Featherless_AI' },
-    { key: 'lambdaaiApiKey', label: 'Lambda_AI' },
-    { key: 'nebiusApiKey', label: 'Nebius_Studio' },
-  ];
-
-  const providerOptions = useMemo(
-    () => Array.from(new Set(MODEL_OPTIONS.map(m => m.provider))),
-    []
+  // ── Provider / Model derived state ────────────────────────────────────────
+  const currentModelOption = useMemo(
+    () => MODEL_OPTIONS.find(m => m.value === settings.model),
+    [settings.model]
   );
-  const currentModelOption = MODEL_OPTIONS.find(m => m.value === settings.model);
-  const effectiveProvider = (settings.aiProvider || currentModelOption?.provider || providerOptions[0]) as any;
-  const modelsForProvider = MODEL_OPTIONS.filter(m => m.provider === effectiveProvider);
-  const filteredModels = modelSearch.trim()
-    ? modelsForProvider.filter(m => 
-        m.label.toLowerCase().includes(modelSearch.toLowerCase()) ||
-        m.value.toLowerCase().includes(modelSearch.toLowerCase())
-      )
-    : modelsForProvider;
+  const effectiveProvider = (settings.aiProvider || currentModelOption?.provider || ALL_PROVIDER_OPTIONS[0]) as string;
+  const modelsForProvider = useMemo(
+    () => MODEL_OPTIONS.filter(m => m.provider === effectiveProvider),
+    [effectiveProvider]
+  );
+  const filteredModels = useMemo(() => {
+    if (!modelSearch.trim()) return modelsForProvider;
+    const q = modelSearch.toLowerCase();
+    return modelsForProvider.filter(m =>
+      m.label.toLowerCase().includes(q) || m.value.toLowerCase().includes(q)
+    );
+  }, [modelsForProvider, modelSearch]);
+
   const selectedModelValue = modelsForProvider.some(m => m.value === settings.model)
     ? settings.model
     : (modelsForProvider[0]?.value || '');
 
+  // Fix: only update model when provider changes and current model doesn't belong to new provider
   useEffect(() => {
-    const nextProvider = (settings.aiProvider || currentModelOption?.provider || providerOptions[0]) as any;
-    const safeModelsForProvider = MODEL_OPTIONS.filter(m => m.provider === nextProvider);
-    const firstModelValue = safeModelsForProvider[0]?.value;
-    if (!firstModelValue) return;
-
-    const isModelValid = safeModelsForProvider.some(m => m.value === settings.model);
-    const needsProviderUpdate = !!settings.aiProvider && settings.aiProvider !== nextProvider;
-    const needsModelUpdate = !isModelValid || !settings.model;
-
-    if (needsProviderUpdate || needsModelUpdate) {
-      setSettings(prev => ({
-        ...prev,
-        aiProvider: nextProvider,
-        model: isModelValid ? prev.model : firstModelValue
-      }));
+    const isModelValid = modelsForProvider.some(m => m.value === settings.model);
+    if (!isModelValid && modelsForProvider.length > 0) {
+      setSettings(prev => ({ ...prev, model: modelsForProvider[0].value }));
     }
-  }, [settings.aiProvider, settings.model, setSettings, providerOptions, currentModelOption]);
+  }, [effectiveProvider]); // intentionally only effectiveProvider, not settings.model
 
+  // ── API Key Verification (debounced, PROVIDER_CONFIGS stable ref) ─────────
+  const handleVerify = useCallback(async (providerKey: keyof AppSettings) => {
+    const key = String((settings as any)?.[providerKey] || '');
+    if (!key) return;
+    setVerificationStatuses(prev => ({ ...prev, [providerKey]: 'verifying' }));
+    const isValid = await verifyKey(providerKey, key);
+    setVerificationStatuses(prev => ({ ...prev, [providerKey]: isValid ? 'valid' : 'invalid' }));
+  }, [settings]);
+
+  // Auto-verify on key change (debounced, only when idle)
   useEffect(() => {
-    const verifyKey = async (providerKey: keyof AppSettings) => {
-      const key = (settings as any)?.[providerKey] || '';
-      if (!key) {
-        setVerificationStatuses(prev => ({ ...prev, [providerKey]: 'idle' }));
-        return;
-      }
-      setVerificationStatuses(prev => ({ ...prev, [providerKey]: 'verifying' }));
-      let isValid = false;
-      try {
-        const keyStr = String(providerKey).toLowerCase();
-        if (keyStr.includes('gemini')) isValid = await geminiService.verifyApiKey(key);
-        else if (keyStr.includes('groq')) isValid = await groqService.verifyApiKey(key);
-        else if (keyStr.includes('anthropic')) isValid = await anthropicService.verifyApiKey(key);
-        else if (keyStr.includes('openai')) isValid = await openaiService.verifyApiKey(key);
-        else if (keyStr.includes('deepseek')) isValid = await deepseekService.verifyApiKey(key);
-        else if (keyStr.includes('mistral')) isValid = await mistralService.verifyApiKey(key);
-        else if (keyStr.includes('xai')) isValid = await xaiService.verifyApiKey(key);
-        else if (keyStr.includes('perplexity')) isValid = await perplexityService.verifyApiKey(key);
-        else if (keyStr.includes('together')) isValid = await togetherService.verifyApiKey(key);
-        else if (keyStr.includes('openrouter')) isValid = await openrouterService.verifyApiKey(key);
-        else if (keyStr.includes('cerebras')) isValid = await cerebrasService.verifyApiKey(key);
-        else if (keyStr.includes('siliconflow')) isValid = await siliconflowService.verifyApiKey(key);
-        else if (keyStr.includes('moonshot')) isValid = await moonshotService.verifyApiKey(key);
-        else if (keyStr.includes('ollama')) isValid = await ollamaService.verifyApiKey(key);
-        else if (keyStr.includes('pollinations')) isValid = await pollinationsService.verifyApiKey(key);
-        else if (keyStr.includes('tinyfish')) isValid = await tinyfishService.verifyApiKey(key);
-        else isValid = true;
-      } catch (e) { isValid = false; }
-      setVerificationStatuses(prev => ({ ...prev, [providerKey]: isValid ? 'valid' : 'invalid' }));
-    };
-
-    const timeoutId = setTimeout(() => {
-      providers.forEach(p => {
-        const currentKey = (settings as any)?.[p.key] || '';
+    const tid = setTimeout(() => {
+      PROVIDER_CONFIGS.forEach(p => {
+        const currentKey = String((settings as any)?.[p.key] || '');
         const currentStatus = verificationStatuses[p.key] || 'idle';
         if (currentKey && currentStatus === 'idle') {
-          verifyKey(p.key);
+          handleVerify(p.key);
         }
       });
-    }, 800);
-
-    return () => clearTimeout(timeoutId);
-  }, [settings, providers, verificationStatuses]);
+    }, 1000);
+    return () => clearTimeout(tid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.geminiApiKey, settings.groqApiKey, settings.openaiApiKey, settings.anthropicApiKey,
+      settings.deepseekApiKey, settings.mistralApiKey, settings.xaiApiKey, settings.openRouterApiKey,
+      settings.togetherApiKey, settings.cerebrasApiKey, settings.siliconFlowApiKey, settings.perplexityApiKey,
+      settings.moonshotApiKey, settings.ollamaApiKey, settings.cohereApiKey, settings.wisGateApiKey]);
 
   if (!isSettingsOpen) return null;
+
+  // ── Security tab grouped by category ──────────────────────────────────────
+  const securityGroups: ProviderGroup[] = ['AI Models', 'Search APIs', 'Tools'];
 
   return (
     <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4">
@@ -186,26 +254,38 @@ export const SettingsModal: React.FC<{
 
         {/* Content */}
         <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar bg-gradient-to-b from-black to-[#050000]">
+          
+          {/* ── SYSTEM TAB ────────────────────────────────────────────────── */}
           {activeTab === 'system' && (
             <div className="space-y-6">
               
-              {/* Provider & Model Selection inside System Params */}
+              {/* Provider & Model Selection */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-black/60 p-4 border border-[#F120F0]/30 rounded-lg">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]/80">AI Provider</label>
                   <select
                     value={effectiveProvider}
-                    onChange={(e) => setSettings(prev => {
+                    onChange={(e) => {
                       const newProvider = e.target.value as any;
                       const newModels = MODEL_OPTIONS.filter(m => m.provider === newProvider);
-                      return { ...prev, aiProvider: newProvider, model: newModels[0]?.value || prev.model };
-                    })}
-                    className="w-full bg-black/80 border-2 border-[#F120F0]/50 rounded-lg px-3 py-2 text-[11px] text-[#F120F0] outline-none focus:border-[#F120F0] focus:shadow-[0_0_12px_rgba(241,32,240,0.4)] font-bold uppercase tracking-wider transition-all"
+                      setSettings(prev => ({ ...prev, aiProvider: newProvider, model: newModels[0]?.value || prev.model }));
+                      setModelSearch('');
+                    }}
+                    className="w-full bg-black/80 border-2 border-[#F120F0]/50 rounded-lg px-3 py-2 text-[11px] text-[#F120F0] outline-none focus:border-[#F120F0] focus:shadow-[0_0_12px_rgba(241,32,240,0.4)] font-bold transition-all"
                   >
-                    {providerOptions.map(p => (
-                      <option key={p} value={p} className="bg-black">{p}</option>
-                    ))}
+                    {ALL_PROVIDER_OPTIONS.map(p => {
+                      const count = MODEL_OPTIONS.filter(m => m.provider === p).length;
+                      return (
+                        <option key={p} value={p} className="bg-black">
+                          {PROVIDER_LABELS[p!] || p} ({count})
+                        </option>
+                      );
+                    })}
                   </select>
+                  <div className="text-[8px] text-[#F120F0]/40 font-mono">
+                    {modelsForProvider.length} models available
+                    {FREE_PROVIDERS.includes(effectiveProvider as any) && ' • 🆓 FREE'}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]/80">Active Model</label>
@@ -219,16 +299,18 @@ export const SettingsModal: React.FC<{
                   <select
                     value={selectedModelValue}
                     onChange={(e) => setSettings(prev => ({ ...prev, model: e.target.value }))}
-                    className="w-full bg-black/80 border-2 border-[#F120F0]/50 rounded-lg px-3 py-2 text-[11px] text-[#F120F0] outline-none focus:border-[#F120F0] focus:shadow-[0_0_12px_rgba(241,32,240,0.4)] font-bold transition-all"
-                    size={Math.min(filteredModels.length, 6)}
+                    className="w-full bg-black/80 border-2 border-[#F120F0]/50 rounded-lg px-3 py-1 text-[11px] text-[#F120F0] outline-none focus:border-[#F120F0] focus:shadow-[0_0_12px_rgba(241,32,240,0.4)] font-bold transition-all"
+                    size={8}
                   >
-                    {filteredModels.map(m => (
-                      <option key={m.value} value={m.value} className="bg-black">
+                    {filteredModels.length > 0 ? filteredModels.map(m => (
+                      <option key={m.value} value={m.value} className="bg-black py-1">
                         {m.isFree ? '🆓 ' : ''}{m.label || m.value}
                       </option>
-                    ))}
+                    )) : (
+                      <option value="" className="bg-black text-zinc-600">No models found</option>
+                    )}
                   </select>
-                  <div className="text-[8px] text-[#F120F0]/40 font-mono">{filteredModels.length} models • 🆓 = Free</div>
+                  <div className="text-[8px] text-[#F120F0]/40 font-mono">{filteredModels.length}/{modelsForProvider.length} shown • 🆓 = Free</div>
                 </div>
               </div>
 
@@ -272,7 +354,7 @@ export const SettingsModal: React.FC<{
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {healthStats.filter(h => h.totalCalls > 0).slice(0, 6).map(h => (
                       <div key={h.provider} className={`p-2 rounded border text-center ${h.isHealthy ? 'border-green-900/30 bg-green-950/10' : 'border-red-900/30 bg-red-950/10'}`}>
-                        <div className="text-[9px] font-black uppercase text-[#F120F0]">{h.provider}{h.isFree ? ' 🆓' : ''}</div>
+                        <div className="text-[9px] font-black uppercase text-[#F120F0]">{PROVIDER_LABELS[h.provider] || h.provider}{h.isFree ? ' 🆓' : ''}</div>
                         <div className={`text-[8px] font-mono ${h.isHealthy ? 'text-green-400' : 'text-red-400'}`}>
                           {h.successCalls}/{h.totalCalls} OK • {h.avgLatencyMs}ms
                         </div>
@@ -324,15 +406,54 @@ export const SettingsModal: React.FC<{
                 </div>
               </div>
 
+              {/* System Prompt Section */}
               <div className="space-y-4 pt-4 border-t border-[#F120F0]/20">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Core Directive</label>
-                  <button onClick={() => setSettings(prev => ({ ...prev, customPromptPrefix: DEFAULT_SYSTEM_INSTRUCTION }))} className="text-[9px] font-black uppercase text-[#F120F0]/50 hover:text-[#F120F0] px-2 py-0.5 border border-[#F120F0]/30 rounded hover:bg-[#F120F0]/20 transition-all">Load Default</button>
+                {/* Core Directive = systemInstruction */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]">Core Directive</label>
+                      <span className="text-[8px] text-zinc-600 ml-2 font-mono">(systemInstruction)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] text-[#F120F0]/30 font-mono">{((settings as any)?.systemInstruction || '').length} chars</span>
+                      <button
+                        onClick={() => setSettings(prev => ({ ...prev, systemInstruction: DEFAULT_SYSTEM_INSTRUCTION }))}
+                        className="text-[9px] font-black uppercase text-[#F120F0]/50 hover:text-[#F120F0] px-2 py-0.5 border border-[#F120F0]/30 rounded hover:bg-[#F120F0]/20 transition-all"
+                      >
+                        Load Default
+                      </button>
+                    </div>
+                  </div>
+                  <textarea
+                    value={(settings as any)?.systemInstruction || ''}
+                    onChange={(e) => setSettings(prev => ({ ...prev, systemInstruction: e.target.value }))}
+                    rows={4}
+                    placeholder="System instruction / core directive for the AI..."
+                    className="w-full bg-zinc-950 border border-[#F120F0]/30 rounded-lg p-3 text-xs text-[#F120F0] outline-none focus:border-[#F120F0] font-mono custom-scrollbar"
+                  />
                 </div>
-                <textarea value={(settings as any)?.customPromptPrefix || ''} onChange={(e) => setSettings(prev => ({ ...prev, customPromptPrefix: e.target.value }))} rows={3} placeholder="Inject directive before each message..." className="w-full bg-zinc-950 border border-[#F120F0]/30 rounded-lg p-3 text-xs text-[#F120F0] outline-none focus:border-[#F120F0] font-mono custom-scrollbar" />
-                
+
+                {/* Prompt Prefix = customPromptPrefix */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]/70">Prompt Prefix</label>
+                      <span className="text-[8px] text-zinc-600 ml-2 font-mono">(injected before messages)</span>
+                    </div>
+                    <span className="text-[8px] text-[#F120F0]/30 font-mono">{((settings as any)?.customPromptPrefix || '').length} chars</span>
+                  </div>
+                  <textarea
+                    value={(settings as any)?.customPromptPrefix || ''}
+                    onChange={(e) => setSettings(prev => ({ ...prev, customPromptPrefix: e.target.value }))}
+                    rows={2}
+                    placeholder="Inject directive before each message..."
+                    className="w-full bg-zinc-950 border border-[#F120F0]/20 rounded-lg p-3 text-xs text-[#F120F0]/80 outline-none focus:border-[#F120F0] font-mono custom-scrollbar"
+                  />
+                </div>
+
                 <div className="flex gap-2">
-                  <button onClick={() => setSettings(prev => ({ ...prev, promptInjectionEnabled: !prev.promptInjectionEnabled }))} className={`flex-1 py-1.5 text-[9px] font-black uppercase border-2 rounded transition-all ${(settings as any)?.promptInjectionEnabled ? 'bg-[#F120F0]/20 border-[#F120F0] text-[#F120F0]' : 'border-[#F120F0]/30 text-[#F120F0]/50'}`}>Prompt Injection: ${(settings as any)?.promptInjectionEnabled ? 'ON' : 'OFF'}</button>
+                  <button onClick={() => setSettings(prev => ({ ...prev, promptInjectionEnabled: !prev.promptInjectionEnabled }))} className={`flex-1 py-1.5 text-[9px] font-black uppercase border-2 rounded transition-all ${(settings as any)?.promptInjectionEnabled ? 'bg-[#F120F0]/20 border-[#F120F0] text-[#F120F0]' : 'border-[#F120F0]/30 text-[#F120F0]/50'}`}>Prompt Injection: {(settings as any)?.promptInjectionEnabled ? 'ON' : 'OFF'}</button>
                   <select value={(settings as any)?.promptInjectionMode || 'always'} onChange={(e) => setSettings(prev => ({ ...prev, promptInjectionMode: e.target.value as any }))} disabled={!(settings as any)?.promptInjectionEnabled} className="flex-1 bg-black/80 border-2 border-[#F120F0]/40 rounded px-2 text-[9px] text-[#F120F0] outline-none font-bold uppercase">
                     <option value="always" className="bg-black">Always</option>
                     <option value="once" className="bg-black">Once</option>
@@ -368,8 +489,8 @@ export const SettingsModal: React.FC<{
                 </div>
               </div>
 
-               {/* A2A Protocol */}
-               <div className="pt-4 border-t border-[#F120F0]/20 space-y-4">
+              {/* A2A Protocol */}
+              <div className="pt-4 border-t border-[#F120F0]/20 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-widest text-[#F120F0] block">A2A Protocol (Agent-to-Agent)</label>
@@ -397,38 +518,64 @@ export const SettingsModal: React.FC<{
             </div>
           )}
 
+          {/* ── SECURITY TAB ──────────────────────────────────────────────── */}
           {activeTab === 'security' && (
-            <div className="space-y-4">
-              {providers.map((p) => {
-                const status = verificationStatuses[p.key] || 'idle';
-                const hasKeyVal = !!((settings as any)?.[p.key]);
-                const borderColor = status === 'valid' ? 'border-green-500' : status === 'invalid' ? 'border-red-500' : status === 'verifying' ? 'border-yellow-500' : 'border-[#F120F0]/30';
-                const bgColor = status === 'valid' ? 'bg-green-900/10' : status === 'invalid' ? 'bg-red-900/10' : 'bg-black/60';
-                const textColor = status === 'valid' ? 'text-green-300' : status === 'invalid' ? 'text-red-300' : 'text-[#F120F0]';
-                
+            <div className="space-y-6">
+              {securityGroups.map(group => {
+                const groupProviders = PROVIDER_CONFIGS.filter(p => p.group === group);
                 return (
-                  <div key={String(p.key)} className="relative group">
-                    <input 
-                      type="password" 
-                      value={(settings as any)?.[p.key] || ''}
-                      onChange={(e) => { 
-                        setSettings(prev => ({ ...prev, [p.key]: e.target.value })); 
-                        setVerificationStatuses(prev => ({ ...prev, [p.key]: 'idle' })); 
-                      }}
-                      placeholder={p.label}
-                      className={`${bgColor} border-2 ${borderColor} rounded-lg px-4 py-3 text-xs md:text-sm ${textColor} outline-none transition-all font-bold w-full focus:border-[#F120F0] focus:shadow-[0_0_15px_rgba(241,32,240,0.3)] placeholder-[#F120F0]/30`}
-                    />
-                    {hasKeyVal && (
-                      <div className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase px-2 py-1 rounded transition-all ${status === 'valid' ? 'bg-green-600/20 text-green-400' : status === 'invalid' ? 'bg-red-600/20 text-red-400' : status === 'verifying' ? 'bg-yellow-600/20 text-yellow-400 animate-pulse' : 'bg-[#F120F0]/10 text-[#F120F0]/80'}`}>
-                        {status === 'valid' ? 'VERIFIED' : status === 'invalid' ? 'INVALID' : status === 'verifying' ? 'VERIFYING...' : 'STORED'}
-                      </div>
-                    )}
+                  <div key={group} className="space-y-3">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-[#F120F0]/50 border-b border-[#F120F0]/20 pb-1 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F120F0]/50 inline-block" />
+                      {group}
+                    </div>
+                    <div className="space-y-2">
+                      {groupProviders.map((p) => {
+                        const status = verificationStatuses[p.key] || 'idle';
+                        const hasKeyVal = !!((settings as any)?.[p.key]);
+                        const borderColor = status === 'valid' ? 'border-green-500' : status === 'invalid' ? 'border-red-500' : status === 'verifying' ? 'border-yellow-500' : 'border-[#F120F0]/30';
+                        const bgColor = status === 'valid' ? 'bg-green-900/10' : status === 'invalid' ? 'bg-red-900/10' : 'bg-black/60';
+                        const textColor = status === 'valid' ? 'text-green-300' : status === 'invalid' ? 'text-red-300' : 'text-[#F120F0]';
+
+                        return (
+                          <div key={String(p.key)} className="relative group flex items-center gap-2">
+                            <div className="flex-1 relative">
+                              <input
+                                type="password"
+                                value={(settings as any)?.[p.key] || ''}
+                                onChange={(e) => {
+                                  setSettings(prev => ({ ...prev, [p.key]: e.target.value }));
+                                  setVerificationStatuses(prev => ({ ...prev, [p.key]: 'idle' }));
+                                }}
+                                placeholder={p.label}
+                                className={`${bgColor} border-2 ${borderColor} rounded-lg px-4 py-2.5 text-xs ${textColor} outline-none transition-all font-bold w-full focus:border-[#F120F0] focus:shadow-[0_0_15px_rgba(241,32,240,0.3)] placeholder-[#F120F0]/30 pr-24`}
+                              />
+                              {hasKeyVal && (
+                                <div className={`absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black uppercase px-1.5 py-0.5 rounded transition-all ${status === 'valid' ? 'bg-green-600/20 text-green-400' : status === 'invalid' ? 'bg-red-600/20 text-red-400' : status === 'verifying' ? 'bg-yellow-600/20 text-yellow-400 animate-pulse' : 'bg-[#F120F0]/10 text-[#F120F0]/60'}`}>
+                                  {status === 'valid' ? 'VERIFIED ✓' : status === 'invalid' ? 'INVALID ✗' : status === 'verifying' ? '⟳ ...' : 'STORED'}
+                                </div>
+                              )}
+                            </div>
+                            {hasKeyVal && status !== 'verifying' && (
+                              <button
+                                onClick={() => handleVerify(p.key)}
+                                className="flex-shrink-0 text-[8px] font-black uppercase px-2 py-2 rounded border border-[#F120F0]/30 text-[#F120F0]/60 hover:text-[#F120F0] hover:border-[#F120F0] hover:bg-[#F120F0]/10 transition-all"
+                                title="Verify key"
+                              >
+                                VERIFY
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
             </div>
           )}
 
+          {/* ── CONNECTION TAB ────────────────────────────────────────────── */}
           {activeTab === 'connection' && (
             <div className="space-y-6">
               {/* Master toggle */}
@@ -512,7 +659,8 @@ export const SettingsModal: React.FC<{
                                       setSettings(prev => ({ ...prev, mcpServerUrls: [...(prev.mcpServerUrls || []), server.url] }));
                                     }
                                   }}
-                                  className={`text-[9px] font-black px-2 py-1 rounded transition-all ${alreadyAdded ? 'bg-red-900/30 text-red-400 border border-red-500/30 hover:bg-red-600 hover:text-black' : 'bg-[#F120F0]/10 text-[#F120F0] border border-[#F120F0]/30 hover:bg-[#F120F0] hover:text-black'}`}>
+                                  className={`text-[9px] font-black px-2 py-1 rounded transition-all ${alreadyAdded ? 'bg-red-900/30 text-red-400 border border-red-500/30 hover:bg-red-600 hover:text-black' : 'bg-[#F120F0]/10 text-[#F120F0] border border-[#F120F0]/30 hover:bg-[#F120F0] hover:text-black'}`}
+                                >
                                   {alreadyAdded ? 'REMOVE' : 'CONNECT'}
                                 </button>
                               </div>
@@ -529,6 +677,7 @@ export const SettingsModal: React.FC<{
             </div>
           )}
 
+          {/* ── TOOLS TAB ─────────────────────────────────────────────────── */}
           {activeTab === 'tools' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-2 border-b border-[#F120F0]/20">
@@ -606,6 +755,7 @@ export const SettingsModal: React.FC<{
             </div>
           )}
 
+          {/* ── APPS TAB ──────────────────────────────────────────────────── */}
           {activeTab === 'apps' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-2 border-b border-[#F120F0]/20">
@@ -732,7 +882,7 @@ export const SettingsModal: React.FC<{
         </div>
 
         <div className="p-6 border-t border-[#F120F0]/30 bg-[#050000] flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-[#F120F0]/50">
-          <div>Settings_v5.0.0 // AUTO-FALLBACK + MULTI-AGENT</div>
+          <div>Settings_v6.0.0 // PROVIDER-LABELS + VERIFY + SYSTEM-PROMPT-FIX</div>
           <button
             onClick={() => { if (confirm('SYSTEM CRITICAL: Purging all stored data. Proceed?')) { localStorage.clear(); window.location.reload(); } }}
             className="text-red-900 hover:text-red-500 transition-colors bg-red-950/10 px-3 py-1.5 rounded-lg border border-red-900/30"

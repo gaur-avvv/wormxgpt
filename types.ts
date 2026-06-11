@@ -8,7 +8,7 @@ export type ProviderType =
   | 'cohere' | 'wisgate' | 'nvidia' | 'fireworks' | 'sambanova'
   | 'hyperbolic' | 'huggingface' | 'replicate' | 'azure' | 'bedrock'
   | 'vertexai' | 'cloudflare' | 'deepinfra' | 'novita' | 'featherless'
-  | 'lambdaai' | 'nebius' | 'tinyfish';
+  | 'lambdaai' | 'nebius' | 'tinyfish' | 'ai21';
 
 // ── Stream Response ──────────────────────────────────────────────────────────
 export interface StreamChunk {
@@ -154,6 +154,7 @@ export interface AppSettings {
   featherlessApiKey?: string;
   lambdaaiApiKey?: string;
   nebiusApiKey?: string;
+  ai21ApiKey?: string;
   witAiServerToken?: string;
   tavilyApiKey?: string;
   braveApiKey?: string;

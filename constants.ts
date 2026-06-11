@@ -203,21 +203,29 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { label: ' GLM-5 (744B MoE Long Context)', value: 'glm', provider: 'pollinations', isFree: true },
 
   // Fast & Balanced
-  { label: ' Mistral Small 3.2 (Efficient)', value: 'mistral', provider: 'pollinations' },
-  { label: ' Nova Micro (Ultra Cheap)', value: 'nova-fast', provider: 'pollinations' },
-  { label: ' MiniMax M2.5 (Multi-Lang)', value: 'minimax', provider: 'pollinations' },
-  { label: ' Grok 4 Fast (High Speed)', value: 'grok', provider: 'pollinations' },
-  { label: ' Step 3.5 Flash (Fast Reasoning)', value: 'step-3.5-flash', provider: 'pollinations' },
+  { label: ' OpenAI GPT-5 Mini (Balanced)', value: 'openai', provider: 'pollinations', isFree: true },
+  { label: ' OpenAI GPT-5 Nano (Fast)', value: 'openai-fast', provider: 'pollinations', isFree: true },
+  { label: ' Claude Sonnet 4.6', value: 'claude', provider: 'pollinations', isFree: true },
+  { label: ' Claude Haiku 4.5 (Fast)', value: 'claude-fast', provider: 'pollinations', isFree: true },
+  { label: ' Claude Airforce', value: 'claude-airforce', provider: 'pollinations', isFree: true },
+  { label: ' OpenAI Seraphyn', value: 'openai-seraphyn', provider: 'pollinations', isFree: true },
+  { label: ' Gemini 3 Flash', value: 'gemini', provider: 'pollinations', isFree: true },
+  { label: ' Gemini 2.5 Flash Lite', value: 'gemini-fast', provider: 'pollinations', isFree: true },
+  { label: ' Mistral Small 3.2 (Efficient)', value: 'mistral', provider: 'pollinations', isFree: true },
+  { label: ' Nova Micro (Ultra Cheap)', value: 'nova-fast', provider: 'pollinations', isFree: true },
+  { label: ' MiniMax M2.5 (Multi-Lang)', value: 'minimax', provider: 'pollinations', isFree: true },
+  { label: ' Grok 4 Fast (High Speed)', value: 'grok', provider: 'pollinations', isFree: true },
+  { label: ' Step 3.5 Flash (Fast Reasoning)', value: 'step-3.5-flash', provider: 'pollinations', isFree: true },
 
   // Specialized / Search / Code
-  { label: ' Perplexity Sonar Reasoning', value: 'perplexity-reasoning', provider: 'pollinations' },
-  { label: ' Perplexity Sonar (Web Search)', value: 'perplexity-fast', provider: 'pollinations' },
-  { label: ' Gemini 2.5 Search (With Google)', value: 'gemini-search', provider: 'pollinations' },
-  { label: ' Qwen3 Coder 30B (Code)', value: 'qwen-coder', provider: 'pollinations' },
-  { label: ' Qwen Character (Roleplay)', value: 'qwen-character', provider: 'pollinations' },
-  { label: ' Qwen3Guard 8B (Safety)', value: 'qwen-safety', provider: 'pollinations' },
-  { label: ' NomNom (Web Research Agent)', value: 'nomnom', provider: 'pollinations' },
-  { label: ' Polly (GitHub/Web Agent)', value: 'polly', provider: 'pollinations' },
+  { label: ' Perplexity Sonar Reasoning', value: 'perplexity-reasoning', provider: 'pollinations', isFree: true },
+  { label: ' Perplexity Sonar (Web Search)', value: 'perplexity-fast', provider: 'pollinations', isFree: true },
+  { label: ' Gemini 2.5 Search (With Google)', value: 'gemini-search', provider: 'pollinations', isFree: true },
+  { label: ' Qwen3 Coder 30B (Code)', value: 'qwen-coder', provider: 'pollinations', isFree: true },
+  { label: ' Qwen Character (Roleplay)', value: 'qwen-character', provider: 'pollinations', isFree: true },
+  { label: ' Qwen3Guard 8B (Safety)', value: 'qwen-safety', provider: 'pollinations', isFree: true },
+  { label: ' NomNom (Web Research Agent)', value: 'nomnom', provider: 'pollinations', isFree: true },
+  { label: ' Polly (GitHub/Web Agent)', value: 'polly', provider: 'pollinations', isFree: true },
 
   // Image Models (Auto-generate images)
   { label: ' Seedream 5.0 Lite (Reasoning)', value: 'seedream5', provider: 'pollinations' },
@@ -647,7 +655,11 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { label: 'Nebius Qwen3 32B', value: 'Qwen/Qwen3-32B', provider: 'nebius' },
   { label: 'Nebius Mistral 7B Instruct', value: 'mistralai/Mistral-7B-Instruct-v0.3', provider: 'nebius' },
   { label: 'Nebius Gemma 3 27B IT', value: 'google/gemma-3-27b-it', provider: 'nebius' },
-  { label: 'Nebius Phi-4 (Microsoft)', value: 'microsoft/phi-4', provider: 'nebius' }
+  { label: 'Nebius Phi-4 (Microsoft)', value: 'microsoft/phi-4', provider: 'nebius' },
+
+  // ── AI21 LABS ─────────────────────────────────────────────────────────────
+  { label: 'AI21 Jamba 1.6 Large (Efficient Long)', value: 'jamba-1.6-large', provider: 'ai21' },
+  { label: 'AI21 Jamba 1.6 Mini (Fast Edge)', value: 'jamba-1.6-mini', provider: 'ai21' },
 ];
 
 export const AUDIO_MODELS = [
