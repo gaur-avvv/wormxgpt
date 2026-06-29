@@ -1,15 +1,3 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
-# WormGPT - AI Chat Terminal Interface
-
-A modern web-based chat interface for interacting with Google's Gemini API. Features session management, syntax highlighting, and a sleek terminal-inspired design.
-
-## Prerequisites
-
-- **Node.js** 16+ and npm
-- **Gemini API Key** from [Google AI Studio](https://ai.google.dev/)
 
 ## Installation
 
@@ -148,7 +136,3 @@ VITE_APP_ENV           # Optional: 'production' or 'development'
 ## License
 
 MIT
-
-## Support
-
-For issues with Gemini API, visit [Google AI Documentation](https://ai.google.dev/docs)
