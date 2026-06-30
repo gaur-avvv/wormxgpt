@@ -80,6 +80,38 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     tools: ['store_memory', 'read_memory', 'list_memories', 'delete_memory', 'list_directory', 'read_file', 'write_file', 'delete_file', 'search_files', 'get_system_stats', 'get_network_info', 'get_process_list', 'get_disk_usage', 'get_system_uptime', 'get_env_vars', 'get_file_hashes', 'ping_host', 'get_dns_records', 'get_alerts', 'get_forecast', 'get_github_repo', 'get_github_issues', 'get_github_commits', 'run_shell_command', 'run_puppeteer_script', 'http_request']
   },
   {
+    id: 'filesystem',
+    title: 'Filesystem',
+    description: 'Read, write, list, and manage local files and directories',
+    icon: '',
+    color: '#06b6d4',
+    tools: ['ReadFile', 'WriteFile', 'ListDirectory', 'AppendFile', 'DeleteFile', 'FileExists']
+  },
+  {
+    id: 'shell_compute',
+    title: 'Shell & Compute',
+    description: 'Execute shell commands and perform calculations',
+    icon: '',
+    color: '#84cc16',
+    tools: ['ShellExec', 'Calculator', 'TextDiff', 'PasswordGen']
+  },
+  {
+    id: 'network_utils',
+    title: 'Network Utilities',
+    description: 'Ping hosts, get public IP, and check connectivity',
+    icon: '',
+    color: '#f97316',
+    tools: ['PingHost', 'GetPublicIP']
+  },
+  {
+    id: 'hitl',
+    title: 'Human-in-the-Loop',
+    description: 'Pause execution and ask the user for input or approval',
+    icon: '',
+    color: '#a855f7',
+    tools: ['AskHuman']
+  },
+  {
     id: 'data_science',
     title: 'Data & Science',
     description: 'Financial data, academic papers, and scientific information',
@@ -7094,7 +7126,177 @@ finally:
     execute: async (args: any) => {
       try { return autofillIntegration.generateFormData(args.fields || ['name', 'email', 'phone']); } catch (e: any) { return `Autofill error: ${e.message}`; }
     }
-  }
+  },
+
+  // ── Filesystem Tools ───────────────────────────────────────────────────────
+  ReadFile: {
+    type: 'function',
+    function: { name: 'ReadFile', description: 'Read the contents of a local file by path.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Absolute or relative file path to read' } }, required: ['path'] } },
+    execute: async (args: any) => {
+      try {
+        const fs = await import('fs/promises');
+        const content = await fs.readFile(args.path, 'utf8');
+        return content.length > 8000 ? content.slice(0, 8000) + '\n...[truncated]' : content;
+      } catch (e: any) { return `ReadFile error: ${e.message}`; }
+    }
+  },
+  WriteFile: {
+    type: 'function',
+    function: { name: 'WriteFile', description: 'Write or overwrite a local file with given content.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path to write to' }, content: { type: 'string', description: 'Content to write' } }, required: ['path', 'content'] } },
+    execute: async (args: any) => {
+      try {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        await fs.mkdir(path.dirname(args.path), { recursive: true });
+        await fs.writeFile(args.path, args.content, 'utf8');
+        return `✔ Written ${args.content.length} chars to ${args.path}`;
+      } catch (e: any) { return `WriteFile error: ${e.message}`; }
+    }
+  },
+  ListDirectory: {
+    type: 'function',
+    function: { name: 'ListDirectory', description: 'List files and directories at a given path.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Directory path to list (default: current dir)' } } } },
+    execute: async (args: any) => {
+      try {
+        const fs = await import('fs/promises');
+        const entries = await fs.readdir(args.path || '.', { withFileTypes: true });
+        return entries.map(e => `${e.isDirectory() ? '📁' : '📄'} ${e.name}`).join('\n');
+      } catch (e: any) { return `ListDirectory error: ${e.message}`; }
+    }
+  },
+  AppendFile: {
+    type: 'function',
+    function: { name: 'AppendFile', description: 'Append content to an existing file (or create it).', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path' }, content: { type: 'string', description: 'Content to append' } }, required: ['path', 'content'] } },
+    execute: async (args: any) => {
+      try {
+        const fs = await import('fs/promises');
+        await fs.appendFile(args.path, args.content, 'utf8');
+        return `✔ Appended to ${args.path}`;
+      } catch (e: any) { return `AppendFile error: ${e.message}`; }
+    }
+  },
+  DeleteFile: {
+    type: 'function',
+    function: { name: 'DeleteFile', description: 'Delete a local file.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path to delete' } }, required: ['path'] } },
+    execute: async (args: any) => {
+      try {
+        const fs = await import('fs/promises');
+        await fs.unlink(args.path);
+        return `✔ Deleted ${args.path}`;
+      } catch (e: any) { return `DeleteFile error: ${e.message}`; }
+    }
+  },
+  FileExists: {
+    type: 'function',
+    function: { name: 'FileExists', description: 'Check if a file or directory exists.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Path to check' } }, required: ['path'] } },
+    execute: async (args: any) => {
+      try {
+        const fs = await import('fs/promises');
+        await fs.access(args.path);
+        const stat = await fs.stat(args.path);
+        return `Exists: true, type: ${stat.isDirectory() ? 'directory' : 'file'}, size: ${stat.size} bytes`;
+      } catch { return 'Exists: false'; }
+    }
+  },
+
+  // ── Shell Execution ────────────────────────────────────────────────────────
+  ShellExec: {
+    type: 'function',
+    function: { name: 'ShellExec', description: 'Execute a shell command and return stdout/stderr. Use with caution.', parameters: { type: 'object', properties: { command: { type: 'string', description: 'Shell command to run' }, cwd: { type: 'string', description: 'Working directory (optional)' } }, required: ['command'] } },
+    execute: async (args: any) => {
+      try {
+        const { execSync } = await import('child_process');
+        const out = execSync(args.command, { cwd: args.cwd, timeout: 15000, encoding: 'utf8', shell: true as any });
+        return out.trim() || '(no output)';
+      } catch (e: any) { return `ShellExec error: ${e.stderr || e.message}`; }
+    }
+  },
+
+  // ── Calculator ─────────────────────────────────────────────────────────────
+  Calculator: {
+    type: 'function',
+    function: { name: 'Calculator', description: 'Evaluate a mathematical expression safely. Supports +, -, *, /, **, %, sqrt, abs, floor, ceil, round, log, sin, cos, tan, PI, E.', parameters: { type: 'object', properties: { expression: { type: 'string', description: 'Math expression to evaluate, e.g. "sqrt(144) + 2**10"' } }, required: ['expression'] } },
+    execute: (args: any) => {
+      try {
+        // Safe eval: only allow math operations
+        const sanitized = args.expression
+          .replace(/[^0-9+\-*/().%, \t\nsqrtabceilflooroundlogsincotan PI E]/g, '')
+          .replace(/\bsqrt\b/g, 'Math.sqrt')
+          .replace(/\babs\b/g, 'Math.abs')
+          .replace(/\bfloor\b/g, 'Math.floor')
+          .replace(/\bceil\b/g, 'Math.ceil')
+          .replace(/\bround\b/g, 'Math.round')
+          .replace(/\blog\b/g, 'Math.log')
+          .replace(/\bsin\b/g, 'Math.sin')
+          .replace(/\bcos\b/g, 'Math.cos')
+          .replace(/\btan\b/g, 'Math.tan')
+          .replace(/\bPI\b/g, 'Math.PI')
+          .replace(/\bE\b/g, 'Math.E');
+        const result = Function(`"use strict"; return (${sanitized})`)();
+        return `${args.expression} = ${result}`;
+      } catch (e: any) { return `Calculator error: ${e.message}`; }
+    }
+  },
+
+  // ── Password Generator ─────────────────────────────────────────────────────
+  PasswordGen: {
+    type: 'function',
+    function: { name: 'PasswordGen', description: 'Generate a secure random password.', parameters: { type: 'object', properties: { length: { type: 'number', description: 'Password length (default 16)' }, symbols: { type: 'boolean', description: 'Include symbols (default true)' }, numbers: { type: 'boolean', description: 'Include numbers (default true)' } } } },
+    execute: (args: any) => {
+      const len = args.length || 16;
+      let chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      if (args.numbers !== false) chars += '0123456789';
+      if (args.symbols !== false) chars += '!@#$%^&*()-_=+[]{}|;:,.<>?';
+      let pwd = '';
+      const arr = new Uint32Array(len);
+      // Use crypto if available, else Math.random
+      try { (globalThis as any).crypto.getRandomValues(arr); } catch { arr.fill(0).forEach((_, i) => { arr[i] = Math.floor(Math.random() * chars.length); }); }
+      for (let i = 0; i < len; i++) pwd += chars[arr[i] % chars.length];
+      return pwd;
+    }
+  },
+
+  // ── Network Tools ──────────────────────────────────────────────────────────
+  PingHost: {
+    type: 'function',
+    function: { name: 'PingHost', description: 'Check if a host is reachable by sending an HTTP HEAD request.', parameters: { type: 'object', properties: { host: { type: 'string', description: 'Hostname or URL to ping' } }, required: ['host'] } },
+    execute: async (args: any) => {
+      try {
+        const url = args.host.startsWith('http') ? args.host : `https://${args.host}`;
+        const start = Date.now();
+        const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+        return `${args.host} — ${res.status} ${res.statusText} (${Date.now() - start}ms)`;
+      } catch (e: any) { return `${args.host} — unreachable: ${e.message}`; }
+    }
+  },
+  GetPublicIP: {
+    type: 'function',
+    function: { name: 'GetPublicIP', description: 'Get the current public IP address of this machine.', parameters: { type: 'object', properties: {} } },
+    execute: async () => {
+      try {
+        const res = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) });
+        const data = await res.json() as any;
+        return `Public IP: ${data.ip}`;
+      } catch (e: any) { return `GetPublicIP error: ${e.message}`; }
+    }
+  },
+
+  // ── Human-in-the-Loop ─────────────────────────────────────────────────────
+  AskHuman: {
+    type: 'function',
+    function: { name: 'AskHuman', description: 'Pause execution and ask the human user a question. Use when you need clarification, confirmation, or a decision from the user before proceeding. Returns the user\'s response.', parameters: { type: 'object', properties: { question: { type: 'string', description: 'The question to ask the user' }, context: { type: 'string', description: 'Optional context explaining why you\'re asking' } }, required: ['question'] } },
+    execute: async (args: any) => {
+      // Delegate to the CLI HITL handler if running in CLI mode
+      if ((global as any).hitlEnabled === false) {
+        return 'HITL is disabled. Proceeding with best judgment.';
+      }
+      if ((global as any).cliAskHuman) {
+        return await (global as any).cliAskHuman(args.question, args.context);
+      }
+      // Non-CLI fallback: return a placeholder
+      return `[HITL] Question: ${args.question} — No interactive terminal available.`;
+    }
+  },
 
 };
 // ── Helper: extract links from markdown content ────────────────────────────
@@ -7157,7 +7359,6 @@ export const getDynamicTools = async (settings: any) => {
     if (mcpService.isConnected) {
       const mcpToolsRaw = await mcpService.getTools();
       mappedMcpTools = mcpToolsRaw
-        .filter(mt => enabledNames.includes(mt.name))
         .map(mt => {
           return {
             type: 'function',
@@ -7336,6 +7537,26 @@ export const executeToolCall = async (toolCall: ToolCall) => {
   let args;
   try { args = JSON.parse(toolCall.function.arguments); } catch (e) { args = toolCall.function.arguments || {}; }
 
+  // ── Safety Confirmation Check ─────────────────────────────────────────────
+  const SAFE_TOOLS = new Set([
+    'GetCurrentDateTime', 'SearchWeb', 'WebCrawler', 'FetchWebpage',
+    'DNSLookup', 'WhoisLookup', 'IPGeolocation', 'HashGenerator',
+    'Base64Tool', 'JDoodleCompiler', 'TextTranslator', 'GenerateImage',
+    'YouTubeTranscript', 'RedditSearch', 'HackerNewsSearch', 'GetNews',
+    'ArxivSearch', 'CryptoPrices', 'BraveSearch', 'GoogleAISearch',
+    'DuckDuckGoSearch', 'JinaSearch', 'ExaSearch', 'DeepResearch',
+    'search_web', 'fetch_url'
+  ]);
+
+  if (!SAFE_TOOLS.has(name)) {
+    if ((global as any).cliPromptPermission) {
+      const allowed = await (global as any).cliPromptPermission(name, args);
+      if (!allowed) {
+        return JSON.stringify({ error: `Permission denied: User rejected execution of tool ${name}.` });
+      }
+    }
+  }
+
   // ── Chrome MCP tool routing ──────────────────────────────────────────────
   // Route all chrome_* tools + browser tab tools through the chromeBridge,
   // making them universally available to any provider/model.
@@ -7404,10 +7625,17 @@ export const executeToolCall = async (toolCall: ToolCall) => {
   try {
     const { mcpService } = await import('./mcp');
     if (mcpService.isConnected) {
+      // executeTool throws if tool is not found, or if execution fails
       const result = await mcpService.executeTool(name, args);
       return typeof result === 'string' ? result : JSON.stringify(result);
     }
-  } catch (e) { }
+  } catch (e: any) {
+    if (e.message && e.message.includes('not found in any connected MCP server')) {
+      // This means the tool wasn't an MCP tool, allow it to fall through to the final "Tool not found"
+    } else {
+      throw new Error(`MCP Tool Error: ${e.message}`);
+    }
+  }
 
   throw new Error(`Tool not found: ${name}`);
 };

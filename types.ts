@@ -8,7 +8,7 @@ export type ProviderType =
   | 'cohere' | 'wisgate' | 'nvidia' | 'fireworks' | 'sambanova'
   | 'hyperbolic' | 'huggingface' | 'replicate' | 'azure' | 'bedrock'
   | 'vertexai' | 'cloudflare' | 'deepinfra' | 'novita' | 'featherless'
-  | 'lambdaai' | 'nebius' | 'tinyfish' | 'ai21';
+  | 'lambdaai' | 'nebius' | 'tinyfish' | 'ai21' | 'uncloseai';
 
 // ── Stream Response ──────────────────────────────────────────────────────────
 export interface StreamChunk {

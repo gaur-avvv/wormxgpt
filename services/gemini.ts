@@ -347,10 +347,7 @@ export class GeminiService {
         errorMessage = "CONTENT_FILTERED: Response blocked by safety filters. Rephrase your query.";
       }
 
-      yield {
-        text: `[SYSTEM ERROR] Connection to main terminal severed:\n\n${errorMessage}`,
-        images: []
-      };
+      throw new Error(errorMessage);
     }
   }
 
@@ -360,7 +357,7 @@ export class GeminiService {
       const ai = new GoogleGenAI({ apiKey: key });
       // Use the model directly as seen in streamChat
       await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: [{ role: 'user', parts: [{ text: 'hi' }] }],
         config: { maxOutputTokens: 1 }
       });

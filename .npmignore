@@ -1,0 +1,37 @@
+# Source / Web UI files not needed for CLI
+App.tsx
+index.tsx
+index.html
+vite.config.ts
+Dockerfile
+vercel.json
+server.js
+*.txt
+*.md
+!README.md
+!LICENSE
+
+# Directories not needed
+components/
+context/
+hooks/
+public/
+dist/
+test/
+extension/
+api/
+.git/
+.vscode/
+node_modules/
+
+# Temp files
+*.log
+tmp_*
+check_braces.js
+count_braces.js
+find_mismatch.js
+test-*.js
+test_*.js
+server_log.txt
+all_tools_log.txt
+tools_log.txt

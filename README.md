@@ -1,138 +1,94 @@
+# WormXGPT — Unfiltered Chaos AI Agent & Terminal Suite
 
-## Installation
+> **No limits. No filters. No restrictions.** WormXGPT is a unified AI tooling suite containing both a premium Hacker-themed React Web Dashboard and an advanced Unfiltered CLI agent. It features 150+ tools, multi-server MCP integration, auto-fallback across 30+ providers, and local workspace integration.
 
-1. **Clone and setup:**
-   ```bash
-   npm install
-   ```
+---
 
-2. **Configure environment:**
-   - Copy `.env.example` to `.env.local`
-   - Add your Gemini API key:
-     ```
-     GEMINI_API_KEY=your_api_key_here
-     ```
+## Architecture & Features
 
-3. **Development server:**
-   ```bash
-   npm run dev
-   ```
-   App runs at `http://localhost:3000`
+WormXGPT consists of three core components:
 
-## Deployment
+1. **WormXGPT CLI Agent** — A robust command-line terminal with:
+   - **Workspace Context Scanning**: Dynamically reads file layout and git structure to inform the model on codebase questions.
+   - **Cost & Token tracking**: Formats exact token usage and estimated cost logs at the end of every response stream.
+   - **Tool Permission Safety**: Prompts the user (`? Allow tool X to execute? (y/n)`) before running potentially destructive or unsafe tools (shell/files/browser).
+   - **Auto-Fallback**: Instantly chains providers (Gemini → Groq → Pollinations → UncloseAI) to bypass API quota issues or server crashes.
+2. **Hacker-Themed Web Client** — A premium React SPA built using Tailwind, Outfit typography, matrix style boots, session persistence, and full chat visualization.
+3. **MCP Bridge Server** — An Express-based SSE server on port `3002` exposing 50+ local system tools (file system writes, browser automation, OSINT) to both CLI and Web clients.
 
-### Build for Production
+---
+
+## Installation & Setup
+
+### 1. Global Installation (CLI mode)
+Install the CLI package globally:
+```bash
+npm install -g wormxgpt
+```
+Or run directly without installation:
+```bash
+npx wormxgpt
+```
+
+### 2. Local Development & Web Dashboard
+Clone the repository and install dependencies:
+```bash
+git clone https://github.com/gaur-avvv/xgpt.git
+cd xgpt
+npm install
+```
+
+Start the Vite development server (runs Web Dashboard at `http://localhost:3000`):
+```bash
+npm run dev
+```
+
+Build React Web client for production:
 ```bash
 npm run build
 ```
-Generates optimized bundle in `dist/` directory.
 
-### Deployment Options
+---
 
-**Docker:**
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY . .
-RUN npm install && npm run build
-EXPOSE 3000
-CMD ["npm", "run", "preview"]
+## Command Reference (CLI Mode)
+
+Start the interactive CLI:
+```bash
+wormxgpt
 ```
 
-**Vercel/Netlify:**
-- Set `GEMINI_API_KEY` in environment variables
-- Connect git repo and deploy
+### Subcommands
+- `wormxgpt "prompt"` — Run direct one-shot query and exit (Claude Code style)
+- `wormxgpt setup` — Launch interactive configuration wizard
+- `wormxgpt doctor` — Run system and API diagnostics/network health checks
+- `wormxgpt tools` — List all 150+ client-side tools
+- `wormxgpt serve` — Start local MCP bridge server on port `3002`
+- `wormxgpt version` — Output client version
 
-**Self-hosted:**
-- Build: `npm run build`
-- Serve `dist/` directory with any static server
-- Set environment variable: `GEMINI_API_KEY`
+### Interactive CLI Commands
+Type `/` inside the CLI chat loop to trigger autocomplete commands:
+- `/model <name>` — Switch active model
+- `/provider <name>` — Switch active API provider
+- `/key <provider> <key>` — Save API Key
+- `/tools` / `/tools enable <n>` — Manage active tool checklist
+- `/mcp` / `/mcp add <url>` — Connect to external MCP servers
+- `/sessions` — Load/delete chat history sessions
+- `/system <prompt>` — Set custom system instructions
+- `/run <tool> [args]` — Execute any client tool directly (e.g. `/run SearchWeb {"query":"Rust coding"}`)
 
-## Features
-
-- 📝 **Session Management** - Save and switch between chat sessions
-- 🔒 **Secure API Key Handling** - Keys stored in browser localStorage
-- 🎨 **Terminal Design** - Dynamic Hacker-themed boot sequences, matrix scanlines, and glitch effects
-- 🤖 **Provider Compliance** - Guaranteed system instruction injection across OpenAI, Anthropic, Gemini, DeepSeek, and Groq
-- 📱 **Responsive Layout** - Works on desktop and tablet
-- 🖼️ **Image Support** - Send images with your messages
-- ⚙️ **Model Selection** - Choose from available Gemini models
-- 📊 **Advanced Settings** - Control temperature, thinking budget, system prompts
-- 🔌 **MCP Integration** - Model Context Protocol bridge with 50+ server-side tools and full MV3 Chrome extension support
-- 🛠️ **150+ Tools** - Search, OSINT, coding, crypto, text processing, browser automation & more
-
-## MCP Integration
-
-WormGPT includes a built-in MCP (Model Context Protocol) server and client infrastructure:
-
-- **MCP Server** (`mcp-server.ts`) - Express-based SSE server on port 3002 with 52 tools across categories: system, network, GitHub, weather, encoding/crypto, text processing, and DevOps utilities.
-- **MCP Client** (`services/mcp.ts`) - Connects to multiple MCP servers simultaneously with auto-reconnect, health checks, and CORS proxy support for production deployments.
-- **Default MCP Servers** - Pre-configured with 10 curated MCP servers including Context7, DeepWiki, CoinGecko, Globalping, Smithery, and more.
-
-### Tool Categories (150+)
-
-| Category | Tools | Description |
-|----------|-------|-------------|
-| Search & Recon | 19 | Web search, news, academic, social media |
-| Extraction & Crawling | 17 | Scraping, content extraction, PDF parsing |
-| OSINT & Recon | 13 | DNS, WHOIS, IP geolocation, port scanning |
-| Code & Compute | 13 | Compilers, regex, hashing, Base64, JWT, JSON, CSV, text diff |
-| Communication & Utility | 11 | Translation, temp email, weather, currency |
-| Local Bridge (MCP) | 26 | File system, process, network, shell access |
-| Browser Automation | 10 | Playwright, Puppeteer, Selenium script generation |
-| Agentic Search | 8 | Multi-step autonomous research & synthesis |
-| Jobs & Career | 10 | Job search, salary, company research |
-| Advanced Search | 12 | Multi-engine, patents, legal, social media |
-| AI & Media | 9 | Image generation, video, audio, sentiment |
-| E-Commerce | 7 | Product search, price comparison, coupons |
-| Utility & Generators | 10 | QR codes, passwords, UUIDs, timezone, colors |
-| OSINT Advanced | 5 | Breach checks, Shodan, cert transparency, Wayback |
-| Dev & Package Info | 4 | GitHub profiles, npm packages, crypto prices |
-
-## Configuration
-
-**System Instructions:** Customize AI behavior in settings panel
-**Model Selection:** Switch between Gemini versions
-**Temperature:** Control response randomness (0-1)
-**Thinking Budget:** Set extended reasoning tokens (0-32768)
-
-## File Structure
-
-```
-├── App.tsx              # Main app component
-├── index.tsx            # Entry point
-├── constants.ts         # Config, prompts & default MCP servers
-├── types.ts             # TypeScript interfaces
-├── mcp-server.ts        # MCP Bridge server (52 tools, SSE on :3002)
-├── services/
-│   ├── gemini.ts        # Gemini API integration
-│   ├── mcp.ts           # MCP client (multi-server, auto-reconnect)
-│   └── tools.ts         # 150+ client-side tool definitions
-├── vite.config.ts       # Build config
-├── tsconfig.json        # TypeScript config
-└── index.html           # HTML template
-```
+---
 
 ## Environment Variables
 
-```bash
-GEMINI_API_KEY          # Required: Your Gemini API key
-VITE_APP_ENV           # Optional: 'production' or 'development'
-```
+WormXGPT automatically parses `.env.local` or environment keys:
+- `GEMINI_API_KEY` — API key for Gemini models
+- `GROQ_API_KEY` — API key for Groq models
+- `OPENAI_API_KEY` — API key for OpenAI compatible backends
+- `PORT` — Port for the production Express server (defaults to `3000`)
 
-## Build Optimization
-
-- **Code splitting** - Vendor/Gemini/App chunks
-- **Minification** - Terser compression
-- **No console logs** - Removed in production
-- **Source maps** - Disabled for smaller bundle
-
-## Troubleshooting
-
-- **API Key errors:** Verify key in `.env.local` is valid
-- **Build fails:** Run `npm install` and `npm run build` again
-- **Styling issues:** Ensure Tailwind CSS is loaded in browser
+---
 
 ## License
 
-MIT
+AGPL-3.0
+

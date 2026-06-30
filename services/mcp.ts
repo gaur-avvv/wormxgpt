@@ -103,6 +103,7 @@ export class MCPService {
   private reconnectAttempts: Map<string, number> = new Map();
   private readonly HEALTH_INTERVAL   = 30_000;  // 30s — detects stale connections faster
   private readonly MAX_RETRIES       = 3;
+  private readonly MAX_RECONNECT_ATTEMPTS = 5;  // Stop reconnecting after 5 failed attempts
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -690,6 +691,7 @@ export class MCPService {
     client: Client,
     transport: StreamableHTTPClientTransport | SSEClientTransport
   ) {
+    this.reconnectAttempts.set(url, 0); // Reset reconnect attempts on success
     this.servers.set(url, {
       client,
       transport,
@@ -788,8 +790,14 @@ export class MCPService {
             state.status = 'degraded';
             state.degradedSince = Date.now();
           } else {
-            await this.disconnect(url);
-            this._scheduleReconnect(url);
+            const attempts = this.reconnectAttempts.get(url) || 0;
+            if (attempts < this.MAX_RECONNECT_ATTEMPTS) {
+              await this.disconnect(url);
+              this._scheduleReconnect(url);
+            } else {
+              state.status = 'degraded';
+              state.degradedSince = Date.now();
+            }
           }
         }
       }
@@ -798,11 +806,23 @@ export class MCPService {
 
   private _scheduleReconnect(url: string) {
     if (this.reconnectTimers.has(url)) return;
-    console.log(`[MCP] 🔄 Reconnecting ${url} in ${this.RECONNECT_DELAY / 1000}s...`);
+    const attempts = this.reconnectAttempts.get(url) || 0;
+    if (attempts >= this.MAX_RECONNECT_ATTEMPTS) {
+      console.warn(`[MCP] ⏹ Max reconnect attempts (${this.MAX_RECONNECT_ATTEMPTS}) reached for ${url}. Giving up.`);
+      this._setStatus(url, 'error', 'Max reconnect attempts exceeded');
+      return;
+    }
+    const delay = Math.min(
+      this.RECONNECT_MAX_DELAY,
+      this.RECONNECT_BASE_DELAY * Math.pow(2, attempts)
+    );
+    this.reconnectAttempts.set(url, attempts + 1);
+
+    console.log(`[MCP] 🔄 Reconnecting ${url} in ${delay / 1000}s (attempt ${attempts + 1}/${this.MAX_RECONNECT_ATTEMPTS})...`);
     const timer = setTimeout(async () => {
       this.reconnectTimers.delete(url);
       await this.connect(url);
-    }, this.RECONNECT_DELAY);
+    }, delay);
     this.reconnectTimers.set(url, timer);
   }
 

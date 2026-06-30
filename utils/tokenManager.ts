@@ -187,3 +187,43 @@ export const pruneHistory = (
 
   return recentHistory;
 };
+
+// ── Cost Estimation ──────────────────────────────────────────────────────────
+
+export interface ModelPricing {
+  inputPerM: number;  // Cost per 1M input tokens (USD)
+  outputPerM: number; // Cost per 1M output tokens (USD)
+}
+
+const PRICING_PROFILES: Record<string, ModelPricing> = {
+  'gpt-4o-mini': { inputPerM: 0.150, outputPerM: 0.600 },
+  'gpt-4o': { inputPerM: 2.500, outputPerM: 10.000 },
+  'gpt-4-turbo': { inputPerM: 10.000, outputPerM: 30.000 },
+  'claude-3-5-sonnet': { inputPerM: 3.000, outputPerM: 15.000 },
+  'claude-3-5-haiku': { inputPerM: 0.800, outputPerM: 4.000 },
+  'claude-3-opus': { inputPerM: 15.000, outputPerM: 75.000 },
+  'gemini-2.5-flash': { inputPerM: 0.075, outputPerM: 0.300 },
+  'gemini-2.5-pro': { inputPerM: 1.250, outputPerM: 5.000 },
+  'gemini-1.5-flash': { inputPerM: 0.075, outputPerM: 0.300 },
+  'gemini-1.5-pro': { inputPerM: 1.250, outputPerM: 5.000 },
+  'deepseek-chat': { inputPerM: 0.140, outputPerM: 0.280 },
+  'deepseek-reasoner': { inputPerM: 0.550, outputPerM: 2.190 },
+  '__default__': { inputPerM: 0.000, outputPerM: 0.000 } // Free tier, Groq, WisGate, etc.
+};
+
+export function calculateEstimatedCost(model: string, inputTokens: number, outputTokens: number): number {
+  let profile = PRICING_PROFILES['__default__'];
+  
+  // Try partial matching on name
+  for (const [key, value] of Object.entries(PRICING_PROFILES)) {
+    if (key !== '__default__' && model.toLowerCase().includes(key)) {
+      profile = value;
+      break;
+    }
+  }
+
+  const inputCost = (inputTokens / 1_000_000) * profile.inputPerM;
+  const outputCost = (outputTokens / 1_000_000) * profile.outputPerM;
+  return inputCost + outputCost;
+}
+

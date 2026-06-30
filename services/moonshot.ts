@@ -1,5 +1,6 @@
 import { validateAndFixToolArgs } from "../utils/toolHelpers";
 import { getEffectiveSystemInstruction } from "../utils/promptUtils";
+import { AppSettings, Message } from '../types';
 
 export class MoonshotService {
   private apiKey: string = "";

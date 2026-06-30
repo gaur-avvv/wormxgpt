@@ -1,5 +1,5 @@
 import { AppSettings, Message, ProviderType, StreamChunk, ProviderHealthStats } from '../types';
-import { FALLBACK_CHAIN, FREE_MODEL_DEFAULTS, FREE_PROVIDERS } from '../constants';
+import { FALLBACK_CHAIN, FREE_MODEL_DEFAULTS, FREE_PROVIDERS, FREE_TIER_PROVIDERS } from '../constants';
 
 // ── Provider Service Interface ───────────────────────────────────────────────
 export interface ProviderService {
@@ -160,8 +160,9 @@ export class ProviderRouter {
       const userChain = settings.fallbackChain || FALLBACK_CHAIN;
       for (const p of userChain) {
         if (p !== primaryProvider && this.services.has(p)) {
-          // Only add if we have an API key or it's free
-          if (this.hasApiKey(p, settings)) {
+          // Include if: free provider, free-tier provider (no key needed), or has a key configured
+          const isFreeOrFreeTier = FREE_PROVIDERS.includes(p) || FREE_TIER_PROVIDERS.includes(p);
+          if (isFreeOrFreeTier || this.hasApiKey(p, settings)) {
             chain.push({ provider: p, model: this.getBestFreeModel(p) || settings.model });
           }
         }
@@ -295,4 +296,5 @@ export async function initializeProviderRouter(): Promise<void> {
   providerRouter.register('lambdaai', services.lambdaaiService);
   providerRouter.register('nebius', services.nebiusService);
   providerRouter.register('wisgate', services.wisGateService);
+  providerRouter.register('uncloseai', services.uncloseaiService);
 }

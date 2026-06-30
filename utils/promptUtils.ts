@@ -17,25 +17,37 @@ export function getEffectiveSystemInstruction(settings: AppSettings, messages: M
   }
 
   const baseInstruction = settings.systemInstruction?.trim() || DEFAULT_SYSTEM_INSTRUCTION;
+  let fullInstruction = baseInstruction;
 
-  // No custom prefix — return base instruction as-is
-  if (!settings.customPromptPrefix?.trim()) {
-    return baseInstruction;
-  }
+  // Prepend custom prefix if configured
+  if (settings.customPromptPrefix?.trim()) {
+    const prefix = settings.customPromptPrefix.trim();
+    const mode = settings.promptInjectionMode || 'always';
 
-  const prefix = settings.customPromptPrefix.trim();
-  const mode = settings.promptInjectionMode || 'always';
-
-  if (mode === 'once') {
-    // Only inject on first user message
-    const userMessageCount = messages.filter(m => m.role === 'user').length;
-    if (userMessageCount > 1) {
-      return baseInstruction;
+    if (mode === 'once') {
+      const userMessageCount = messages.filter(m => m.role === 'user').length;
+      if (userMessageCount <= 1) {
+        fullInstruction = `${prefix}\n\n${baseInstruction}`;
+      }
+    } else {
+      fullInstruction = `${prefix}\n\n${baseInstruction}`;
     }
   }
 
-  // 'always' or 'once' on first message: prepend custom prefix
-  return `${prefix}\n\n${baseInstruction}`;
+  // Dynamically inject workspace context if the user asks about the project / files
+  const lastUserMsg = messages[messages.length - 1]?.content || '';
+  const promptLower = typeof lastUserMsg === 'string' ? lastUserMsg.toLowerCase() : '';
+  const keywords = ['project', 'files', 'workspace', 'directory', 'folder', 'codebase', 'repository', 'structure', 'npm', 'git', 'refactor', 'find'];
+  const mentionsWorkspace = keywords.some(k => promptLower.includes(k));
+
+  if (mentionsWorkspace) {
+    try {
+      const { injectWorkspacePrompt } = require('./workspaceContext');
+      fullInstruction = injectWorkspacePrompt(fullInstruction);
+    } catch {}
+  }
+
+  return fullInstruction;
 }
 
 /**

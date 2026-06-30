@@ -11,7 +11,7 @@ export interface ModelOption {
 
 // ── Auto-Fallback Configuration ──────────────────────────────────────────────
 export const FALLBACK_CHAIN: ProviderType[] = [
-  'pollinations', 'groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface', 'wisgate'
+  'pollinations', 'uncloseai', 'wisgate', 'groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface'
 ];
 
 export const FREE_MODEL_DEFAULTS: Partial<Record<ProviderType, string>> = {
@@ -22,10 +22,11 @@ export const FREE_MODEL_DEFAULTS: Partial<Record<ProviderType, string>> = {
   siliconflow: 'Qwen/Qwen3-8B',
   huggingface: 'meta-llama/Llama-3.3-70B-Instruct',
   wisgate: 'gemini-3-flash',
+  uncloseai: 'hermes',
 };
 
 // ── Provider API Key Requirements ────────────────────────────────────────────
-export const FREE_PROVIDERS: ProviderType[] = ['pollinations', 'wisgate'];
+export const FREE_PROVIDERS: ProviderType[] = ['pollinations', 'wisgate', 'uncloseai'];
 export const FREE_TIER_PROVIDERS: ProviderType[] = ['groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface'];
 
 

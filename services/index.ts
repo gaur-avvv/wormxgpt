@@ -44,6 +44,7 @@ export { featherlessService } from './featherless';
 export { lambdaaiService } from './lambdaai';
 export { nebiusService } from './nebius';
 export { wisGateService } from './wisgate';
+export { uncloseaiService } from './uncloseai';
 
 // ── Core Infrastructure ──────────────────────────────────────────────────────
 export { providerRouter, initializeProviderRouter } from './providerRouter';

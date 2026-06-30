@@ -98,6 +98,10 @@ export class TinyFishService {
     }
   }
 
+  async *streamChat(settings: AppSettings, messages: any[], signal?: AbortSignal): AsyncGenerator<any> {
+    yield { text: "[TinyFish] Agent browser service is not designed for conversational chat completion.", images: [] };
+  }
+
   getApiKey(): string {
     return this.apiKey || (typeof window !== 'undefined' ? localStorage.getItem('tinyfishApiKey') || '' : '');
   }
