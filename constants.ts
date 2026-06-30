@@ -11,7 +11,7 @@ export interface ModelOption {
 
 // ── Auto-Fallback Configuration ──────────────────────────────────────────────
 export const FALLBACK_CHAIN: ProviderType[] = [
-  'pollinations', 'uncloseai', 'wisgate', 'groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface'
+  'pollinations', 'uncloseai', 'wisgate', 'llm7', 'groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface'
 ];
 
 export const FREE_MODEL_DEFAULTS: Partial<Record<ProviderType, string>> = {
@@ -23,11 +23,13 @@ export const FREE_MODEL_DEFAULTS: Partial<Record<ProviderType, string>> = {
   huggingface: 'meta-llama/Llama-3.3-70B-Instruct',
   wisgate: 'gemini-3-flash',
   uncloseai: 'hermes',
+  llm7: 'llama-3.1-8b-instruct-fp8',
+  puter: 'gpt-4o-mini',
 };
 
 // ── Provider API Key Requirements ────────────────────────────────────────────
 export const FREE_PROVIDERS: ProviderType[] = ['pollinations', 'wisgate', 'uncloseai'];
-export const FREE_TIER_PROVIDERS: ProviderType[] = ['groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface'];
+export const FREE_TIER_PROVIDERS: ProviderType[] = ['groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface', 'llm7'];
 
 
 
@@ -661,6 +663,23 @@ export const MODEL_OPTIONS: ModelOption[] = [
   // ── AI21 LABS ─────────────────────────────────────────────────────────────
   { label: 'AI21 Jamba 1.6 Large (Efficient Long)', value: 'jamba-1.6-large', provider: 'ai21' },
   { label: 'AI21 Jamba 1.6 Mini (Fast Edge)', value: 'jamba-1.6-mini', provider: 'ai21' },
+
+  // ── LLM7 (2026 Free & Paid Models) ─────────────────────────────────────────
+  { label: 'LLM7 Bidara (Specialized)', value: 'bidara', provider: 'llm7', isFree: true },
+  { label: 'LLM7 Codestral 2501 (Code)', value: 'codestral-2501', provider: 'llm7', isFree: true },
+  { label: 'LLM7 DeepSeek R1 0528 (Reasoning)', value: 'deepseek-r1-0528', provider: 'llm7', isFree: true },
+  { label: 'LLM7 GPT o3 2025-04-16 (Reasoning)', value: 'gpt-o3-2025-04-16', provider: 'llm7', isFree: true },
+  { label: 'LLM7 LLaMA 3.1 8B Instruct FP8', value: 'llama-3.1-8b-instruct-fp8', provider: 'llm7', isFree: true },
+  { label: 'LLM7 LLaMA 4 Scout 17B 16E', value: 'llama-4-scout-17b-16e-instruct', provider: 'llm7', isFree: true },
+  { label: 'LLM7 Mistral Large 2411 (Frontier)', value: 'mistral-large-2411', provider: 'llm7', isFree: true },
+  { label: 'LLM7 Mistral Small 2503 (Efficient)', value: 'mistral-small-2503', provider: 'llm7', isFree: true },
+  { label: 'LLM7 Phi-4 Multimodal Instruct', value: 'phi-4-multimodal-instruct', provider: 'llm7', isFree: true },
+
+  // ── PUTER.COM (Account-based 400+ Models) ──────────────────────────────────
+  { label: 'Puter GPT-4o (OpenAI)', value: 'gpt-4o', provider: 'puter' },
+  { label: 'Puter GPT-4o Mini (OpenAI Fast)', value: 'gpt-4o-mini', provider: 'puter' },
+  { label: 'Puter Claude 3.5 Sonnet (Anthropic)', value: 'claude-3-5-sonnet', provider: 'puter' },
+  { label: 'Puter Gemini 2.5 Flash (Google)', value: 'gemini-2.5-flash', provider: 'puter' },
 ];
 
 export const AUDIO_MODELS = [

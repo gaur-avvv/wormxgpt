@@ -49,6 +49,8 @@ const PROVIDER_LABELS: Record<string, string> = {
   nebius: 'Nebius Studio',
   tinyfish: 'TinyFish',
   ai21: 'AI21 Labs',
+  llm7: 'LLM7.io (OpenAI Comp)',
+  puter: 'Puter.com AI',
 };
 
 // ── API Key provider config (OUTSIDE component to prevent infinite debounce loop)
@@ -89,6 +91,8 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
   { key: 'lambdaaiApiKey', label: 'Lambda AI', group: 'AI Models' },
   { key: 'nebiusApiKey', label: 'Nebius Studio', group: 'AI Models' },
   { key: 'tinyfishApiKey', label: 'TinyFish WebAgent', group: 'AI Models' },
+  { key: 'llm7ApiKey', label: 'LLM7.io API Key', group: 'AI Models' },
+  { key: 'puterApiKey', label: 'Puter.com Auth Token', group: 'AI Models' },
   // Search APIs
   { key: 'witAiServerToken', label: 'Wit.AI Server Token', group: 'Search APIs' },
   { key: 'tavilyApiKey', label: 'Tavily Search', group: 'Search APIs' },

@@ -8,7 +8,7 @@ export type ProviderType =
   | 'cohere' | 'wisgate' | 'nvidia' | 'fireworks' | 'sambanova'
   | 'hyperbolic' | 'huggingface' | 'replicate' | 'azure' | 'bedrock'
   | 'vertexai' | 'cloudflare' | 'deepinfra' | 'novita' | 'featherless'
-  | 'lambdaai' | 'nebius' | 'tinyfish' | 'ai21' | 'uncloseai';
+  | 'lambdaai' | 'nebius' | 'tinyfish' | 'ai21' | 'uncloseai' | 'llm7' | 'puter';
 
 // ── Stream Response ──────────────────────────────────────────────────────────
 export interface StreamChunk {
@@ -102,6 +102,8 @@ export interface AppSettings {
   thinkingBudget: number;
   geminiApiKey?: string;
   groqApiKey?: string;
+  llm7ApiKey?: string;
+  puterApiKey?: string;
   pollinationsApiKey?: string;
   cerebrasApiKey?: string;
   siliconFlowApiKey?: string;

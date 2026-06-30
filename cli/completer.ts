@@ -68,6 +68,14 @@ export const KNOWN_MODELS: Record<string, string[]> = {
   uncloseai: [
     'hermes', 'qwen', 'speech'
   ],
+  llm7: [
+    'bidara', 'codestral-2501', 'deepseek-r1-0528', 'gpt-o3-2025-04-16',
+    'llama-3.1-8b-instruct-fp8', 'llama-4-scout-17b-16e-instruct',
+    'mistral-large-2411', 'mistral-small-2503', 'phi-4-multimodal-instruct'
+  ],
+  puter: [
+    'gpt-4o', 'gpt-4o-mini', 'claude-3-5-sonnet', 'gemini-2.5-flash'
+  ],
 };
 
 // Flat list of all known model strings

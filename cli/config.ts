@@ -80,7 +80,7 @@ export function setApiKey(provider: string, key: string, settings: AppSettings):
     huggingface: 'huggingfaceApiKey', deepinfra: 'deepinfraApiKey', novita: 'novitaApiKey',
     featherless: 'featherlessApiKey', lambdaai: 'lambdaaiApiKey', nebius: 'nebiusApiKey',
     tinyfish: 'tinyfishApiKey', brave: 'braveApiKey', tavily: 'tavilyApiKey',
-    firecrawl: 'firecrawlApiKey',
+    firecrawl: 'firecrawlApiKey', llm7: 'llm7ApiKey', puter: 'puterApiKey',
   };
   const field = map[provider.toLowerCase()];
   if (!field) return false;

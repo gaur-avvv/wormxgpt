@@ -45,6 +45,8 @@ export { lambdaaiService } from './lambdaai';
 export { nebiusService } from './nebius';
 export { wisGateService } from './wisgate';
 export { uncloseaiService } from './uncloseai';
+export { llm7Service } from './llm7';
+export { puterService } from './puter';
 
 // ── Core Infrastructure ──────────────────────────────────────────────────────
 export { providerRouter, initializeProviderRouter } from './providerRouter';

@@ -65,6 +65,8 @@ export class ProviderRouter {
       huggingface: 'huggingfaceApiKey', deepinfra: 'deepinfraApiKey', novita: 'novitaApiKey',
       featherless: 'featherlessApiKey', lambdaai: 'lambdaaiApiKey', nebius: 'nebiusApiKey',
       tinyfish: 'tinyfishApiKey',
+      llm7: 'llm7ApiKey',
+      puter: 'puterApiKey',
     };
     return map[provider] || null;
   }
@@ -297,4 +299,6 @@ export async function initializeProviderRouter(): Promise<void> {
   providerRouter.register('nebius', services.nebiusService);
   providerRouter.register('wisgate', services.wisGateService);
   providerRouter.register('uncloseai', services.uncloseaiService);
+  providerRouter.register('llm7', services.llm7Service);
+  providerRouter.register('puter', services.puterService);
 }
