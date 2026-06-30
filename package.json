@@ -1,6 +1,6 @@
 {
   "name": "wormxgpt",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "WormXGPT — Unfiltered Chaos CLI. Multi-provider AI chat with 100+ tools, MCP integration, auto-fallback, multi-agent orchestration. No filters, no limits.",
   "type": "module",
   "bin": {
