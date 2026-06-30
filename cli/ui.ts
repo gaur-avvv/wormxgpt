@@ -78,7 +78,7 @@ function stripAnsi(s: string): string {
 export function toolCallHeader(name: string, args: any): string {
   const argsStr = typeof args === 'string' ? args : JSON.stringify(args, null, 0);
   const truncated = argsStr.length > 120 ? argsStr.substring(0, 117) + '...' : argsStr;
-  return `${C.yellow}⚡ Tool Call:${C.reset} ${C.bcyan}${name}${C.reset}${C.gray}(${truncated})${C.reset}`;
+  return `${C.yellow}Tool Call:${C.reset} ${C.bcyan}${name}${C.reset}${C.gray}(${truncated})${C.reset}`;
 }
 
 export function toolResultDisplay(name: string, result: string, ms: number): string {
@@ -97,7 +97,7 @@ ${C.bold}${C.bred}╔═══════════════════�
 ${C.bold}${C.bred}║          WormXGPT — Command Reference            ║${C.reset}
 ${C.bold}${C.bred}╚══════════════════════════════════════════════════╝${C.reset}
 
-${C.bold}${C.cyan}🤖 AI & Model${C.reset}
+${C.bold}${C.cyan}AI & Model${C.reset}
   ${C.hacker}/model${C.reset} ${C.dim}<name>${C.reset}        Switch model  ${C.dim}(Tab-autocomplete!)${C.reset}
   ${C.hacker}/models${C.reset}              Browse all available models grouped by provider
   ${C.hacker}/provider${C.reset} ${C.dim}<name>${C.reset}     Switch provider  ${C.dim}(Tab-autocomplete!)${C.reset}
@@ -107,7 +107,7 @@ ${C.bold}${C.cyan}🤖 AI & Model${C.reset}
   ${C.hacker}/parallel${C.reset} ${C.dim}<prompt>${C.reset}  Run on all configured providers simultaneously
   ${C.hacker}/multi${C.reset}               Toggle multi-agent orchestration
 
-${C.bold}${C.cyan}💬 Chat & Session${C.reset}
+${C.bold}${C.cyan}Chat & Session${C.reset}
   ${C.hacker}/new${C.reset}                 Start a fresh chat session
   ${C.hacker}/clear${C.reset}               Clear messages in current session
   ${C.hacker}/sessions${C.reset}            List & switch saved sessions
@@ -116,7 +116,7 @@ ${C.bold}${C.cyan}💬 Chat & Session${C.reset}
   ${C.hacker}/hibernate${C.reset}           Compress context to save tokens now
   ${C.hacker}/hitl${C.reset}               Toggle Human-in-the-Loop (AI can ask you questions mid-task)
 
-${C.bold}${C.cyan}🛠  Tools & MCP${C.reset}
+${C.bold}${C.cyan}Tools & MCP${C.reset}
   ${C.hacker}/tools${C.reset}               List all tools (27 active)
   ${C.hacker}/tools enable${C.reset} ${C.dim}<name>${C.reset}  Enable a tool  ${C.dim}(Tab-autocomplete name!)${C.reset}
   ${C.hacker}/tools disable${C.reset} ${C.dim}<n>${C.reset}    Disable a tool
@@ -128,7 +128,7 @@ ${C.bold}${C.cyan}🛠  Tools & MCP${C.reset}
   ${C.hacker}/serve${C.reset}               Start local MCP server on port 3002
   ${C.hacker}/run${C.reset} ${C.dim}<tool> [args]${C.reset}    Execute a tool directly
 
-${C.bold}${C.cyan}🧠 Customization${C.reset}
+${C.bold}${C.cyan}Customization${C.reset}
   ${C.hacker}/provider add${C.reset}        Register a custom OpenAI-compatible endpoint
   ${C.hacker}/provider list${C.reset}       List custom AI endpoints
   ${C.hacker}/provider remove${C.reset}     Remove a custom endpoint
@@ -139,7 +139,7 @@ ${C.bold}${C.cyan}🧠 Customization${C.reset}
   ${C.hacker}/plugin list${C.reset}         List active plugins
   ${C.hacker}/plugin delete${C.reset}       Remove a plugin
 
-${C.bold}${C.cyan}📊 Info & Config${C.reset}
+${C.bold}${C.cyan}Info & Config${C.reset}
   ${C.hacker}/settings${C.reset}            Show current settings panel
   ${C.hacker}/health${C.reset}              Provider health & latency stats
   ${C.hacker}/doctor${C.reset}              Run full connectivity + key diagnostics
@@ -150,18 +150,17 @@ ${C.bold}${C.cyan}📊 Info & Config${C.reset}
   ${C.hacker}/exit${C.reset}                Exit WormXGPT
 
 ${C.dim}─────────────────────────────────────────────────────────────${C.reset}
-${C.dim}💡 Press Tab after /  to autocomplete commands${C.reset}
-${C.dim}💡 Press Tab after /model  to see model names${C.reset}
-${C.dim}💡 Press Tab after /key  to see provider names${C.reset}
-${C.dim}💡 Ctrl+C during streaming aborts generation${C.reset}
+${C.dim}Press Tab after /  to autocomplete commands${C.reset}
+${C.dim}Press Tab after /model  to see model names${C.reset}
+${C.dim}Press Tab after /key  to see provider names${C.reset}
+${C.dim}Ctrl+C during streaming aborts generation${C.reset}
 `;
-
 // ── Startup Quick-Tips Bar ───────────────────────────────────────────────────
 export function quickTipsBar(): string {
   return [
     `${C.dim}─────────────────────────────────────────────────────────────────────${C.reset}`,
-    `${C.dim}💡 Quick cmds:${C.reset}  ${C.hacker}/model${C.reset}${C.dim}  /provider  /key  /tools  /setup  /doctor  /help${C.reset}`,
-    `${C.dim}⌨  Tab-complete: type ${C.reset}${C.hacker}/${C.reset}${C.dim} or ${C.reset}${C.hacker}/model ${C.reset}${C.dim}then press${C.reset} ${C.bold}Tab${C.reset}${C.dim} for suggestions${C.reset}`,
+    `${C.dim}Quick cmds:${C.reset}  ${C.hacker}/model${C.reset}${C.dim}  /provider  /key  /tools  /setup  /doctor  /help${C.reset}`,
+    `${C.dim}Tab-complete: type ${C.reset}${C.hacker}/${C.reset}${C.dim} or ${C.reset}${C.hacker}/model ${C.reset}${C.dim}then press${C.reset} ${C.bold}Tab${C.reset}${C.dim} for suggestions${C.reset}`,
     `${C.dim}─────────────────────────────────────────────────────────────────────${C.reset}`,
   ].join('\n');
 }

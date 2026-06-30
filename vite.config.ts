@@ -47,13 +47,7 @@ export default defineConfig(({ mode }) => {
         outDir: 'dist',
         sourcemap: false,
         chunkSizeWarningLimit: 3000,
-        minify: 'terser',
-        terserOptions: {
-          compress: {
-            drop_console: false,
-            drop_debugger: true,
-          }
-        },
+        minify: 'esbuild',
         rollupOptions: {
           output: {
             manualChunks: {

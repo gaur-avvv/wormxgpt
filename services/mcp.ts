@@ -78,6 +78,7 @@ function registerMcpUrl(url: string) {
 // ── MCPService ───────────────────────────────────────────────────────────────
 
 export class MCPService {
+  public disableReconnect = false;
   private servers: Map<string, ServerState> = new Map();
   private reconnectTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
   private healthTimer: ReturnType<typeof setInterval> | null = null;
@@ -439,7 +440,7 @@ export class MCPService {
     this._setStatus(url, 'connecting');
     registerMcpUrl(url);
 
-    console.log(`[MCP] 📡 Connecting to ${url}...`);
+    console.log(`[MCP] Connecting to ${url}...`);
 
     // Try StreamableHTTP first (modern protocol)
     try {
@@ -447,7 +448,7 @@ export class MCPService {
       const client = new Client({ name: 'wormgpt_ui', version: '2.3.0' }, { capabilities: {} });
       await client.connect(transport);
       this._registerServer(url, client, transport);
-      console.log(`[MCP] ✅ StreamableHTTP connected: ${url}`);
+      console.log(`[MCP] StreamableHTTP connected: ${url}`);
       this._startHealthCheck();
       return true;
     } catch (e1: any) {
@@ -460,11 +461,11 @@ export class MCPService {
       const client = new Client({ name: 'wormgpt_ui', version: '2.3.0' }, { capabilities: {} });
       await client.connect(transport);
       this._registerServer(url, client, transport);
-      console.log(`[MCP] ✅ SSE connected: ${url}`);
+      console.log(`[MCP] SSE connected: ${url}`);
       this._startHealthCheck();
       return true;
     } catch (e2: any) {
-      console.error(`[MCP] ❌ Both transports failed for ${url}:`, e2.message);
+      console.error(`[MCP] Both transports failed for ${url}:`, e2.message);
       this._setStatus(url, 'error', e2.message);
       this._scheduleReconnect(url);
       return false;
@@ -644,13 +645,13 @@ export class MCPService {
         if (freshState) {
           freshState.consecutiveFailures++;
           console.warn(
-            `[MCP] ⚠️ Tool '${name}' failed (attempt ${attempt + 1}/${this.MAX_RETRIES}): ${e.message}` +
+            `[MCP] Tool '${name}' failed (attempt ${attempt + 1}/${this.MAX_RETRIES}): ${e.message}` +
             ` [consecutive failures: ${freshState.consecutiveFailures}]`
           );
 
           // Trip circuit breaker
           if (freshState.consecutiveFailures >= this.CB_FAILURE_THRESHOLD) {
-            console.error(`[MCP] 🔴 CIRCUIT BREAKER TRIPPED for ${serverUrl} after ${freshState.consecutiveFailures} failures`);
+            console.error(`[MCP] CIRCUIT BREAKER TRIPPED for ${serverUrl} after ${freshState.consecutiveFailures} failures`);
             freshState.status = 'degraded';
             freshState.degradedSince = Date.now();
             freshState.error = e.message;
@@ -673,7 +674,7 @@ export class MCPService {
    * Independent calls are batched; failures are isolated per call.
    */
   async executeToolsBatch(calls: ToolCallRequest[]): Promise<Array<{ name: string; result?: string; error?: string }>> {
-    console.log(`[MCP] ⚡ Executing batch of ${calls.length} tool calls in parallel...`);
+    console.log(`[MCP] Executing batch of ${calls.length} tool calls in parallel...`);
     const results = await Promise.allSettled(
       calls.map(c => this.executeTool(c.name, c.args))
     );
@@ -751,6 +752,7 @@ export class MCPService {
   }
 
   private _startHealthCheck() {
+    if (this.disableReconnect) return;
     if (this.healthTimer) return;
     this.healthTimer = setInterval(async () => {
       const now = Date.now();
@@ -759,7 +761,7 @@ export class MCPService {
         // Auto-recover degraded servers after CB_RECOVERY_DELAY
         if (state.status === 'degraded' && state.degradedSince) {
           if (now - state.degradedSince >= this.CB_RECOVERY_DELAY) {
-            console.log(`[MCP] 🔁 Auto-recovering degraded server: ${url}`);
+            console.log(`[MCP] Auto-recovering degraded server: ${url}`);
             state.consecutiveFailures = 0;
             state.degradedSince = undefined;
             await this.disconnect(url);
@@ -784,9 +786,9 @@ export class MCPService {
           state.consecutiveFailures = 0;
         } catch (e: any) {
           state.consecutiveFailures++;
-          console.warn(`[MCP] 💔 Health failed for ${url} (failures: ${state.consecutiveFailures})`);
+          console.warn(`[MCP] Health failed for ${url} (failures: ${state.consecutiveFailures})`);
           if (state.consecutiveFailures >= this.CB_FAILURE_THRESHOLD) {
-            console.error(`[MCP] 🔴 Server ${url} — circuit breaker tripped`);
+            console.error(`[MCP] Server ${url} — circuit breaker tripped`);
             state.status = 'degraded';
             state.degradedSince = Date.now();
           } else {
@@ -805,10 +807,11 @@ export class MCPService {
   }
 
   private _scheduleReconnect(url: string) {
+    if (this.disableReconnect) return;
     if (this.reconnectTimers.has(url)) return;
     const attempts = this.reconnectAttempts.get(url) || 0;
     if (attempts >= this.MAX_RECONNECT_ATTEMPTS) {
-      console.warn(`[MCP] ⏹ Max reconnect attempts (${this.MAX_RECONNECT_ATTEMPTS}) reached for ${url}. Giving up.`);
+      console.warn(`[MCP] Max reconnect attempts (${this.MAX_RECONNECT_ATTEMPTS}) reached for ${url}. Giving up.`);
       this._setStatus(url, 'error', 'Max reconnect attempts exceeded');
       return;
     }
@@ -818,7 +821,7 @@ export class MCPService {
     );
     this.reconnectAttempts.set(url, attempts + 1);
 
-    console.log(`[MCP] 🔄 Reconnecting ${url} in ${delay / 1000}s (attempt ${attempts + 1}/${this.MAX_RECONNECT_ATTEMPTS})...`);
+    console.log(`[MCP] Reconnecting ${url} in ${delay / 1000}s (attempt ${attempts + 1}/${this.MAX_RECONNECT_ATTEMPTS})...`);
     const timer = setTimeout(async () => {
       this.reconnectTimers.delete(url);
       await this.connect(url);

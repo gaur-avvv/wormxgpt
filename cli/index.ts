@@ -62,6 +62,7 @@ function cleanExit(code: number) {
 
 // ─── Initialize ──────────────────────────────────────────────────────────────
 async function init() {
+  mcpService.disableReconnect = true;
   // Register safety permission check hook
   (global as any).cliPromptPermission = async (name: string, args: any): Promise<boolean> => {
     if (!process.stdin.isTTY) return true;

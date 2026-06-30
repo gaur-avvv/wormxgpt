@@ -44,7 +44,7 @@ export async function runParallelConsensus(
     return providerRouter.streamWithFallback(settings, sessionMessages);
   }
 
-  console.log(`\n${C.yellow}🤖 [Parallel Consensus] Dispatching subagents to ${C.bold}${providers.join(', ')}${C.reset}...`);
+  console.log(`\n${C.yellow}[Parallel Consensus] Dispatching subagents to ${C.bold}${providers.join(', ')}${C.reset}...`);
 
   // Build the message payload for each model
   const apiMessages = [...sessionMessages];
@@ -77,7 +77,7 @@ export async function runParallelConsensus(
     const icon = r.success ? `${C.green}✔` : `${C.red}✘`;
     boxLines.push(`${icon} ${C.bold}${r.provider}${C.reset}: ${r.response.substring(0, 100).replace(/\n/g, ' ')}...`);
   });
-  console.log('\n' + box('🤖 Subagent Parallel Results', boxLines, C.cyan) + '\n');
+  console.log('\n' + box('Subagent Parallel Results', boxLines, C.cyan) + '\n');
 
   // Now, synthesize using the default provider
   const consensusPrompt = `You are the Consensus Master. Below are the responses from several different AI models to the user's prompt: "${prompt}".

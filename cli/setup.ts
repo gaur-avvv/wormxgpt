@@ -45,16 +45,16 @@ export function printSetupStatus(settings: AppSettings, checkResult: { missingKe
     : `${C.dim}— Disabled / Not Set${C.reset}`;
 
   const lines = [
-    `${C.bold}🔑 Default AI Provider:${C.reset}  ${C.hacker}${activeProvider}${C.reset} (${settings.model})`,
+    `${C.bold}Default AI Provider:${C.reset}  ${C.hacker}${activeProvider}${C.reset} (${settings.model})`,
     `   ${C.bold}Status:${C.reset}                ${providerStatus}`,
-    `${C.bold}🧠 Agentic Memory:${C.reset}      ${memoryStatus}`,
-    `${C.bold}💾 Redis Caching:${C.reset}       ${cacheStatus}`,
+    `${C.bold}Agentic Memory:${C.reset}      ${memoryStatus}`,
+    `${C.bold}Redis Caching:${C.reset}       ${cacheStatus}`,
   ];
-  console.log('\n' + box('📋 Configuration Status Board', lines, C.orange) + '\n');
+  console.log('\n' + box('Configuration Status Board', lines, C.orange) + '\n');
 }
 
 export async function runSetupWizard(rl: readline.Interface, settings: AppSettings): Promise<void> {
-  console.log('\n' + box('⚙️  WormXGPT Config Wizard', [
+  console.log('\n' + box('WormXGPT Config Wizard', [
     'Welcome to the setup wizard. We will configure your',
     'AI Providers, API Keys, Memory options, and Caching.',
   ], C.yellow) + '\n');
@@ -180,7 +180,7 @@ export async function runSetupWizard(rl: readline.Interface, settings: AppSettin
           `${C.dim}Cache:${C.reset}     ${settings.redisUrl ? C.green + 'Redis' : C.red + 'Disabled'}${C.reset}`,
           `${C.dim}Tools:${C.reset}     ${(settings.enabledTools || []).length} enabled`,
         ];
-        console.log('\n' + box('⚙️  Current Settings Details', lines) + '\n');
+        console.log('\n' + box('Current Settings Details', lines) + '\n');
         break;
       }
 
