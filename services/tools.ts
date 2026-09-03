@@ -7640,3 +7640,15 @@ export const executeToolCall = async (toolCall: ToolCall) => {
   throw new Error(`Tool not found: ${name}`);
 };
 
+export const executeToolByName = async (name: string, args: any = {}) => {
+  return executeToolCall({
+    id: `tool_${Date.now()}`,
+    type: 'function',
+    function: {
+      name,
+      arguments: typeof args === 'string' ? args : JSON.stringify(args)
+    }
+  });
+};
+
+

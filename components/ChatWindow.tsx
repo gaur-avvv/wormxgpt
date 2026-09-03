@@ -1,96 +1,150 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import { Terminal, Sparkles, ShieldAlert, Cpu, Eye, ArrowDown } from 'lucide-react';
 import { useWormGPT } from '../context/GlobalContext';
 import { ChatMessage } from './ChatMessage';
 import { SUGGESTED_PROMPTS } from '../constants';
 
-export const ChatWindow: React.FC = () => {
+export const ChatWindow: React.FC<{
+  onOpenModelSelector?: (mode?: 'text' | 'vision') => void;
+}> = ({ onOpenModelSelector }) => {
   const { activeSession, settings, isStreaming, setInput } = useWormGPT();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const userScrolledUp = useRef<boolean>(false);
+  const [showScrollBottom, setShowScrollBottom] = useState<boolean>(false);
 
-  // Virtualization windowing
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
   const messages = useMemo(() => activeSession.messages, [activeSession.messages]);
+  const lastMessage = messages[messages.length - 1];
+  const lastMessageContent = lastMessage?.content;
 
-  useEffect(() => {
-    // Auto-scroll to bottom on new messages if near bottom
-    if (scrollRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 200;
-      if (isNearBottom || isStreaming.current) {
-        scrollRef.current.scrollTo({ top: scrollHeight, behavior: 'smooth' });
-      }
-    }
-  }, [messages.length, isStreaming.current]);
-
-  const handleScroll = () => {
+  // Scroll detection handler to maintain user intent
+  const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    setShowScrollBottom(scrollHeight - scrollTop - clientHeight > 300);
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
     
-    // Simple windowing logic (can be expanded to full virtualization)
-    // For now, we render the last 100 messages for performance
-  };
+    // User is considered scrolled up if more than 70px from the bottom
+    const isUp = distanceFromBottom > 70;
+    userScrolledUp.current = isUp;
+    setShowScrollBottom(distanceFromBottom > 160);
+  }, []);
+
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (!scrollRef.current) return;
+    userScrolledUp.current = false;
+    setShowScrollBottom(false);
+    
+    if (smooth) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    } else {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, []);
+
+  // When a new message is appended or active session changes, reset userScrolledUp and scroll down
+  useEffect(() => {
+    userScrolledUp.current = false;
+    scrollToBottom(true);
+  }, [messages.length, activeSession.id, scrollToBottom]);
+
+  // Streaming-aware auto-scrolling: During active token streams, smoothly maintain bottom position
+  // without jitter ONLY if the user hasn't scrolled up to review previous output
+  useEffect(() => {
+    if (isStreaming.current && !userScrolledUp.current && scrollRef.current) {
+      // Direct scroll assignment prevents browser animation queue stuttering during high-frequency tokens
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [lastMessageContent, isStreaming.current]);
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col relative bg-[#050000]">
-      {/* Background Watermark */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none z-0">
-        <h1 className="text-[20vw] font-black italic tracking-tighter text-red-600 rotate-[-15deg]">WormGPT</h1>
-      </div>
-
+    <div className="flex-1 overflow-hidden flex flex-col relative bg-[#090d16] font-sans">
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 sm:p-8 md:p-12 scroll-smooth custom-scrollbar relative z-10"
+        className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 custom-scrollbar relative z-10"
       >
         <div className="max-w-4xl mx-auto min-h-full flex flex-col">
           {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-20 animate-fadeIn">
-              <div className="mb-8 relative">
-                <div className="w-24 h-24 bg-red-600/10 border-2 border-red-600/60 rounded-full animate-pulse flex items-center justify-center shadow-[0_0_30px_#ff000033]">
-                  <div className="w-14 h-14 bg-red-600/20 border-2 border-red-600 rounded-full flex items-center justify-center">
-                    <span className="text-red-500 text-3xl font-black italic drop-shadow-[0_0_8px_#ff0000]">W</span>
-                  </div>
+            <div className="flex-1 flex flex-col items-center justify-center py-12 text-center animate-in fade-in duration-300">
+              {/* Terminal Logo Icon */}
+              <div className="mb-6 relative">
+                <div className="w-16 h-16 rounded-2xl bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-xl shadow-indigo-950/40">
+                  <Terminal className="w-8 h-8" />
                 </div>
-                <div className="absolute -inset-6 border-2 border-red-600/20 rounded-full animate-ping opacity-10" />
               </div>
-              
-              <h2 className="text-4xl font-black uppercase tracking-[0.4em] text-red-600 mb-2 drop-shadow-[0_0_15px_#ff0000]">Terminal_Ready</h2>
-              <p className="text-[11px] text-red-500/50 font-mono uppercase tracking-[0.5em] mb-12">System.Wait(Command_Injection)...</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl px-4">
-                {SUGGESTED_PROMPTS.map((p, i) => (
+              <h2 className="text-2xl font-bold tracking-tight text-slate-100 mb-2">
+                WormGPT Terminal & Model Harness
+              </h2>
+              <p className="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
+                Autonomous agent harness with multi-model routing, unrestricted prompt injection, and 28+ provider fallback chains.
+              </p>
+
+              {/* Active Harness Config Badges */}
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+                <div 
+                  onClick={() => onOpenModelSelector?.('text')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 flex items-center gap-1.5 cursor-pointer hover:border-indigo-500/50 transition-all"
+                >
+                  <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Text: {settings.model}</span>
+                </div>
+
+                <div 
+                  onClick={() => onOpenModelSelector?.('vision')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 flex items-center gap-1.5 cursor-pointer hover:border-violet-500/50 transition-all"
+                >
+                  <Eye className="w-3.5 h-3.5 text-violet-400" />
+                  <span>Vision: {settings.visionModel || 'gemini-2.5-flash'}</span>
+                </div>
+
+                {settings.systemOverride && (
+                  <div className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>System Override Active</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Prompts */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-2xl px-4 text-left">
+                {SUGGESTED_PROMPTS.slice(0, 4).map((p, i) => (
                   <button 
                     key={i} 
                     onClick={() => setInput(p)} 
-                    className="p-4 bg-zinc-950/40 border-2 border-red-900/20 hover:border-red-600/60 hover:bg-red-600/10 text-[10px] text-left transition-all rounded text-zinc-500 hover:text-red-400 font-bold uppercase tracking-wider"
+                    className="p-3.5 bg-slate-900/40 hover:bg-indigo-600/10 border border-slate-800 hover:border-indigo-500/40 rounded-xl text-xs text-slate-300 hover:text-slate-100 transition-all duration-200"
                   >
-                    {p}
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                      <span className="truncate">{p}</span>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           ) : (
-            <>
-              {/* Virtualized view of messages (slice for now to ensure extreme performance) */}
-              {messages.slice(-100).map((msg, i) => (
-                <ChatMessage key={`${msg.timestamp}-${i}`} message={msg} settings={settings} />
+            <div className="space-y-6 pb-20">
+              {messages.map((msg, i) => (
+                <ChatMessage key={`${msg.timestamp || i}-${i}`} message={msg} settings={settings} />
               ))}
-              <div className="h-20 shrink-0" />
-            </>
+            </div>
           )}
         </div>
       </div>
 
       {showScrollBottom && (
         <button 
-          onClick={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })}
-          className="absolute bottom-6 right-6 p-3 bg-red-600 text-black rounded-full shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:scale-110 active:scale-95 transition-all z-20"
+          onClick={() => scrollToBottom(true)}
+          className="absolute bottom-6 right-6 p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg shadow-indigo-950/60 hover:scale-105 active:scale-95 transition-all z-20 flex items-center justify-center"
+          title="Scroll to latest message"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 14l-7 7-7-7" strokeWidth={3} /></svg>
+          <ArrowDown className="w-4 h-4" />
         </button>
       )}
     </div>
   );
 };
+
+export default ChatWindow;

@@ -3,6 +3,7 @@ import { FALLBACK_CHAIN, FREE_MODEL_DEFAULTS, FREE_PROVIDERS, FREE_TIER_PROVIDER
 
 // ── Provider Service Interface ───────────────────────────────────────────────
 export interface ProviderService {
+  generateChat?(settings: AppSettings, messages: Message[], signal?: AbortSignal): Promise<StreamChunk>;
   streamChat(settings: AppSettings, messages: Message[], signal?: AbortSignal): AsyncGenerator<StreamChunk>;
   verifyApiKey?(key: string): Promise<boolean>;
   setApiKey?(key: string): void;
@@ -142,18 +143,19 @@ export class ProviderRouter {
   }
 
   /**
-   * Stream chat with automatic fallback on failure.
-   * Tries the selected provider first, then falls back through the chain.
+   * Synchronous Request-Response with Fallback Handling
    */
-  async *streamWithFallback(
+  async generateWithFallback(
     settings: AppSettings,
     messages: Message[],
     signal?: AbortSignal
-  ): AsyncGenerator<StreamChunk> {
+  ): Promise<StreamChunk> {
     const primaryProvider = settings.aiProvider || 'pollinations';
     const autoFallback = settings.autoFallback ?? true;
 
-    // Build the fallback chain: primary first, then configured/default chain
+    // Build the fallback chain:
+    // 1. Primary provider
+    // 2. Only providers with configured keys OR genuinely free providers
     const chain: { provider: ProviderType; model: string }[] = [
       { provider: primaryProvider, model: settings.model }
     ];
@@ -161,99 +163,158 @@ export class ProviderRouter {
     if (autoFallback) {
       const userChain = settings.fallbackChain || FALLBACK_CHAIN;
       for (const p of userChain) {
-        if (p !== primaryProvider && this.services.has(p)) {
-          // Include if: free provider, free-tier provider (no key needed), or has a key configured
-          const isFreeOrFreeTier = FREE_PROVIDERS.includes(p) || FREE_TIER_PROVIDERS.includes(p);
-          if (isFreeOrFreeTier || this.hasApiKey(p, settings)) {
+        if (p !== primaryProvider && (this.services.has(p) || FREE_PROVIDERS.includes(p))) {
+          const isFree = FREE_PROVIDERS.includes(p);
+          const hasKey = this.hasApiKey(p, settings);
+          if (isFree || hasKey) {
             chain.push({ provider: p, model: this.getBestFreeModel(p) || settings.model });
           }
         }
       }
+      // Ensure pollinations is always at least present in the chain if not already
+      if (!chain.some(c => c.provider === 'pollinations')) {
+        chain.push({ provider: 'pollinations', model: 'openai' });
+      }
     }
 
-    let lastError: Error | null = null;
+    let lastErrorMsg = '';
 
     for (let i = 0; i < chain.length; i++) {
       const { provider, model } = chain[i];
-      const service = this.services.get(provider);
-      if (!service) continue;
+      let service = this.services.get(provider);
 
-      if (signal?.aborted) return;
-
-      // If this is a fallback attempt, yield a status message
-      if (i > 0) {
-        yield {
-          text: `⚡ Auto-fallback: Switching to ${provider} (${model})...\n\n`,
-          images: []
-        };
+      if (!service) {
+        try {
+          const { providerRegistry } = await import('./providers/registry');
+          const reg = providerRegistry.getProvider(provider as any);
+          if (reg) service = reg as any;
+        } catch {}
       }
+
+      if (!service) continue;
+      if (signal?.aborted) throw new Error('Request aborted by user');
 
       const start = Date.now();
       try {
-        // Create settings override for fallback provider
         const effectiveSettings: AppSettings = i === 0 ? settings : {
           ...settings,
           aiProvider: provider,
           model: model,
         };
 
-        let hasYielded = false;
-        for await (const chunk of service.streamChat(effectiveSettings, messages, signal)) {
-          hasYielded = true;
-          yield chunk;
+        let result: StreamChunk;
+        if (typeof service.generateChat === 'function') {
+          result = await service.generateChat(effectiveSettings, messages, signal);
+        } else {
+          // Fallback if provider only implemented streamChat
+          let text = '';
+          let images: string[] = [];
+          let sources: any[] = [];
+          for await (const chunk of service.streamChat(effectiveSettings, messages, signal)) {
+            if (chunk.text) text = chunk.text;
+            if (chunk.images) images = chunk.images;
+            if (chunk.sources) sources = chunk.sources;
+          }
+          result = { text, images, sources };
         }
 
-        // If we got here without error, record success
-        this.recordSuccess(provider, Date.now() - start);
-        return; // Success — don't try next provider
-
-      } catch (error: any) {
-        const errMsg = error?.message || 'Unknown error';
-        this.recordFailure(provider, errMsg);
-        lastError = error;
-
-        console.warn(`[ProviderRouter] ${provider} failed: ${errMsg}`);
-
-        // Don't fallback for user-abort
-        if (error?.name === 'AbortError' || signal?.aborted) return;
-
-        // If no more fallbacks, throw
-        if (i === chain.length - 1) {
-          yield {
-            text: `[SYSTEM ERROR] All providers failed.\n\nLast error (${provider}): ${errMsg}\n\nTried: ${chain.map(c => c.provider).join(' → ')}`,
-            images: []
-          };
-          return;
+        if (result && (result.text || (result.images && result.images.length > 0))) {
+          this.recordSuccess(provider, Date.now() - start);
+          return result;
         }
+      } catch (err: any) {
+        if (err.name === 'AbortError' || signal?.aborted) {
+          throw err;
+        }
+        lastErrorMsg = err?.message || 'Unknown error';
+        this.recordFailure(provider, lastErrorMsg);
+        console.warn(`[ProviderRouter] ${provider} failed: ${lastErrorMsg}`);
       }
+    }
+
+    // Absolute fallback: try standard Pollinations synchronous direct handler
+    try {
+      const { pollinationsService } = await import('./pollinations');
+      const fallbackResult = await pollinationsService.generateChat(
+        { ...settings, aiProvider: 'pollinations', model: 'openai' },
+        messages,
+        signal
+      );
+      if (fallbackResult && fallbackResult.text) {
+        return fallbackResult;
+      }
+    } catch {}
+
+    return {
+      text: `[SYSTEM ERROR] Neural routing failed.\n\nAll attempted providers (${chain.map(c => c.provider).join(' → ')}) returned errors.\nLast error: ${lastErrorMsg || 'Connection timeout.'}\n\nPlease check your API key in Settings or switch provider to Pollinations AI.`,
+      images: []
+    };
+  }
+
+  /**
+   * Synchronous Direct generation without fallback
+   */
+  async generateDirect(
+    settings: AppSettings,
+    messages: Message[],
+    signal?: AbortSignal
+  ): Promise<StreamChunk> {
+    const provider = settings.aiProvider || 'pollinations';
+    let service = this.services.get(provider);
+
+    if (!service) {
+      const { providerRegistry } = await import('./providers/registry');
+      const reg = providerRegistry.getProvider(provider as any);
+      if (reg) service = reg as any;
+    }
+
+    if (!service) {
+      throw new Error(`Provider '${provider}' is not registered.`);
+    }
+
+    const start = Date.now();
+    try {
+      let result: StreamChunk;
+      if (typeof service.generateChat === 'function') {
+        result = await service.generateChat(settings, messages, signal);
+      } else {
+        let text = '';
+        let images: string[] = [];
+        let sources: any[] = [];
+        for await (const chunk of service.streamChat(settings, messages, signal)) {
+          if (chunk.text) text = chunk.text;
+          if (chunk.images) images = chunk.images;
+          if (chunk.sources) sources = chunk.sources;
+        }
+        result = { text, images, sources };
+      }
+      this.recordSuccess(provider, Date.now() - start);
+      return result;
+    } catch (err: any) {
+      this.recordFailure(provider, err?.message || 'Unknown');
+      throw err;
     }
   }
 
   /**
-   * Stream chat without fallback — direct to the specified provider.
+   * Generator wrappers for backwards compatibility
    */
+  async *streamWithFallback(
+    settings: AppSettings,
+    messages: Message[],
+    signal?: AbortSignal
+  ): AsyncGenerator<StreamChunk> {
+    const result = await this.generateWithFallback(settings, messages, signal);
+    yield result;
+  }
+
   async *streamDirect(
     settings: AppSettings,
     messages: Message[],
     signal?: AbortSignal
   ): AsyncGenerator<StreamChunk> {
-    const provider = settings.aiProvider || 'pollinations';
-    const service = this.services.get(provider);
-    if (!service) {
-      yield { text: `[ERROR] Provider '${provider}' is not registered.`, images: [] };
-      return;
-    }
-
-    const start = Date.now();
-    try {
-      for await (const chunk of service.streamChat(settings, messages, signal)) {
-        yield chunk;
-      }
-      this.recordSuccess(provider, Date.now() - start);
-    } catch (error: any) {
-      this.recordFailure(provider, error?.message || 'Unknown');
-      throw error;
-    }
+    const result = await this.generateDirect(settings, messages, signal);
+    yield result;
   }
 }
 
@@ -262,10 +323,8 @@ export const providerRouter = new ProviderRouter();
 
 /**
  * Initialize the router with all available services.
- * Called once on app startup.
  */
 export async function initializeProviderRouter(): Promise<void> {
-  // Lazy import to avoid circular dependencies
   const services = await import('./index');
   
   providerRouter.register('gemini', services.geminiService);
@@ -285,7 +344,7 @@ export async function initializeProviderRouter(): Promise<void> {
   providerRouter.register('ollama', services.ollamaService);
   providerRouter.register('tinyfish', services.tinyfishService);
 
-  // New providers — all now available
+  // OpenAI-Compatible Providers
   providerRouter.register('cohere', services.cohereService);
   providerRouter.register('nvidia', services.nvidiaService);
   providerRouter.register('fireworks', services.fireworksService);

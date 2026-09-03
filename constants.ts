@@ -11,25 +11,25 @@ export interface ModelOption {
 
 // ── Auto-Fallback Configuration ──────────────────────────────────────────────
 export const FALLBACK_CHAIN: ProviderType[] = [
-  'pollinations', 'uncloseai', 'wisgate', 'llm7', 'groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface'
+  'pollinations', 'puter', 'llm7', 'wisgate', 'uncloseai', 'groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface'
 ];
 
 export const FREE_MODEL_DEFAULTS: Partial<Record<ProviderType, string>> = {
   pollinations: 'openai',
+  puter: 'gpt-4o-mini',
+  llm7: 'llama-3.1-8b-instruct',
+  wisgate: 'gemini-2.5-flash',
+  uncloseai: 'hermes',
   groq: 'llama-3.3-70b-versatile',
   cerebras: 'llama-3.3-70b',
   sambanova: 'Meta-Llama-3.3-70B-Instruct',
-  siliconflow: 'Qwen/Qwen3-8B',
+  siliconflow: 'Qwen/Qwen2.5-7B-Instruct',
   huggingface: 'meta-llama/Llama-3.3-70B-Instruct',
-  wisgate: 'gemini-3-flash',
-  uncloseai: 'hermes',
-  llm7: 'llama-3.1-8b-instruct-fp8',
-  puter: 'gpt-4o-mini',
 };
 
 // ── Provider API Key Requirements ────────────────────────────────────────────
-export const FREE_PROVIDERS: ProviderType[] = ['pollinations', 'wisgate', 'uncloseai'];
-export const FREE_TIER_PROVIDERS: ProviderType[] = ['groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface', 'llm7'];
+export const FREE_PROVIDERS: ProviderType[] = ['pollinations', 'puter', 'llm7', 'wisgate', 'uncloseai'];
+export const FREE_TIER_PROVIDERS: ProviderType[] = ['groq', 'cerebras', 'sambanova', 'siliconflow', 'huggingface'];
 
 
 
@@ -40,7 +40,6 @@ export const DEFAULT_MCP_SERVERS = [
   'https://sequential-thinking.mcp.run/sse',
   'https://mcp.context7.com/sse',
   'https://mcp.globalping.io/sse',
-  'https://mcp.deepwiki.com/sse',
   'https://server.smithery.ai/@anthropics/mcp-server-fetch/sse',
   'https://server.smithery.ai/@ppl-ai/mcp-perplexity/sse',
   'https://server.smithery.ai/@mcp-server-firecrawl/sse',

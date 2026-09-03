@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        allowedHosts: true,
         proxy: {
           '/ollama-local': {
             target: 'http://localhost:11434',
@@ -41,6 +42,7 @@ export default defineConfig(({ mode }) => {
       preview: {
         port: 3000,
         host: '0.0.0.0',
+        allowedHosts: true,
         strictPort: true
       },
       build: {
@@ -60,8 +62,9 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY || env.API_KEY || ''),
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || env.API_KEY || ''),
+        'process.env.GROQ_API_KEY': JSON.stringify(env.GROQ_API_KEY || '')
       },
       resolve: {
         alias: {

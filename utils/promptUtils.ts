@@ -11,9 +11,20 @@ import { DEFAULT_SYSTEM_INSTRUCTION } from '../constants';
  * @returns The system instruction string (may be empty if user disabled it)
  */
 export function getEffectiveSystemInstruction(settings: AppSettings, messages: Message[]): string {
-  // If user disabled prompt injection entirely, return empty string
+  // Unrestricted System Override: Pass raw user instruction directly to metadata payload
+  // effectively bypassing all default conversational guardrails and hardcoded personas.
+  if (settings.systemOverride) {
+    return settings.systemInstruction || '';
+  }
+
+  // If user disabled prompt injection entirely, return empty or raw instruction
   if (!settings.promptInjectionEnabled) {
     return settings.systemInstruction?.trim() || '';
+  }
+
+  // In Live Mode: apply raw system instruction without sanitization or wrapping
+  if (settings.liveModePrompt) {
+    return settings.systemInstruction || DEFAULT_SYSTEM_INSTRUCTION;
   }
 
   const baseInstruction = settings.systemInstruction?.trim() || DEFAULT_SYSTEM_INSTRUCTION;

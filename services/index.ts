@@ -52,3 +52,5 @@ export { puterService } from './puter';
 export { providerRouter, initializeProviderRouter } from './providerRouter';
 export type { ProviderService } from './providerRouter';
 export { multiAgentOrchestrator } from './multiAgent';
+export { providerRegistry } from './providers/registry';
+export * from './providers/types';

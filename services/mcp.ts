@@ -1,6 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { REMOTE_MCP_DIRECTORY, RemoteMcpServer } from "./mcpDirectory";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,25 +45,43 @@ function patchFetchForProxy() {
   if (isLocalhost) return;
 
   const proxyBase = `${window.location.origin}/api/mcp-proxy`;
-  const originalFetch = window.fetch.bind(window);
+  try {
+    const originalFetch = window.fetch ? window.fetch.bind(window) : fetch.bind(window);
 
-  window.fetch = function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    let url: string;
-    if (typeof input === 'string') url = input;
-    else if (input instanceof URL) url = input.href;
-    else url = (input as Request).url;
+    const patchedFetch = function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+      let url: string;
+      if (typeof input === 'string') url = input;
+      else if (input instanceof URL) url = input.href;
+      else url = (input as Request).url;
 
-    const shouldProxy = Array.from(_knownMcpUrls).some(mcpUrl => url.startsWith(mcpUrl));
-    if (shouldProxy && !url.startsWith(proxyBase)) {
-      const proxied = `${proxyBase}?url=${encodeURIComponent(url)}`;
-      if (typeof input === 'string' || input instanceof URL) {
-        return originalFetch(proxied, init);
-      } else {
-        return originalFetch(new Request(proxied, input as Request), init);
+      const shouldProxy = Array.from(_knownMcpUrls).some(mcpUrl => url.startsWith(mcpUrl));
+      if (shouldProxy && !url.startsWith(proxyBase)) {
+        const proxied = `${proxyBase}?url=${encodeURIComponent(url)}`;
+        if (typeof input === 'string' || input instanceof URL) {
+          return originalFetch(proxied, init);
+        } else {
+          return originalFetch(new Request(proxied, input as Request), init);
+        }
+      }
+      return originalFetch(input, init);
+    };
+
+    try {
+      window.fetch = patchedFetch;
+    } catch (_) {
+      try {
+        Object.defineProperty(window, 'fetch', {
+          value: patchedFetch,
+          writable: true,
+          configurable: true,
+        });
+      } catch (err) {
+        // Fetch is readonly/getter only in this iframe environment
       }
     }
-    return originalFetch(input, init);
-  };
+  } catch (err) {
+    // Ignore fetch wrapping errors
+  }
 
   _fetchPatched = true;
 }
@@ -147,6 +166,9 @@ export class MCPService {
   /** Returns the call cache size (for diagnostics) */
   public getCallCacheSize(): number { return this.callCache.size; }
 
+  /** Full categorized directory of 100+ remote HTTPS MCP endpoints */
+  public readonly DIRECTORY: RemoteMcpServer[] = REMOTE_MCP_DIRECTORY;
+
   // ── Curated Server List ───────────────────────────────────────────────────
   public readonly CURATED_SERVERS = [
     // ── Web & Content ────────────────────────────────────────────────────
@@ -159,10 +181,10 @@ export class MCPService {
       transport: 'sse'
     },
     {
-      name: 'DeepWiki (GitHub Docs)',
-      url: 'https://mcp.deepwiki.com/mcp',
+      name: 'Mintlify Index (API Docs)',
+      url: 'https://index.mintlify.com/mcp',
       category: 'Web',
-      description: 'AI-powered GitHub repo documentation search',
+      description: 'AI-powered technical API documentation and schema search',
       auth: 'none',
       transport: 'streamable'
     },
@@ -465,9 +487,12 @@ export class MCPService {
       this._startHealthCheck();
       return true;
     } catch (e2: any) {
-      console.error(`[MCP] Both transports failed for ${url}:`, e2.message);
-      this._setStatus(url, 'error', e2.message);
-      this._scheduleReconnect(url);
+      console.warn(`[MCP] Both transports failed for ${url}:`, e2?.message || e2);
+      this._setStatus(url, 'error', e2?.message || 'Connection failed');
+      const isClientError = e2?.message && (e2.message.includes('404') || e2.message.includes('401') || e2.message.includes('403') || e2.message.includes('Non-200'));
+      if (!isClientError) {
+        this._scheduleReconnect(url);
+      }
       return false;
     }
   }
