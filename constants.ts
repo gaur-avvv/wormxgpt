@@ -144,6 +144,15 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { label: 'Gemini 2.5 Flash TTS Preview (Vocal Mimic)', value: 'gemini-2.5-flash-preview-tts', provider: 'gemini' },
 
 
+  { label: 'Gemini 2.5 Flash Thinking Exp', value: 'gemini-2.5-flash-thinking-exp-01-21', provider: 'gemini' },
+  { label: 'Gemini 2.0 Flash', value: 'gemini-2.0-flash', provider: 'gemini' },
+  { label: 'Gemini 2.0 Flash Lite Preview', value: 'gemini-2.0-flash-lite-preview-02-05', provider: 'gemini' },
+  { label: 'Gemini 2.0 Pro Experimental', value: 'gemini-2.0-pro-exp-02-05', provider: 'gemini' },
+  { label: 'Gemini 2.0 Flash Thinking Exp', value: 'gemini-2.0-flash-thinking-exp-1219', provider: 'gemini' },
+  { label: 'LearnLM 1.5 Pro Experimental', value: 'learnlm-1.5-pro-experimental', provider: 'gemini' },
+  { label: 'Imagen 3 (HQ Photorealism)', value: 'imagen-3.0-generate-002', provider: 'gemini' },
+  { label: 'Imagen 3 Fast (Rapid Generation)', value: 'imagen-3.0-fast-generate-001', provider: 'gemini' },
+
   // Gemini 1.5 Series - Legacy (Million+ Token Context)
   { label: 'Gemini 1.5 Pro (1M+ Token Context)', value: 'gemini-1.5-pro', provider: 'gemini' },
   { label: 'Gemini 1.5 Pro Exp (Experimental)', value: 'gemini-1.5-pro-exp-0827', provider: 'gemini' },
@@ -193,16 +202,26 @@ export const MODEL_OPTIONS: ModelOption[] = [
   // TTS
   { label: 'Groq Orpheus V1 English (TTS)', value: 'canopylabs/orpheus-v1-english', provider: 'groq' },
   { label: 'Groq Orpheus Arabic Saudi (TTS)', value: 'canopylabs/orpheus-arabic-saudi', provider: 'groq' },
+  { label: 'Groq LLaMA 3.3 70B Speculative', value: 'llama-3.3-70b-specdec', provider: 'groq' },
+  { label: 'Groq LLaMA 3.2 1B Preview (Fast)', value: 'llama-3.2-1b-preview', provider: 'groq' },
+  { label: 'Groq LLaMA 3.2 3B Preview', value: 'llama-3.2-3b-preview', provider: 'groq' },
+  { label: 'Groq LLaMA 3.2 11B Vision Preview', value: 'llama-3.2-11b-vision-preview', provider: 'groq' },
+  { label: 'Groq LLaMA 3.2 90B Vision Preview', value: 'llama-3.2-90b-vision-preview', provider: 'groq' },
+  { label: 'Groq Mixtral 8x7B (32K Context)', value: 'mixtral-8x7b-32768', provider: 'groq' },
 
   // Pollinations Models - Text (Updated Feb 2026) - ALL FREE, no API key needed
 
   // Premium / Specialized Reasoning
   { label: ' OpenAI GPT-5.2 (Reasoning)', value: 'openai-large', provider: 'pollinations', isFree: true },
   { label: ' Claude Opus 4.6 (Most Intelligent)', value: 'claude-large', provider: 'pollinations', isFree: true },
+  { label: ' Claude Hybrid (Free Reasoning & Vision)', value: 'claude-hybrid', provider: 'pollinations', isFree: true },
+  { label: ' DeepSeek Reasoner (Free R1 Full CoT)', value: 'deepseek-reasoner', provider: 'pollinations', isFree: true },
   { label: ' Gemini 3.1 Pro (1M Context)', value: 'gemini-large', provider: 'pollinations', isFree: true },
   { label: ' DeepSeek V3.2 (Reasoning)', value: 'deepseek', provider: 'pollinations', isFree: true },
   { label: ' Kimi K2.5 (Flagship Agentic)', value: 'kimi', provider: 'pollinations', isFree: true },
   { label: ' GLM-5 (744B MoE Long Context)', value: 'glm', provider: 'pollinations', isFree: true },
+  { label: ' Meta Llama 3.3 70B (Open Weights)', value: 'llama', provider: 'pollinations', isFree: true },
+  { label: ' SearchGPT (Live Web Grounding)', value: 'searchgpt', provider: 'pollinations', isFree: true },
 
   // Fast & Balanced
   { label: ' OpenAI GPT-5 Mini (Balanced)', value: 'openai', provider: 'pollinations', isFree: true },
@@ -249,6 +268,7 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { label: ' NanoBanana (Gemini 2.5)', value: 'nanobanana', provider: 'pollinations' },
   { label: ' GPT Image 1 Mini (OpenAI)', value: 'gptimage', provider: 'pollinations' },
   { label: ' Imagen 4 (Google Latest)', value: 'imagen-4', provider: 'pollinations' },
+  { label: ' Midjourney Style (Artistic)', value: 'midjourney', provider: 'pollinations' },
   { label: ' Pruna p-image (Fast T2I)', value: 'p-image', provider: 'pollinations' },
   { label: ' Pruna p-image-edit (I2I)', value: 'p-image-edit', provider: 'pollinations' },
   { label: ' Grok Imagine (xAI)', value: 'grok-imagine', provider: 'pollinations' },
@@ -256,6 +276,10 @@ export const MODEL_OPTIONS: ModelOption[] = [
   // Video & Audio Models
   { label: ' Veo 3.1 Fast (Google Latest)', value: 'veo', provider: 'pollinations' },
   { label: ' Wan 2.6 (Alibaba I2V/T2V)', value: 'wan', provider: 'pollinations' },
+  { label: ' Seedance Video Gen', value: 'seedance', provider: 'pollinations' },
+  { label: ' Seedance Pro (HQ Video)', value: 'seedance-pro', provider: 'pollinations' },
+  { label: ' Grok Video Gen', value: 'grok-video', provider: 'pollinations' },
+  { label: ' LTX-2 Next-Gen Video', value: 'ltx-2', provider: 'pollinations' },
   { label: ' Sora 2 (Together Next-Gen)', value: 'sora-2', provider: 'pollinations' },
   { label: ' ElevenLabs v3 TTS', value: 'elevenlabs', provider: 'pollinations' },
   { label: ' Suno v5 (AI Music)', value: 'suno', provider: 'pollinations' },
@@ -263,6 +287,8 @@ export const MODEL_OPTIONS: ModelOption[] = [
 
   // ── CEREBRAS (World's Fastest Inference) ────────────────────────────────
   { label: 'Cerebras LLaMA 3.1 8B (Fast)', value: 'llama3.1-8b', provider: 'cerebras' },
+  { label: 'Cerebras LLaMA 3.2 3B (Ultra Fast)', value: 'llama-3.2-3b', provider: 'cerebras' },
+  { label: 'Cerebras LLaMA 3.2 1B (Sub-Second)', value: 'llama-3.2-1b', provider: 'cerebras' },
   { label: 'Cerebras LLaMA 3.1 70B (Instruct)', value: 'llama-3.1-70b', provider: 'cerebras' },
   { label: 'Cerebras LLaMA 3.3 70B (2026)', value: 'llama-3.3-70b', provider: 'cerebras' },
   { label: 'Cerebras Qwen 3 32B (Thinking)', value: 'qwen-3-32b', provider: 'cerebras' },

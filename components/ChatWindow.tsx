@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
-import { Terminal, Sparkles, ShieldAlert, Cpu, Eye, ArrowDown } from 'lucide-react';
+import { Terminal, Sparkles, ShieldAlert, Cpu, Eye, ArrowDown, Loader2 } from 'lucide-react';
 import { useWormGPT } from '../context/GlobalContext';
 import { ChatMessage } from './ChatMessage';
 import { SUGGESTED_PROMPTS } from '../constants';
@@ -7,7 +7,7 @@ import { SUGGESTED_PROMPTS } from '../constants';
 export const ChatWindow: React.FC<{
   onOpenModelSelector?: (mode?: 'text' | 'vision') => void;
 }> = ({ onOpenModelSelector }) => {
-  const { activeSession, settings, isStreaming, setInput } = useWormGPT();
+  const { activeSession, settings, isStreaming, activeToolCalling, setInput } = useWormGPT();
   const scrollRef = useRef<HTMLDivElement>(null);
   const userScrolledUp = useRef<boolean>(false);
   const [showScrollBottom, setShowScrollBottom] = useState<boolean>(false);
@@ -52,11 +52,10 @@ export const ChatWindow: React.FC<{
   // Streaming-aware auto-scrolling: During active token streams, smoothly maintain bottom position
   // without jitter ONLY if the user hasn't scrolled up to review previous output
   useEffect(() => {
-    if (isStreaming.current && !userScrolledUp.current && scrollRef.current) {
-      // Direct scroll assignment prevents browser animation queue stuttering during high-frequency tokens
+    if (isStreaming && !userScrolledUp.current && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [lastMessageContent, isStreaming.current]);
+  }, [lastMessageContent, isStreaming]);
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col relative bg-[#090d16] font-sans">
@@ -127,7 +126,13 @@ export const ChatWindow: React.FC<{
           ) : (
             <div className="space-y-6 pb-20">
               {messages.map((msg, i) => (
-                <ChatMessage key={`${msg.timestamp || i}-${i}`} message={msg} settings={settings} />
+                <ChatMessage 
+                  key={`${msg.timestamp || i}-${i}`} 
+                  message={msg} 
+                  settings={settings}
+                  isGenerating={isStreaming && i === messages.length - 1 && msg.role === 'model'}
+                  activeToolCalling={isStreaming && i === messages.length - 1 ? activeToolCalling : null}
+                />
               ))}
             </div>
           )}
