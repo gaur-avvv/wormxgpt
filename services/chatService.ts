@@ -14,7 +14,9 @@ export class ChatService {
   private async executeApplicableTools(
     settings: AppSettings,
     messages: Message[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onToolStart?: (toolName: string) => void,
+    onToolEnd?: (toolName: string) => void
   ): Promise<{ toolInvocations: ToolInvocation[]; augmentedMessages: Message[] }> {
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg || lastMsg.role !== 'user') {
@@ -29,13 +31,22 @@ export class ChatService {
     let toolToRun: string | null = null;
     let toolArgs: Record<string, any> = {};
 
+    const KNOWN_EXPLICIT_TOOLS = new Set([
+      'search', 'google_search', 'parallel_search', 'web_scraper', 'scrape_web',
+      'deepwiki', 'read_wiki_structure', 'search_docs', 'lookup_cve', 'cve',
+      'cryptoprices', 'crypto', 'calculator', 'calc', 'weather', 'dns_lookup',
+      'port_scan', 'shodan_search', 'whois'
+    ]);
+
     if (text.startsWith('/')) {
       const match = text.match(/^\/([a-zA-Z0-9_-]+)(?:\s+(.*))?$/s);
       if (match) {
         const cmd = match[1].toLowerCase();
         const rest = (match[2] || '').trim();
-        toolToRun = cmd;
-        toolArgs = { query: rest, input: rest };
+        if (KNOWN_EXPLICIT_TOOLS.has(cmd) || cmd.startsWith('tool:') || cmd.startsWith('mcp:')) {
+          toolToRun = cmd.replace(/^(tool|mcp):/, '');
+          toolArgs = { query: rest, input: rest };
+        }
       }
     } else {
       // 2. Keyword heuristic for armed zero-auth MCP tools
@@ -56,6 +67,8 @@ export class ChatService {
     }
 
     if (toolToRun) {
+      if (signal?.aborted) throw new Error('Request aborted by user');
+      onToolStart?.(toolToRun);
       const toolCallId = `call_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
       try {
         let result: any;
@@ -74,10 +87,10 @@ export class ChatService {
           result
         });
 
-        // Augment context with tool output for model reasoning
+        // Augment context with tool output for model reasoning as a user turn
         augmentedMessages.push({
-          role: 'assistant',
-          content: `[TOOL_INVOCATION_RESULT for ${toolToRun}]:\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}`,
+          role: 'user',
+          content: `[TOOL EXECUTION RESULT FOR "${toolToRun}"]:\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}\n\nPlease synthesize this tool information to answer the user query: "${text}"`,
           timestamp: Date.now()
         });
       } catch (err: any) {
@@ -88,6 +101,8 @@ export class ChatService {
           args: toolArgs,
           result: { error: err.message || 'Execution error' }
         });
+      } finally {
+        onToolEnd?.(toolToRun);
       }
     }
 
@@ -100,9 +115,17 @@ export class ChatService {
   public async generateChatResponse(
     settings: AppSettings,
     messages: Message[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onToolStart?: (toolName: string) => void,
+    onToolEnd?: (toolName: string) => void
   ): Promise<StreamChunk> {
-    const { toolInvocations, augmentedMessages } = await this.executeApplicableTools(settings, messages, signal);
+    const { toolInvocations, augmentedMessages } = await this.executeApplicableTools(
+      settings,
+      messages,
+      signal,
+      onToolStart,
+      onToolEnd
+    );
     const response = await providerRouter.generateWithFallback(settings, augmentedMessages, signal);
     
     return {
@@ -117,9 +140,17 @@ export class ChatService {
   public async generateDirectResponse(
     settings: AppSettings,
     messages: Message[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onToolStart?: (toolName: string) => void,
+    onToolEnd?: (toolName: string) => void
   ): Promise<StreamChunk> {
-    const { toolInvocations, augmentedMessages } = await this.executeApplicableTools(settings, messages, signal);
+    const { toolInvocations, augmentedMessages } = await this.executeApplicableTools(
+      settings,
+      messages,
+      signal,
+      onToolStart,
+      onToolEnd
+    );
     const response = await providerRouter.generateDirect(settings, augmentedMessages, signal);
     
     return {

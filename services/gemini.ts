@@ -48,7 +48,7 @@ export class GeminiService {
       return this.generateMediaViaPollinations('audio', audioPrompt, settings);
     }
 
-    const key = settings.geminiApiKey || this.getPersistedApiKey() || process.env.API_KEY || '';
+    const key = settings.geminiApiKey || this.getPersistedApiKey() || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     if (!key) {
       throw new Error('Gemini API key not configured');
     }
@@ -162,20 +162,50 @@ export class GeminiService {
 
         const prunedContents = contents.length > attachedCount ? [contents[0], ...recentContents] : contents;
 
-        const response = await ai.models.generateContent({
-          model: settings.model || 'gemini-2.5-flash',
-          contents: prunedContents,
-          config: {
-            systemInstruction: systemPrompt,
-            temperature: settings.temperature,
-            topP: settings.topP ?? 1.0,
-            maxOutputTokens: settings.maxTokens ?? 4000,
-            thinkingConfig: isThinkingSupported ? {
-              thinkingBudget: settings.thinkingBudget
-            } : undefined,
-            tools: geminiTools as any,
-          },
-        });
+        const normalizeModel = (m: string) => {
+          const raw = (m || '').toLowerCase();
+          if (raw.includes('gemini-3') || raw.includes('gemini-1.5')) {
+            return raw.includes('pro') ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+          }
+          if (raw.startsWith('gemini-')) return raw;
+          return 'gemini-2.5-flash';
+        };
+        const modelToUse = normalizeModel(settings.model);
+
+        let response: any;
+        try {
+          response = await ai.models.generateContent({
+            model: modelToUse,
+            contents: prunedContents,
+            config: {
+              systemInstruction: systemPrompt,
+              temperature: settings.temperature,
+              topP: settings.topP ?? 1.0,
+              maxOutputTokens: settings.maxTokens ?? 4000,
+              thinkingConfig: isThinkingSupported && modelToUse === 'gemini-2.5-pro' ? {
+                thinkingBudget: settings.thinkingBudget
+              } : undefined,
+              tools: geminiTools as any,
+            },
+          });
+        } catch (callErr: any) {
+          if (modelToUse !== 'gemini-2.5-flash') {
+            console.warn(`[Gemini] ${modelToUse} failed, falling back to gemini-2.5-flash:`, callErr?.message);
+            response = await ai.models.generateContent({
+              model: 'gemini-2.5-flash',
+              contents: prunedContents,
+              config: {
+                systemInstruction: systemPrompt,
+                temperature: settings.temperature,
+                topP: settings.topP ?? 1.0,
+                maxOutputTokens: settings.maxTokens ?? 4000,
+                tools: geminiTools as any,
+              },
+            });
+          } else {
+            throw callErr;
+          }
+        }
 
         if (signal?.aborted) throw new Error('Generation cancelled by user');
 
