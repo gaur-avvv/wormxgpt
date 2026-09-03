@@ -67,7 +67,7 @@
   ],
   "dependencies": {
     "@a2a-js/sdk": "^0.3.13",
-    "@faker-js/faker": "^9.9.0",
+    "@faker-js/faker": "^10.6.0",
     "@google/adk": "^0.5.0",
     "@google/genai": "^1.37.0",
     "@heyputer/puter.js": "^2.5.4",
