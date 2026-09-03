@@ -1,128 +1,273 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { 
+  Plus, Settings, Download, Trash2, ChevronLeft, ChevronRight, 
+  MessageSquare, Search, Terminal, ShieldAlert
+} from 'lucide-react';
 import { useWormGPT } from '../../context/GlobalContext';
 
-interface SidebarProps {
-  onDeleteSession: (id: string) => void;
-  onNewSession: () => void;
-  onClear: () => void;
-  onHardReset: () => void;
-  onExport: () => void;
+export interface SidebarProps {
+  sessions?: Array<{ id: string; title: string; updatedAt?: number; messages?: any[] }>;
+  activeSessionId?: string;
+  onSelectSession?: (id: string) => void;
+  onNewSession?: () => void;
+  onDeleteSession?: (id: string) => void;
+  onClear?: () => void;
+  onHardReset?: () => void;
+  onExport?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
+  sessions: propSessions,
+  activeSessionId: propActiveSessionId,
+  onSelectSession,
+  onNewSession: propOnNewSession,
   onDeleteSession,
-  onNewSession,
   onClear,
-  onHardReset,
   onExport
 }) => {
   const { 
-    sessions, 
-    activeSessionId, 
-    setActiveSessionId, 
+    sessions: ctxSessions, 
+    activeSessionId: ctxActiveSessionId, 
+    setActiveSessionId: ctxSetActiveSessionId, 
     isSidebarOpen, 
     setIsSidebarOpen,
-    setIsSettingsOpen
+    setIsSettingsOpen,
+    settings
   } = useWormGPT();
   
-  const [isHovered, setIsHovered] = useState(false);
-  const effectiveOpen = isSidebarOpen || isHovered;
+  const rawSessions = propSessions || ctxSessions;
+  const currentActiveId = propActiveSessionId || ctxActiveSessionId;
+  const handleSelect = onSelectSession || ctxSetActiveSessionId;
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Normalize sessions with valid updatedAt
+  const normalizedSessions = useMemo(() => {
+    return rawSessions.map(s => {
+      let ts = s.updatedAt;
+      if (!ts && s.messages && s.messages.length > 0) {
+        ts = s.messages[s.messages.length - 1].timestamp;
+      }
+      return {
+        ...s,
+        updatedAt: ts || Date.now()
+      };
+    });
+  }, [rawSessions]);
+
+  // Filter sessions by title keywords or creation/update timestamp
+  const filteredSessions = useMemo(() => {
+    if (!searchTerm.trim()) return normalizedSessions;
+    const query = searchTerm.toLowerCase();
+    return normalizedSessions.filter((s) => {
+      const titleMatch = (s.title || '').toLowerCase().includes(query);
+      const dateStr = new Date(s.updatedAt).toLocaleDateString().toLowerCase();
+      const dateMatch = dateStr.includes(query);
+      return titleMatch || dateMatch;
+    });
+  }, [normalizedSessions, searchTerm]);
+
+  const handleNew = () => {
+    if (propOnNewSession) {
+      propOnNewSession();
+    }
+  };
 
   return (
-    <>
-      <style>{`
-        .sidebar-scroll::-webkit-scrollbar { width: 0px; }
-        .sidebar-scroll { scrollbar-width: none; }
-      `}</style>
-      
-      <aside 
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`fixed inset-y-0 left-0 z-50 bg-[#050000] border-r-2 border-red-900/40 flex flex-col transition-all duration-500 ease-in-out ${effectiveOpen ? 'w-72' : 'w-16'} overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.2)]`}
-      >
-        {/* Header / Brand */}
-        <div className="p-4 border-b-2 border-red-600/30 bg-gradient-to-b from-red-600/10 via-black to-black flex items-center justify-between h-20 shrink-0">
-          {effectiveOpen ? (
-            <div className="flex flex-col animate-fadeIn">
-              <h1 className="text-xl font-black text-red-600 tracking-tighter italic drop-shadow-[0_0_8px_#ff0000]">WormGPT_OS</h1>
+    <aside 
+      className={`fixed inset-y-0 left-0 z-50 bg-[#0d1322]/95 backdrop-blur-xl border-r border-indigo-950/40 flex flex-col transition-all duration-300 ease-in-out ${
+        isSidebarOpen ? 'w-64 sm:w-72' : 'w-16'
+      } shadow-2xl shadow-black/60 font-sans select-none`}
+    >
+      {/* Brand Header */}
+      <div className="p-3.5 border-b border-indigo-950/50 flex items-center justify-between h-16 shrink-0 bg-[#090d16]/80">
+        {isSidebarOpen ? (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0">
+              <Terminal className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xs font-mono font-bold tracking-tight text-slate-100 truncate">WormGPT Terminal</h1>
               <div className="flex items-center gap-1.5">
-                <span className="w-1 h-1 bg-red-500 rounded-full animate-pulse"></span>
-                <span className="text-[7px] text-red-500/60 font-black uppercase tracking-[0.2em] leading-none">TERMINAL.MATRIX.4.7</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="text-[10px] text-slate-400 font-mono">v4.7 HARNESS</span>
               </div>
             </div>
-          ) : (
-            <div className="w-full flex justify-center">
-              <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse shadow-[0_0_8px_#ff0000]"></div>
+          </div>
+        ) : (
+          <div className="w-full flex justify-center">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+              <Terminal className="w-4 h-4" />
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* New Session Button */}
-        <div className="p-3 shrink-0">
+        {/* Toggle Collapse Button */}
+        {isSidebarOpen && (
           <button
-            onClick={onNewSession}
-            className={`w-full py-3 neon-button !bg-red-600/10 hover:!bg-red-600 transition-all group ${!effectiveOpen ? 'px-0' : 'px-4'}`}
+            onClick={() => setIsSidebarOpen(false)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
+            title="Collapse Sidebar"
           >
-            <span className="text-lg">+</span>
-            {effectiveOpen && <span className="animate-fadeIn">NEW_CHAT</span>}
+            <ChevronLeft className="w-4 h-4" />
           </button>
-        </div>
+        )}
+      </div>
 
-        {/* Session List */}
-        <div className="flex-1 overflow-y-auto sidebar-scroll p-2 space-y-2">
-          {sessions.map(s => (
-            <div
-              key={s.id}
-              onClick={() => setActiveSessionId(s.id)}
-              className={`group relative flex items-center gap-3 p-3 rounded-lg border transition-all duration-300 cursor-pointer ${s.id === activeSessionId ? 'bg-red-600/15 border-red-600/60' : 'bg-zinc-950/40 border-red-900/20 hover:border-red-600/40'}`}
-            >
-              <div className={`shrink-0 w-2 h-2 rounded-full ${s.id === activeSessionId ? 'bg-red-500 shadow-[0_0_8px_#ff0000]' : 'bg-red-900/40'}`} />
-              {effectiveOpen && (
-                <div className="flex-1 min-w-0 pr-6 animate-fadeIn">
-                  <div className={`text-[10px] font-bold uppercase truncate ${s.id === activeSessionId ? 'text-red-400' : 'text-zinc-500 group-hover:text-red-400'}`}>
-                    {s.title}
+      {/* Action Header: + NEW SESSION & Search Filter */}
+      <div className="p-3 border-b border-indigo-950/40 space-y-2 shrink-0">
+        <button
+          onClick={handleNew}
+          className={`w-full py-2 px-3 text-xs font-mono font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-900/30 flex items-center justify-center gap-2 ${
+            !isSidebarOpen ? 'px-0' : ''
+          }`}
+          title="New Session"
+        >
+          <Plus className="w-4 h-4 shrink-0" />
+          {isSidebarOpen && <span>+ NEW SESSION</span>}
+        </button>
+
+        {isSidebarOpen && (
+          <div className="relative">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search sessions or date..."
+              className="w-full bg-[#070b12] border border-indigo-950/60 rounded-md px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 font-mono"
+            />
+            {searchTerm ? (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1.5 text-zinc-500 hover:text-zinc-300 text-xs font-mono px-1"
+                title="Clear filter"
+              >
+                ×
+              </button>
+            ) : (
+              <Search className="w-3 h-3 text-zinc-600 absolute right-2.5 top-2.5 pointer-events-none" />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* System Override status indicator in sidebar */}
+      {isSidebarOpen && settings.systemOverride && (
+        <div className="mx-3 my-1.5 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-amber-300 text-[11px] font-medium shrink-0">
+          <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">System Override Active</span>
+        </div>
+      )}
+
+      {/* Sessions List */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+        {filteredSessions.length === 0 ? (
+          isSidebarOpen ? (
+            <p className="text-[11px] font-mono text-zinc-500 text-center py-6">
+              No matching sessions found
+            </p>
+          ) : null
+        ) : (
+          filteredSessions.map((session) => {
+            const isActive = session.id === currentActiveId;
+            return (
+              <div
+                key={session.id}
+                onClick={() => handleSelect(session.id)}
+                className={`group relative w-full text-left p-2 rounded-md transition-all text-xs font-mono flex items-center gap-2 cursor-pointer ${
+                  isActive
+                    ? 'bg-indigo-950/50 text-indigo-200 border border-indigo-800/40 shadow-sm'
+                    : 'text-zinc-400 hover:bg-[#070b12] hover:text-zinc-200 border border-transparent'
+                }`}
+                title={session.title}
+              >
+                <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-indigo-400' : 'text-zinc-600'}`} />
+
+                {isSidebarOpen && (
+                  <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <span className="truncate font-medium text-xs">
+                      {session.title || 'Untitled Session'}
+                    </span>
+                    <span className="text-[10px] text-zinc-500">
+                      {new Date(session.updatedAt).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
                   </div>
-                </div>
-              )}
-              {effectiveOpen && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDeleteSession(s.id); }}
-                  className="absolute right-2 opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-opacity"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.8 12.1A2 2 0 0116.1 21H7.9a2 2 0 01-2-1.9L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth={2} /></svg>
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+                )}
 
-        {/* Footer Actions */}
-        <div className="p-3 border-t border-red-900/30 bg-black/40 space-y-2 shrink-0">
-          <button 
-            onClick={() => setIsSettingsOpen(true)}
-            className="w-full flex items-center gap-3 p-2 text-red-900 hover:text-red-500 transition-colors group"
+                {isSidebarOpen && onDeleteSession && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteSession(session.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 rounded transition-all shrink-0"
+                    title="Delete Session"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Footer Controls */}
+      <div className="p-3 border-t border-indigo-950/40 bg-slate-950/40 space-y-1 shrink-0 font-mono text-xs">
+        {!isSidebarOpen && (
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="w-full flex justify-center p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-colors"
+            title="Expand Sidebar"
           >
-            <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.91,7.62,6.29L5.23,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.72,8.87 c-0.11,0.2-0.06,0.47,0.12,0.61l2.03,1.58C4.84,11.36,4.82,11.68,4.82,12c0,0.32,0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.11-0.2,0.06-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" /></svg>
-            {effectiveOpen && <span className="text-[10px] font-black uppercase tracking-widest animate-fadeIn">Settings</span>}
+            <ChevronRight className="w-4 h-4" />
           </button>
-          
-          <button 
+        )}
+
+        {onExport && (
+          <button
             onClick={onExport}
-            className="w-full flex items-center gap-3 p-2 text-red-900 hover:text-red-400 transition-colors"
+            className={`w-full flex items-center gap-2 p-2 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-[#070b12] transition-colors ${
+              !isSidebarOpen ? 'justify-center' : ''
+            }`}
+            title="Export Conversation Logs"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth={2} /></svg>
-            {effectiveOpen && <span className="text-[10px] font-black uppercase tracking-widest animate-fadeIn">Export</span>}
+            <Download className="w-3.5 h-3.5 shrink-0" />
+            {isSidebarOpen && <span>Export Logs</span>}
           </button>
+        )}
 
-          <button 
+        {onClear && (
+          <button
             onClick={onClear}
-            className="w-full flex items-center gap-3 p-2 text-red-950 hover:text-red-600 transition-colors"
+            className={`w-full flex items-center gap-2 p-2 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-[#070b12] transition-colors ${
+              !isSidebarOpen ? 'justify-center' : ''
+            }`}
+            title="Clear Current Chat"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth={2} /></svg>
-            {effectiveOpen && <span className="text-[10px] font-black uppercase tracking-widest animate-fadeIn">Clear Buffer</span>}
+            <Trash2 className="w-3.5 h-3.5 shrink-0 text-rose-400/70" />
+            {isSidebarOpen && <span>Clear Chat</span>}
           </button>
-        </div>
-      </aside>
-    </>
+        )}
+
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          className={`w-full flex items-center gap-2 p-2 rounded-md text-zinc-400 hover:text-indigo-400 hover:bg-[#070b12] transition-colors ${
+            !isSidebarOpen ? 'justify-center' : ''
+          }`}
+          title="Console & System Settings"
+        >
+          <Settings className="w-3.5 h-3.5 shrink-0" />
+          {isSidebarOpen && <span>Settings & Harness</span>}
+        </button>
+      </div>
+    </aside>
   );
 };
+
+export default Sidebar;

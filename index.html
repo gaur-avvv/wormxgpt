@@ -3,29 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="description" content="WormGPT - Advanced AI Terminal with 28+ providers, auto-fallback, multi-agent orchestration, and MCP integration">
+  <meta name="description" content="WormGPT - Advanced Multi-Provider AI Terminal featuring 108+ frontier and local model providers, auto-fallback matrix, MCP tool ecosystem, vision arbitrage, and multi-agent orchestration">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#F120F0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta property="og:title" content="WormGPT Terminal">
-  <meta property="og:description" content="Unrestricted AI terminal with auto-fallback and multi-agent orchestration">
+  <meta property="og:description" content="WormGPT - Advanced Multi-Provider AI Terminal featuring 108+ frontier and local model providers, auto-fallback matrix, MCP tool ecosystem, vision arbitrage, and multi-agent orchestration">
   <meta property="og:type" content="website">
   <!-- Preconnect to common API endpoints -->
   <link rel="preconnect" href="https://text.pollinations.ai" crossorigin>
   <link rel="preconnect" href="https://api.groq.com" crossorigin>
   <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <title>WormGPT Terminal v5.0</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>WormGPT Terminal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
     
     body {
-      font-family: 'Fira Code', monospace;
-      background: linear-gradient(135deg, #0a0a0a 0%, #1a0505 50%, #0a0a0a 100%);
-      color: #00ff41;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #090d16;
+      color: #f1f5f9;
       overflow: hidden;
       margin: 0;
       padding: 0;
@@ -48,22 +48,47 @@
       max-width: 100vw;
     }
 
+    /* Modern Minimal Dark Slate Scrollbar in all sections */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(99, 102, 241, 0.4) rgba(9, 13, 22, 0.9);
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(9, 13, 22, 0.95);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.35);
+      border-radius: 9999px;
+      border: 1px solid rgba(99, 102, 241, 0.15);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(129, 140, 248, 0.7);
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+    }
+
     .custom-scrollbar::-webkit-scrollbar {
-      width: 8px;
+      width: 6px;
+      height: 6px;
     }
 
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: linear-gradient(to bottom, rgba(220, 38, 38, 0.1), rgba(0, 0, 0, 0.5));
+      background: rgba(9, 13, 22, 0.5);
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: linear-gradient(to bottom, #ff003c, #dc2626);
-      border-radius: 4px;
+      background: rgba(99, 102, 241, 0.35);
+      border-radius: 9999px;
+      border: 1px solid rgba(99, 102, 241, 0.15);
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(to bottom, #ff1744, #ff003c);
-      box-shadow: 0 0 10px rgba(255, 0, 60, 0.5);
+      background: rgba(129, 140, 248, 0.7);
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
     }
 
     /* Animations */
@@ -248,24 +273,6 @@
       z-index: -2;
     }
 
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: linear-gradient(to bottom, rgba(220, 38, 38, 0.1), rgba(0, 0, 0, 0.5));
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: linear-gradient(to bottom, #ff003c, #dc2626);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(to bottom, #ff1744, #ff003c);
-      box-shadow: 0 0 10px rgba(255, 0, 60, 0.5);
-    }
-
     /* Message Styles */
     .message-enter {
       animation: fade-in-up 0.5s ease-out;
@@ -436,6 +443,22 @@
     .markdown-content .katex .msupsub {
       color: #f87171 !important;
     }
+
+    /* Custom Hacker-Agent PrismJS Syntax Highlighting Theme */
+    code[class*="language-"], pre[class*="language-"] {
+      color: #e2e8f0;
+      text-shadow: none;
+      font-family: 'Fira Code', monospace;
+    }
+    .token.comment, .token.prolog { color: #64748b; font-style: italic; }
+    .token.string { color: #34d399; }
+    .token.keyword, .token.operator { color: #818cf8; font-weight: 600; }
+    .token.function { color: #38bdf8; }
+    .token.number, .token.boolean { color: #f472b6; }
+    .token.punctuation { color: #94a3b8; }
+    .token.property, .token.tag, .token.constant { color: #fbbf24; }
+    .token.selector, .token.attr-name { color: #a78bfa; }
+    .token.class-name { color: #38bdf8; }
   </style>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>

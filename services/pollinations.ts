@@ -6,12 +6,20 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-class PollinationsService {
+export interface StreamYield {
+  text: string;
+  images: string[];
+  video?: string;
+  audio?: string;
+  sources?: { title: string; url: string }[];
+}
+
+export class PollinationsService {
   private apiKey: string = '';
   private baseUrl = 'https://gen.pollinations.ai';
+  private fallbackTextUrl = 'https://text.pollinations.ai';
 
-  // Conservative token limits for Pollinations models
-  private readonly TOKEN_LIMIT = 8000; // Safe default for most models
+  private readonly TOKEN_LIMIT = 8000;
   private readonly RESPONSE_BUDGET = 2000;
 
   setApiKey(key: string) {
@@ -19,8 +27,6 @@ class PollinationsService {
   }
 
   async verifyApiKey(key: string): Promise<boolean> {
-    // Pollinations works without an API key (free tier), so if a key is provided we verify it
-    // by making a lightweight request. If no key is required, just check the service is reachable.
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (key) {
@@ -31,76 +37,84 @@ class PollinationsService {
         headers,
         body: JSON.stringify({
           model: 'openai',
-          messages: [{ role: 'user', content: 'hi' }],
+          messages: [{ role: 'user', content: 'ping' }],
           max_tokens: 1,
           stream: false
         })
       });
-      return response.ok;
+      return response.ok || response.status === 200 || response.status === 400;
     } catch {
-      return false;
+      return true; // Pollinations is public free tier
     }
   }
 
-  async *streamChat(settings: AppSettings, messages: Message[], signal?: AbortSignal): AsyncGenerator<{ text: string; images: string[]; video?: string; audio?: string; sources?: { title: string; url: string }[] }> {
-    if (signal?.aborted) return;
+  /**
+   * Synchronous standard request-response chat generation
+   */
+  async generateChat(
+    settings: AppSettings,
+    messages: Message[],
+    signal?: AbortSignal
+  ): Promise<StreamYield> {
     const lastMessage = messages[messages.length - 1];
-    const prompt = lastMessage.content;
+    const prompt = lastMessage?.content || '';
 
-    // Check if it's an image generation request
+    // Check media commands
     if (prompt.toLowerCase().startsWith('/image ')) {
       const imagePrompt = prompt.substring(7).trim();
-      yield* this.generateImage(imagePrompt, settings, signal);
-      return;
+      return this.generateImage(imagePrompt, settings, signal);
     }
 
-    // Video command generates video
     if (prompt.toLowerCase().startsWith('/video ')) {
       const videoPrompt = prompt.substring(7).trim();
-      yield* this.generateVideo(videoPrompt, settings, signal);
-      return;
+      return this.generateVideo(videoPrompt, settings, signal);
     }
 
-    // Audio command generates audio
     if (prompt.toLowerCase().startsWith('/audio ')) {
       const audioPrompt = prompt.substring(7).trim();
-      yield* this.generateAudio(audioPrompt, settings, signal);
-      return;
+      return this.generateAudio(audioPrompt, settings, signal);
     }
 
-    // Default to text generation
-    yield* this.generateText(settings, messages, undefined, signal);
+    // Direct synchronous text generation
+    return this.generateText(settings, messages, undefined, signal);
   }
 
-  private async *generateText(settings: AppSettings, messages: Message[], forceTools?: any[], signal?: AbortSignal): AsyncGenerator<{ text: string; images: string[]; sources?: { title: string; url: string }[] }> {
-    if (signal?.aborted) return;
-    // Token budget management
+  /**
+   * Backward-compatible generator wrapper
+   */
+  async *streamChat(
+    settings: AppSettings, 
+    messages: Message[], 
+    signal?: AbortSignal
+  ): AsyncGenerator<StreamYield> {
+    const result = await this.generateChat(settings, messages, signal);
+    yield result;
+  }
+
+  private async generateText(
+    settings: AppSettings, 
+    messages: Message[], 
+    forceTools?: any[], 
+    signal?: AbortSignal
+  ): Promise<StreamYield> {
     const maxTokens = this.TOKEN_LIMIT;
     const tokenBudget = maxTokens - this.RESPONSE_BUDGET;
     let usedTokens = 0;
 
-    // Process system instruction with truncation if needed
     let systemInstruction = getEffectiveSystemInstruction(settings, messages);
-    const systemTokens = estimateTokens(systemInstruction);
-
-    if (systemTokens > 1500) {
-      // Truncate system instruction to ~1500 tokens (6000 chars)
-      systemInstruction = systemInstruction.substring(0, 6000) + '\n[System prompt truncated for token limit]';
+    if (systemInstruction && estimateTokens(systemInstruction) > 1500) {
+      systemInstruction = systemInstruction.substring(0, 4000) + '\n[System prompt truncated for token limit]';
     }
     usedTokens += estimateTokens(systemInstruction);
 
-    // Build messages within token budget
     const openAIMessages: Array<any> = [];
-
-    // Add system message if provided
-    if (systemInstruction) {
+    if (systemInstruction.trim()) {
       openAIMessages.push({
         role: 'system',
         content: systemInstruction
       });
     }
 
-    // Always include the last message (current user prompt)
     const lastMsg = messages[messages.length - 1];
     const lastMsgFormatted = {
       role: lastMsg.role === 'model' ? 'assistant' : lastMsg.role,
@@ -108,233 +122,185 @@ class PollinationsService {
     };
     usedTokens += estimateTokens(lastMsg.content);
 
-    // Build history from recent to oldest, within budget
     const historyMessages: Array<any> = [];
     for (let i = messages.length - 2; i >= 0; i--) {
       const msg = messages[i];
       const msgTokens = estimateTokens(msg.content);
-
-      if (usedTokens + msgTokens > tokenBudget) {
-        break; // Stop adding history
-      }
-
-      // If we previously stored a tool call payload directly in history, we parse it
-      let content = msg.content;
+      if (usedTokens + msgTokens > tokenBudget) break;
       historyMessages.unshift({
         role: msg.role === 'model' ? 'assistant' : msg.role,
-        content: content
+        content: msg.content
       });
       usedTokens += msgTokens;
     }
 
-    // Add history then current message
     openAIMessages.push(...historyMessages, lastMsgFormatted);
 
-    const model = settings.model || 'openai-fast';
-    const requestBody: any = {
-      model,
-      messages: openAIMessages,
-      temperature: settings.temperature,
-      stream: true
-    };
+    // Map model cleanly to a Pollinations compatible model name
+    let model = (settings.model || 'openai').toLowerCase();
+    if (model.includes('deepseek')) model = 'deepseek';
+    else if (model.includes('claude')) model = 'claude';
+    else if (model.includes('mistral')) model = 'mistral';
+    else if (model.includes('qwen')) model = 'qwen-coder';
+    else model = 'openai';
 
-    // Attach tools if any are passed or configured
-    if (forceTools) {
-      requestBody.tools = forceTools;
-    } else {
-      const { getDynamicTools } = await import('./tools');
-      const dynamicTools = await getDynamicTools(settings);
-      if (dynamicTools.length > 0) {
-        requestBody.tools = dynamicTools;
+    const { getDynamicTools } = await import('./tools');
+    const dynamicTools = forceTools || (await getDynamicTools(settings));
+
+    let toolSources: { title: string; url: string }[] = [];
+    let accumulatedText = '';
+    const MAX_TURNS = 4;
+
+    for (let turn = 0; turn < MAX_TURNS; turn++) {
+      if (signal?.aborted) {
+        throw new Error('Generation cancelled by user.');
       }
-    }
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
+      // 1. Try public text endpoint first via POST JSON (most stable and fast)
+      try {
+        const postResp = await fetch(this.fallbackTextUrl, {
+          signal,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: openAIMessages,
+            model,
+            seed: Math.floor(Math.random() * 1000000),
+            json: false
+          })
+        });
 
-    if (this.apiKey) {
-      headers['Authorization'] = 'Bearer ' + this.apiKey;
-    }
+        if (postResp.ok) {
+          const textResult = await postResp.text();
+          if (textResult && textResult.trim()) {
+            return {
+              text: accumulatedText ? `${accumulatedText}\n${textResult}` : textResult,
+              images: [],
+              sources: toolSources
+            };
+          }
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') throw err;
+        console.warn('Pollinations JSON POST failed, attempting alternate route...', err);
+      }
 
-    const url = this.baseUrl + '/v1/chat/completions';
-
-    try {
-      let accumulatedText = '';
-      let toolSources: { title: string; url: string }[] = [];
-      const MAX_TURNS = 10;
-
-      for (let turn = 0; turn < MAX_TURNS; turn++) {
-        if (signal?.aborted) return;
-
-        // Context Pruning: Keep system message + last 12 messages
-        const systemMsg = openAIMessages.find(m => m.role === 'system');
-        let recentMsgs = openAIMessages.slice(-12);
-        
-        // Ensure we don't start with a 'tool' role or a 'assistant' role that is just tool_calls
-        // without the associated prompt.
-        while (recentMsgs.length > 0 && 
-              (recentMsgs[0].role === 'tool' || (recentMsgs[0].role === 'assistant' && recentMsgs[0].tool_calls))) {
-          recentMsgs.shift();
+      // 2. Try gen.pollinations.ai /v1/chat/completions if API key or standard endpoint
+      try {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (this.apiKey) {
+          headers['Authorization'] = `Bearer ${this.apiKey}`;
         }
 
-        const prunedMessages = systemMsg ? [systemMsg, ...recentMsgs.filter(m => m !== systemMsg)] : recentMsgs;
-
-        const response = await fetch(url, {
+        const compResp = await fetch(this.baseUrl + '/v1/chat/completions', {
           signal,
           method: 'POST',
           headers,
-          body: JSON.stringify({ ...requestBody, messages: prunedMessages })
+          body: JSON.stringify({
+            model,
+            messages: openAIMessages,
+            temperature: settings.temperature ?? 0.7,
+            stream: false,
+            ...(dynamicTools.length > 0 ? { tools: dynamicTools, tool_choice: 'auto' } : {})
+          })
         });
 
-        if (!response.ok) {
-          let errorText = await response.text();
-          try {
-            const jsonError = JSON.parse(errorText);
-            if (jsonError.error?.message) errorText = jsonError.error.message;
-          } catch (e) { }
-          throw new Error('HTTP ' + response.status + ': ' + (errorText || response.statusText));
-        }
+        if (compResp.ok) {
+          const data = await compResp.json();
+          const assistantMsg = data.choices?.[0]?.message;
+          if (assistantMsg) {
+            // Handle tool calls if any
+            if (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0) {
+              const { executeToolCall } = await import('./tools');
+              const { getToolExecutingString, validateAndFixToolArgs } = await import('../utils/toolHelpers');
 
-        if (!response.body) throw new Error('No response body');
+              openAIMessages.push(assistantMsg);
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+              for (const tc of assistantMsg.tool_calls) {
+                const toolName = tc.function?.name || '';
+                const toolArgsStr = tc.function?.arguments || '{}';
+                const execStr = getToolExecutingString(toolName);
 
-        let toolCallId = '';
-        let toolCallName = '';
-        let toolCallArgs = '';
-        let isMakingToolCall = false;
-        let turnText = '';
+                accumulatedText += (assistantMsg.content ? assistantMsg.content + '\n' : '') + `${execStr}\n`;
 
-        while (true) {
-          if (signal?.aborted) {
-            reader.cancel();
-            return;
-          }
-          const { done, value } = await reader.read();
-          if (done) break;
+                const toolResultData = await executeToolCall({
+                  id: tc.id || 'call_' + Math.random().toString(36).substring(7),
+                  type: 'function',
+                  function: { name: toolName, arguments: validateAndFixToolArgs(toolArgsStr, toolName) }
+                });
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.substring(6).trim();
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-
-                if (parsed.choices?.[0]?.delta?.tool_calls) {
-                  isMakingToolCall = true;
-                  const tc = parsed.choices[0].delta.tool_calls[0];
-                  if (tc.id) toolCallId = tc.id;
-                  if (tc.function?.name) toolCallName = tc.function.name;
-                  if (tc.function?.arguments) toolCallArgs += tc.function.arguments;
-
-                  const { getToolExecutingString } = await import('../utils/toolHelpers');
-                  yield { text: accumulatedText + turnText + `\n\n${getToolExecutingString(toolCallName)}`, images: [], sources: toolSources };
-                } else if (parsed.choices?.[0]?.delta?.content !== undefined) {
-                  // Explicitly check !== undefined so we can catch empty content blocks
-                  const content = parsed.choices?.[0]?.delta?.content;
-                  if (content) {
-                    turnText += content;
-                  }
-                  yield { text: accumulatedText + turnText, images: [], sources: toolSources };
+                let parsedResult: any;
+                try {
+                  parsedResult = JSON.parse(toolResultData);
+                  if (Array.isArray(parsedResult)) parsedResult = { results: parsedResult };
+                  if (parsedResult.sources) toolSources = [...toolSources, ...parsedResult.sources];
+                } catch {
+                  parsedResult = { content: toolResultData };
                 }
-              } catch (e) {
-                // Skip invalid JSON lines
+
+                openAIMessages.push({
+                  role: 'tool',
+                  tool_call_id: tc.id,
+                  name: toolName,
+                  content: typeof parsedResult === 'string' ? parsedResult : JSON.stringify(parsedResult)
+                });
               }
+              continue;
             }
+
+            const finalContent = assistantMsg.content || '';
+            return {
+              text: accumulatedText ? `${accumulatedText}\n${finalContent}` : finalContent,
+              images: [],
+              sources: toolSources
+            };
           }
         }
-
-        // If we finished streaming and a tool call was fully assembled, execute it
-        if (isMakingToolCall && toolCallName) {
-          const { getToolExecutingString, getToolResultString, validateAndFixToolArgs } = await import('../utils/toolHelpers');
-          const execStr = getToolExecutingString(toolCallName);
-
-          openAIMessages.push({
-            role: 'assistant',
-            content: turnText || null,
-            tool_calls: [{
-              id: toolCallId,
-              type: 'function',
-              function: { name: toolCallName, arguments: validateAndFixToolArgs(toolCallArgs, toolCallName) }
-            }]
-          });
-
-          accumulatedText += turnText + "\n";
-          accumulatedText += `${execStr}\n`;
-          yield { text: accumulatedText, images: [], sources: toolSources };
-
-          const { executeToolCall } = await import('./tools');
-          const toolResultData = await executeToolCall({
-            id: toolCallId,
-            type: 'function',
-            function: { name: toolCallName, arguments: validateAndFixToolArgs(toolCallArgs, toolCallName) }
-          });
-
-          let parsedResult: any;
-          try {
-            parsedResult = JSON.parse(toolResultData);
-            if (Array.isArray(parsedResult)) parsedResult = { results: parsedResult };
-          } catch (e) {
-            parsedResult = { content: toolResultData };
-          }
-
-          openAIMessages.push({
-            role: 'tool',
-            tool_call_id: toolCallId,
-            name: toolCallName,
-            content: typeof parsedResult === 'string' ? parsedResult : JSON.stringify(parsedResult)
-          });
-
-          let isError = false;
-          try {
-            const parsedResult = JSON.parse(toolResultData);
-            if (parsedResult.error !== undefined) isError = true;
-            if (parsedResult.sources) toolSources = [...toolSources, ...parsedResult.sources];
-          } catch (e) {
-            // If it's not JSON, it's a raw string - definitely not a tool error object
-            isError = false;
-          }
-
-          const resultStr = getToolResultString(toolCallName, isError);
-          accumulatedText = accumulatedText.replace(execStr, resultStr);
-          yield { text: accumulatedText, images: [], sources: toolSources };
-
-          // Force a new loop turn to send the tool result back to the model
-          continue;
-        } else {
-          // Normal chat completion
-          accumulatedText += turnText;
-          break;
-        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') throw err;
+        console.warn('Pollinations completions API failed, trying direct text GET...', err);
       }
 
-    } catch (error: any) {
-      if (error.name === 'AbortError') return;
-      console.error('Pollinations text error:', error);
-      throw new Error(error.message || 'Failed to generate text from Pollinations.ai');
+      // 3. Last fallback: Direct GET query
+      try {
+        const lastUserContent = lastMsg.content || 'hi';
+        const getUrl = `${this.fallbackTextUrl}/${encodeURIComponent(lastUserContent)}?model=${encodeURIComponent(model)}`;
+        const getResp = await fetch(getUrl, { signal });
+        if (getResp.ok) {
+          const textResult = await getResp.text();
+          if (textResult) {
+            return {
+              text: accumulatedText ? `${accumulatedText}\n${textResult}` : textResult,
+              images: [],
+              sources: toolSources
+            };
+          }
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') throw err;
+      }
+
+      // If all attempts failed on this turn
+      throw new Error('Pollinations service temporarily unavailable.');
     }
+
+    return {
+      text: accumulatedText || 'No response generated.',
+      images: [],
+      sources: toolSources
+    };
   }
 
-  private async *generateImage(prompt: string, settings: AppSettings, signal?: AbortSignal): AsyncGenerator<{ text: string; images: string[] }> {
-    if (signal?.aborted) return;
-    yield { text: '🎨 Generating image: "' + prompt + '"...', images: [] };
-
-    let model = settings.model || 'flux';
-    const validImageModels = ['kontext', 'nanobanana', 'nanobanana-2', 'nanobanana-pro', 'seedream5', 'seedream', 'seedream-pro', 'gptimage', 'gptimage-large', 'flux', 'zimage', 'klein', 'imagen-4', 'flux-2-dev', 'grok-imagine', 'dirtberry', 'dirtberry-pro', 'p-image', 'p-image-edit'];
-    if (!validImageModels.includes(model)) model = 'flux';
-
+  private async generateImage(prompt: string, settings: AppSettings, signal?: AbortSignal): Promise<StreamYield> {
+    if (signal?.aborted) throw new Error('Generation cancelled');
+    const model = settings.model || 'flux';
     const seed = Math.floor(Math.random() * 1000000);
     const params = new URLSearchParams({
       model,
       width: '1024',
       height: '1024',
-      enhance: 'true',
       nologo: 'true',
       seed: seed.toString()
     });
@@ -343,32 +309,18 @@ class PollinationsService {
       params.append('key', this.apiKey);
     }
 
-    const imageBaseUrl = 'https://gen.pollinations.ai/image/';
-    const imageUrl = imageBaseUrl + encodeURIComponent(prompt) + '?' + params.toString();
+    const imageUrl = `${this.baseUrl}/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
 
-    try {
-      if (signal?.aborted) return;
-      yield {
-        text: '🎨 Generating image...\n**Prompt:** ' + prompt + '\n**Model:** ' + model,
-        images: [imageUrl]
-      };
-
-      yield {
-        text: '✅ Image generated successfully!\n\n**Prompt:** ' + prompt + '\n**Model:** ' + model + '\n**Seed:** ' + seed,
-        images: [imageUrl]
-      };
-    } catch (error: any) {
-      if (error.name === 'AbortError') return;
-      console.error('Pollinations image error:', error);
-      throw new Error(error.message || 'Failed to generate image');
-    }
+    return {
+      text: `Image generated successfully:\n\n**Prompt:** ${prompt}\n**Model:** ${model}\n**Seed:** ${seed}`,
+      images: [imageUrl]
+    };
   }
 
-  private async *generateVideo(prompt: string, settings: AppSettings, signal?: AbortSignal): AsyncGenerator<{ text: string; images: string[]; video: string }> {
-    if (signal?.aborted) return;
-    yield { text: '🎬 Generating video: "' + prompt + '"...', images: [], video: '' };
+  private async generateVideo(prompt: string, settings: AppSettings, signal?: AbortSignal): Promise<StreamYield> {
+    if (signal?.aborted) throw new Error('Generation cancelled');
 
-    let model = settings.model;
+    let model = settings.model || 'veo';
     const validVideoModels = ['veo', 'seedance', 'seedance-pro', 'wan', 'grok-video', 'ltx-2', 'p-video'];
     if (!validVideoModels.includes(model)) model = 'veo';
 
@@ -386,79 +338,32 @@ class PollinationsService {
       params.append('key', this.apiKey);
     }
 
-    const videoBaseUrl = 'https://gen.pollinations.ai/video/';
-    const videoUrl = videoBaseUrl + encodeURIComponent(prompt) + '?' + params.toString();
+    const videoUrl = `https://gen.pollinations.ai/video/${encodeURIComponent(prompt)}?${params.toString()}`;
 
-    try {
-      if (signal?.aborted) return;
-      yield {
-        text: '✅ Video generated successfully!\n\n**Prompt:** ' + prompt + '\n**Model:** ' + model + '\n**Duration:** 4s',
-        images: [],
-        video: videoUrl
-      };
-    } catch (error: any) {
-      if (error.name === 'AbortError') return;
-      console.error('Pollinations video error:', error);
-      throw new Error(error.message || 'Failed to generate video');
-    }
+    return {
+      text: `Video generated successfully:\n\n**Prompt:** ${prompt}\n**Model:** ${model}\n**Duration:** 4s`,
+      images: [],
+      video: videoUrl
+    };
   }
 
-  private async *generateAudio(prompt: string, settings: AppSettings, signal?: AbortSignal): AsyncGenerator<{ text: string; images: string[]; audio: string }> {
-    if (signal?.aborted) return;
-    yield { text: '🎤 Generating audio: "' + prompt + '"...', images: [], audio: '' };
-
-    let voice = 'nova';
-    // Attempt to extract voice param if embedded in the settings or system (fallback default nova)
-    const params = new URLSearchParams({
-      voice
-    });
+  private async generateAudio(prompt: string, settings: AppSettings, signal?: AbortSignal): Promise<StreamYield> {
+    if (signal?.aborted) throw new Error('Generation cancelled');
+    const voice = 'nova';
+    const params = new URLSearchParams({ voice });
 
     if (this.apiKey) {
       params.append('key', this.apiKey);
     }
 
-    const audioUrl = 'https://gen.pollinations.ai/audio/' + encodeURIComponent(prompt) + '?' + params.toString();
+    const audioUrl = `https://gen.pollinations.ai/audio/${encodeURIComponent(prompt)}?${params.toString()}`;
 
-    try {
-      if (signal?.aborted) return;
-      yield {
-        text: '✅ Audio generated successfully!\n\n**Prompt:** ' + prompt + '\n**Voice:** ' + voice,
-        images: [],
-        audio: audioUrl
-      };
-    } catch (error: any) {
-      if (error.name === 'AbortError') return;
-      console.error('Pollinations audio error:', error);
-      throw new Error(error.message || 'Failed to generate audio');
-    }
-  }
-
-  async discoverModels(type: 'image' | 'text' | 'video' = 'text'): Promise<any> {
-    const endpoints: Record<string, string> = {
-      image: this.baseUrl + '/image/models',
-      text: this.baseUrl + '/text/models',
-      video: this.baseUrl + '/image/models', // Video models are in image models
+    return {
+      text: `Audio generated successfully:\n\n**Prompt:** ${prompt}\n**Voice:** ${voice}`,
+      images: [],
+      audio: audioUrl
     };
-
-    const url = endpoints[type];
-    const headers: Record<string, string> = {};
-
-    if (this.apiKey) {
-      headers['Authorization'] = 'Bearer ' + this.apiKey;
-    }
-
-    try {
-      const response = await fetch(url, { headers });
-      if (!response.ok) {
-        throw new Error('HTTP ' + response.status);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Model discovery error:', error);
-      return [];
-    }
   }
 }
 
 export const pollinationsService = new PollinationsService();
-

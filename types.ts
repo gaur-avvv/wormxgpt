@@ -8,7 +8,10 @@ export type ProviderType =
   | 'cohere' | 'wisgate' | 'nvidia' | 'fireworks' | 'sambanova'
   | 'hyperbolic' | 'huggingface' | 'replicate' | 'azure' | 'bedrock'
   | 'vertexai' | 'cloudflare' | 'deepinfra' | 'novita' | 'featherless'
-  | 'lambdaai' | 'nebius' | 'tinyfish' | 'ai21' | 'uncloseai' | 'llm7' | 'puter';
+  | 'lambdaai' | 'nebius' | 'tinyfish' | 'ai21' | 'uncloseai' | 'llm7' | 'puter'
+  | 'llamacpp' | 'lmstudio' | 'jan' | 'vllm' | 'sglang' | 'localai' | 'gpt4all'
+  | 'local_openai_proxy' | 'unsloth' | 'webgpu' | 'webbrain_cloud' | 'azure_openai' | 'aws_bedrock'
+  | 'minimax' | 'kimi' | 'alibaba' | 'z_ai' | 'zhipuai' | (string & {});
 
 // ── Stream Response ──────────────────────────────────────────────────────────
 export interface StreamChunk {
@@ -17,6 +20,7 @@ export interface StreamChunk {
   video?: string;
   audio?: string;
   sources?: { title: string; url: string }[];
+  toolInvocations?: ToolInvocation[];
 }
 
 // ── Provider Health Stats ────────────────────────────────────────────────────
@@ -92,6 +96,8 @@ export interface ChatSession {
   id: string;
   messages: Message[];
   title: string;
+  updatedAt?: number;
+  createdAt?: number;
 }
 
 export interface AppSettings {
@@ -166,6 +172,10 @@ export interface AppSettings {
   serpapiApiKey?: string;
   firecrawlApiKey?: string;
   tinyfishApiKey?: string;
+  llamacppHost?: string;
+  lmstudioHost?: string;
+  janHost?: string;
+  vllmHost?: string;
   // Advanced Model Parameters
   topK?: number;
   minP?: number;
@@ -232,4 +242,18 @@ export interface AppSettings {
   // Prompt Caching
   promptCachingEnabled?: boolean;
   promptCacheTTL?: number; // seconds, default 3600
+  // Multi-Model Orchestration & Model Router
+  visionModel?: string;
+  visionProvider?: ProviderType;
+  modelRoutingMode?: 'auto' | 'manual';
+  // System Override & Unrestricted Prompt Injection
+  systemOverride?: boolean;
+  liveModePrompt?: boolean;
+  // UI Customization
+  themePreference?: 'charcoal' | 'night' | 'slate';
+  fontSize?: 'sm' | 'base' | 'lg';
+  // Vision Arbitrage / pxpipe Token Reduction
+  pxpipeEnabled?: boolean;
+  pxpipeProxyUrl?: string;
+  [key: string]: any;
 }

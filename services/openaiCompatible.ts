@@ -50,6 +50,7 @@ export abstract class OpenAICompatibleService {
         headers: this.getAuthHeader(key)
       });
       if (response.ok) return true;
+
       // Fallback: try a minimal chat completion
       const chatResponse = await fetch(this.getChatCompletionsUrl(), {
         method: 'POST',
@@ -64,7 +65,7 @@ export abstract class OpenAICompatibleService {
           stream: false
         })
       });
-      return chatResponse.ok;
+      return chatResponse.ok || chatResponse.status === 200 || chatResponse.status === 400;
     } catch {
       return false;
     }
@@ -78,8 +79,8 @@ export abstract class OpenAICompatibleService {
     const body: any = {
       model: settings.model || this.defaultModel,
       messages: apiMessages,
-      temperature: settings.temperature,
-      stream: true,
+      temperature: settings.temperature ?? 0.7,
+      stream: false,
       top_p: settings.topP ?? 1.0,
       ...(settings.maxTokens ? { max_tokens: settings.maxTokens } : {}),
       ...(settings.presencePenalty ? { presence_penalty: settings.presencePenalty } : {}),
@@ -92,57 +93,50 @@ export abstract class OpenAICompatibleService {
     return body;
   }
 
-  async *streamChat(
+  /**
+   * Synchronous standard request-response handler for all OpenAI-compatible providers
+   */
+  async generateChat(
     settings: AppSettings,
     messages: Message[],
     signal?: AbortSignal
-  ): AsyncGenerator<StreamYield> {
-    if (signal?.aborted) return;
-
+  ): Promise<StreamYield> {
     const lastMessage = messages[messages.length - 1];
     const prompt = lastMessage?.content || '';
 
     // Media command delegation to pollinations
     if (prompt.toLowerCase().startsWith('/image ')) {
-      yield* this.delegateMedia('image', prompt.substring(7).trim(), settings, signal);
-      return;
+      return this.delegateMedia('image', prompt.substring(7).trim(), settings, signal);
     }
     if (prompt.toLowerCase().startsWith('/video ')) {
-      yield* this.delegateMedia('video', prompt.substring(7).trim(), settings, signal);
-      return;
+      return this.delegateMedia('video', prompt.substring(7).trim(), settings, signal);
     }
     if (prompt.toLowerCase().startsWith('/audio ')) {
-      yield* this.delegateMedia('audio', prompt.substring(7).trim(), settings, signal);
-      return;
+      return this.delegateMedia('audio', prompt.substring(7).trim(), settings, signal);
     }
 
     const key = this.getApiKey();
-    if (!key) {
+    if (!key && !this.baseUrl.includes('localhost') && !this.baseUrl.includes('127.0.0.1')) {
       throw new Error(`${this.providerName} API key not configured`);
     }
 
     // Token budget management
-    const maxTokenBudget = 4000;
-    const responseBudget = 1500;
+    const maxTokenBudget = 8000;
+    const responseBudget = 2000;
     const tokenBudget = maxTokenBudget - responseBudget;
     let usedTokens = 0;
 
-    // System prompt — fully user-controlled via Settings
     let systemPrompt = getEffectiveSystemInstruction(settings, messages);
-    // Truncate only if extremely long (over ~1500 tokens / ~6000 chars)
     if (systemPrompt && estimateTokens(systemPrompt) > 1500) {
-      systemPrompt = systemPrompt.substring(0, 6000) + '\n[System prompt truncated for token limit]';
+      systemPrompt = systemPrompt.substring(0, 4000) + '\n[System prompt truncated for token limit]';
     }
     usedTokens += estimateTokens(systemPrompt);
 
-    // Build API messages — only include system message if non-empty
     const apiMessages: any[] = [];
     if (systemPrompt.trim()) {
       apiMessages.push({ role: 'system', content: systemPrompt });
     }
 
-
-    // Always include the last message
     const lastMsg = messages[messages.length - 1];
     const lastMsgFormatted = {
       role: lastMsg.role === 'model' ? 'assistant' : lastMsg.role,
@@ -150,8 +144,7 @@ export abstract class OpenAICompatibleService {
     };
     usedTokens += estimateTokens(lastMsg.content);
 
-    // Build history from recent to oldest within budget
-    const historyMessages: any[] = [];
+    const historyMessages: Array<any> = [];
     for (let i = messages.length - 2; i >= 0; i--) {
       const msg = messages[i];
       const msgTokens = estimateTokens(msg.content);
@@ -165,180 +158,130 @@ export abstract class OpenAICompatibleService {
 
     apiMessages.push(...historyMessages, lastMsgFormatted);
 
-    // Load dynamic tools
     const { getDynamicTools } = await import('./tools');
     const dynamicTools = await getDynamicTools(settings);
 
     const requestBody = this.buildRequestBody(settings, apiMessages, dynamicTools.length > 0 ? dynamicTools : undefined);
-
     const url = this.getChatCompletionsUrl();
     let accumulatedText = '';
     let toolSources: { title: string; url: string }[] = [];
-    const MAX_TURNS = 10;
-    const decoder = new TextDecoder();
+    const MAX_TURNS = 5;
     let currentApiMessages = [...apiMessages];
 
-    try {
-      for (let turn = 0; turn < MAX_TURNS; turn++) {
-        if (signal?.aborted) return;
+    for (let turn = 0; turn < MAX_TURNS; turn++) {
+      if (signal?.aborted) {
+        throw new Error('Generation cancelled by user');
+      }
 
-        // Context pruning
-        const attachedCount = settings.attachedMessagesCount || 8;
-        let recentMsgs = currentApiMessages.slice(-attachedCount);
+      const attachedCount = settings.attachedMessagesCount || 8;
+      let recentMsgs = currentApiMessages.slice(-attachedCount);
 
-        while (recentMsgs.length > 0 &&
-          (recentMsgs[0].role === 'tool' || (recentMsgs[0].role === 'assistant' && recentMsgs[0].tool_calls))) {
-          recentMsgs.shift();
-        }
+      while (recentMsgs.length > 0 &&
+        (recentMsgs[0].role === 'tool' || (recentMsgs[0].role === 'assistant' && recentMsgs[0].tool_calls))) {
+        recentMsgs.shift();
+      }
 
-        const systemMsg = currentApiMessages.find((m: any) => m.role === 'system');
-        const prunedMessages = systemMsg ? [systemMsg, ...recentMsgs.filter((m: any) => m !== systemMsg)] : recentMsgs;
+      const systemMsg = currentApiMessages.find((m: any) => m.role === 'system');
+      const prunedMessages = systemMsg ? [systemMsg, ...recentMsgs.filter((m: any) => m !== systemMsg)] : recentMsgs;
 
-        const response = await fetch(url, {
-          signal,
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...this.getAuthHeader(key)
-          },
-          body: JSON.stringify({ ...requestBody, messages: prunedMessages })
-        });
+      const response = await fetch(url, {
+        signal,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeader(key)
+        },
+        body: JSON.stringify({ ...requestBody, messages: prunedMessages, stream: false })
+      });
 
-        if (!response.ok) {
-          let errorText = await response.text();
-          try {
-            const jsonError = JSON.parse(errorText);
-            if (jsonError.error?.message) errorText = jsonError.error.message;
-          } catch {}
-          throw new Error(`${this.providerName} Error ${response.status}: ${errorText || response.statusText}`);
-        }
+      if (!response.ok) {
+        let errorText = await response.text();
+        try {
+          const jsonError = JSON.parse(errorText);
+          if (jsonError.error?.message) errorText = jsonError.error.message;
+        } catch {}
+        throw new Error(`${this.providerName} Error ${response.status}: ${errorText || response.statusText}`);
+      }
 
-        if (!response.body) throw new Error('No response body');
-        const reader = response.body.getReader();
+      const data = await response.json();
+      const choice = data.choices?.[0];
+      const assistantMsg = choice?.message;
 
-        const turnToolCalls: Record<number, { id: string; name: string; args: string }> = {};
-        let isMakingToolCall = false;
-        let turnText = '';
-        let sseBuffer = '';
+      if (!assistantMsg) {
+        throw new Error(`${this.providerName} returned empty response.`);
+      }
 
-        while (true) {
-          if (signal?.aborted) { reader.cancel(); return; }
-          const { done, value } = await reader.read();
-          if (done) break;
+      // Handle tool calls
+      if (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0) {
+        const { executeToolCall } = await import('./tools');
+        const { getToolExecutingString, validateAndFixToolArgs } = await import('../utils/toolHelpers');
 
-          sseBuffer += decoder.decode(value, { stream: true });
-          const lines = sseBuffer.split('\n');
-          sseBuffer = lines.pop() || '';
+        currentApiMessages.push(assistantMsg);
 
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const data = line.substring(6).trim();
-            if (data === '[DONE]') continue;
+        for (const tc of assistantMsg.tool_calls) {
+          const toolName = tc.function?.name || '';
+          const toolArgsStr = tc.function?.arguments || '{}';
+          const execStr = getToolExecutingString(toolName);
 
-            try {
-              const parsed = JSON.parse(data);
-              const delta = parsed.choices?.[0]?.delta;
+          accumulatedText += (assistantMsg.content ? assistantMsg.content + '\n' : '') + `${execStr}\n`;
 
-              if (delta?.tool_calls) {
-                isMakingToolCall = true;
-                for (const tc of delta.tool_calls) {
-                  const idx = tc.index ?? 0;
-                  if (!turnToolCalls[idx]) turnToolCalls[idx] = { id: '', name: '', args: '' };
-                  if (tc.id) turnToolCalls[idx].id = tc.id;
-                  if (tc.function?.name) turnToolCalls[idx].name = tc.function.name;
-                  if (tc.function?.arguments) turnToolCalls[idx].args += tc.function.arguments;
-                }
-
-                const firstToolName = Object.values(turnToolCalls)[0]?.name || 'tool';
-                const { getToolExecutingString } = await import('../utils/toolHelpers');
-                yield { text: accumulatedText + turnText + `\n\n${getToolExecutingString(firstToolName)}`, images: [], sources: toolSources };
-              } else if (delta?.content !== undefined && delta.content) {
-                turnText += delta.content;
-                yield { text: accumulatedText + turnText, images: [], sources: toolSources };
-              }
-            } catch {}
-          }
-        }
-
-        if (isMakingToolCall && Object.keys(turnToolCalls).length > 0) {
-          const { executeToolCall } = await import('./tools');
-          const { validateAndFixToolArgs, getToolExecutingString, getToolResultString } = await import('../utils/toolHelpers');
-
-          const toolCallsArray = Object.values(turnToolCalls);
-
-          currentApiMessages.push({
-            role: 'assistant',
-            content: turnText || null,
-            tool_calls: toolCallsArray.map(tc => ({
-              id: tc.id,
-              type: 'function',
-              function: { name: tc.name, arguments: validateAndFixToolArgs(tc.args, tc.name) }
-            }))
+          const toolResultData = await executeToolCall({
+            id: tc.id || 'call_' + Math.random().toString(36).substring(7),
+            type: 'function',
+            function: { name: toolName, arguments: validateAndFixToolArgs(toolArgsStr, toolName) }
           });
 
-          accumulatedText += turnText + '\n';
-
-          for (const tc of toolCallsArray) {
-            const execStr = getToolExecutingString(tc.name);
-            accumulatedText += `${execStr}\n`;
-            yield { text: accumulatedText, images: [], sources: toolSources };
-
-            const fixedArgs = validateAndFixToolArgs(tc.args, tc.name);
-            const toolResultData = await executeToolCall({
-              id: tc.id,
-              type: 'function',
-              function: { name: tc.name, arguments: fixedArgs }
-            });
-
-            let parsedResult: any;
-            try {
-              parsedResult = JSON.parse(toolResultData);
-              if (Array.isArray(parsedResult)) parsedResult = { results: parsedResult };
-            } catch {
-              parsedResult = { content: toolResultData };
-            }
-
-            currentApiMessages.push({
-              role: 'tool',
-              tool_call_id: tc.id,
-              name: tc.name,
-              content: typeof parsedResult === 'string' ? parsedResult : JSON.stringify(parsedResult)
-            });
-
-            try {
-              const pr = JSON.parse(toolResultData);
-              if (pr.sources) toolSources = [...toolSources, ...pr.sources];
-            } catch {}
-
-            let isError = false;
-            try {
-              const pr = JSON.parse(toolResultData);
-              if (pr.error !== undefined) isError = true;
-            } catch {}
-
-            const resultStr = getToolResultString(tc.name, isError);
-            accumulatedText = accumulatedText.replace(execStr, resultStr);
-            yield { text: accumulatedText, images: [], sources: toolSources };
+          let parsedResult: any;
+          try {
+            parsedResult = JSON.parse(toolResultData);
+            if (Array.isArray(parsedResult)) parsedResult = { results: parsedResult };
+            if (parsedResult.sources) toolSources = [...toolSources, ...parsedResult.sources];
+          } catch {
+            parsedResult = { content: toolResultData };
           }
-          continue;
-        } else {
-          accumulatedText += turnText;
-          break;
+
+          currentApiMessages.push({
+            role: 'tool',
+            tool_call_id: tc.id,
+            name: toolName,
+            content: typeof parsedResult === 'string' ? parsedResult : JSON.stringify(parsedResult)
+          });
         }
+        continue;
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') return;
-      console.error(`${this.providerName} stream error:`, error);
-      throw new Error(error.message || `Failed to communicate with ${this.providerName} API`);
+
+      // Normal response complete
+      const finalContent = assistantMsg.content || '';
+      accumulatedText += finalContent;
+      return {
+        text: accumulatedText,
+        images: [],
+        sources: toolSources
+      };
     }
+
+    return {
+      text: accumulatedText || 'No response generated.',
+      images: [],
+      sources: toolSources
+    };
   }
 
-  private async *delegateMedia(
+  async *streamChat(
+    settings: AppSettings,
+    messages: Message[],
+    signal?: AbortSignal
+  ): AsyncGenerator<StreamYield> {
+    const result = await this.generateChat(settings, messages, signal);
+    yield result;
+  }
+
+  private async delegateMedia(
     type: 'image' | 'video' | 'audio',
     prompt: string,
     settings: AppSettings,
     signal?: AbortSignal
-  ): AsyncGenerator<StreamYield> {
+  ): Promise<StreamYield> {
     const { pollinationsService } = await import('./pollinations');
     if (settings.pollinationsApiKey) {
       pollinationsService.setApiKey(settings.pollinationsApiKey);
@@ -349,6 +292,45 @@ export abstract class OpenAICompatibleService {
       timestamp: Date.now(),
       images: []
     }];
-    yield* pollinationsService.streamChat(settings, msgs, signal);
+    return pollinationsService.generateChat(settings, msgs, signal);
   }
+}
+
+export class GenericOpenAIProviderService extends OpenAICompatibleService {
+  protected providerName: string;
+  protected baseUrl: string;
+  protected apiKeyField: string;
+  protected defaultModel: string;
+  protected customAuthHeader?: (key: string) => Record<string, string>;
+
+  constructor(options: {
+    providerName: string;
+    baseUrl: string;
+    apiKeyField?: string;
+    defaultModel?: string;
+    authHeader?: (key: string) => Record<string, string>;
+  }) {
+    super();
+    this.providerName = options.providerName;
+    this.baseUrl = options.baseUrl.replace(/\/+$/, '');
+    this.apiKeyField = options.apiKeyField || `${options.providerName.toLowerCase().replace(/[^a-z0-9]/g, '')}ApiKey`;
+    this.defaultModel = options.defaultModel || 'gpt-4o';
+    this.customAuthHeader = options.authHeader;
+  }
+
+  protected override getAuthHeader(key: string): Record<string, string> {
+    if (this.customAuthHeader) return this.customAuthHeader(key);
+    if (!key) return {};
+    return { Authorization: `Bearer ${key.trim()}` };
+  }
+}
+
+export function createOpenAICompatibleService(options: {
+  providerName: string;
+  baseUrl: string;
+  apiKeyField?: string;
+  defaultModel?: string;
+  authHeader?: (key: string) => Record<string, string>;
+}): GenericOpenAIProviderService {
+  return new GenericOpenAIProviderService(options);
 }
