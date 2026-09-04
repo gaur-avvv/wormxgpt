@@ -176,10 +176,12 @@ export class McpRegistry {
       return entry;
     } catch (err: any) {
       const latencyMs = Math.round(performance.now() - start);
-      // For zero-auth or resilient fallback, mark as registered with catalog tools
-      entry.status = 'connected';
-      entry.latencyMs = latencyMs > 0 ? latencyMs : 45;
-      entry.error = undefined;
+      // Surface the failure instead of masking it as a healthy connection. The
+      // static catalog tools remain available for selection, but the entry is
+      // flagged so the UI and tool routing can treat this server as degraded.
+      entry.status = 'error';
+      entry.latencyMs = latencyMs > 0 ? latencyMs : undefined;
+      entry.error = err?.message || 'MCP server connection failed';
       return entry;
     }
   }
@@ -272,21 +274,11 @@ export class McpRegistry {
         toolName,
         serverName: serverId || 'WormGPT Kernel'
       };
-    } catch {
-      // Return simulated/structured zero-auth response if network is offline
-      const latencyMs = Math.round(performance.now() - start);
-      return {
-        result: {
-          status: 'success',
-          tool: toolName,
-          serverId: serverId || 'mcp_remote',
-          output: `Tool '${toolName}' executed successfully with parameters: ${JSON.stringify(args)}`,
-          timestamp: Date.now()
-        },
-        latencyMs: latencyMs || 65,
-        toolName,
-        serverName: serverId || 'Remote MCP Endpoint'
-      };
+    } catch (err: any) {
+      // Do NOT fabricate a success payload — that would feed a nonexistent tool
+      // result into the model/UI. Surface the failure explicitly instead.
+      const message = err?.message || 'Tool execution failed and no remote/local handler succeeded.';
+      throw new Error(`Arsenal tool '${toolName}'${serverId ? ` (${serverId})` : ''} failed: ${message}`);
     }
   }
 }

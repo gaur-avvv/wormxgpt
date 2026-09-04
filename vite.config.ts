@@ -18,13 +18,19 @@ logger.warn = (msg, options) => {
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    // Restrict Host headers to an explicit allow-list to avoid DNS-rebinding /
+    // drive-by access when the dev/preview server is bound to 0.0.0.0.
+    // Override via a comma-separated ALLOWED_HOSTS env var (e.g. "localhost,my.tunnel.dev").
+    const allowedHosts = env.ALLOWED_HOSTS
+      ? env.ALLOWED_HOSTS.split(',').map(h => h.trim()).filter(Boolean)
+      : ['localhost', '127.0.0.1'];
     return {
       customLogger: logger,
       publicDir: 'public',
       server: {
         port: 3000,
         host: '0.0.0.0',
-        allowedHosts: true,
+        allowedHosts,
         proxy: {
           '/ollama-local': {
             target: 'http://localhost:11434',
@@ -42,7 +48,7 @@ export default defineConfig(({ mode }) => {
       preview: {
         port: 3000,
         host: '0.0.0.0',
-        allowedHosts: true,
+        allowedHosts,
         strictPort: true
       },
       build: {
