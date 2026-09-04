@@ -65,7 +65,9 @@ export abstract class OpenAICompatibleService {
           stream: false
         })
       });
-      return chatResponse.ok || chatResponse.status === 200 || chatResponse.status === 400;
+      // Only a successful response confirms the key. A 400 is a bad request, and
+      // 401/403 are explicit auth failures — none of these mean the key is valid.
+      return chatResponse.ok;
     } catch {
       return false;
     }

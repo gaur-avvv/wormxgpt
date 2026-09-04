@@ -7641,8 +7641,11 @@ export const executeToolCall = async (toolCall: ToolCall) => {
 };
 
 export const executeToolByName = async (name: string, args: any = {}) => {
+  // Combine time with a random suffix so parallel calls in the same millisecond
+  // cannot collide and cross-wire their results.
+  const uniqueId = `tool_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   return executeToolCall({
-    id: `tool_${Date.now()}`,
+    id: uniqueId,
     type: 'function',
     function: {
       name,

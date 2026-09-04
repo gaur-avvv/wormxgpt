@@ -165,35 +165,34 @@ async function deriveEncryptionKey(fingerprint: string): Promise<CryptoKey> {
 }
 
 /**
- * Encrypt payload object into an obfuscated AES-GCM payload string
+ * Encrypt payload object into an obfuscated AES-GCM payload string.
+ *
+ * Fails closed: if WebCrypto is unavailable or encryption fails, this throws
+ * rather than returning plaintext. Callers must decide to skip persistence
+ * instead of silently storing sensitive data (API keys, chat history) in the clear.
  */
 export async function encryptLocalPayload(payload: any, fingerprint: string): Promise<string> {
-  try {
-    const key = await deriveEncryptionKey(fingerprint);
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const encodedData = new TextEncoder().encode(JSON.stringify(payload));
+  const key = await deriveEncryptionKey(fingerprint);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encodedData = new TextEncoder().encode(JSON.stringify(payload));
 
-    const encrypted = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      encodedData
-    );
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    encodedData
+  );
 
-    const combined = new Uint8Array(iv.length + encrypted.byteLength);
-    combined.set(iv, 0);
-    combined.set(new Uint8Array(encrypted), iv.length);
+  const combined = new Uint8Array(iv.length + encrypted.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(encrypted), iv.length);
 
-    let binary = '';
-    const bytes = combined;
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-  } catch (err) {
-    console.warn('[DeviceFP] Encryption failed, falling back to plaintext JSON:', err);
-    return JSON.stringify(payload);
+  let binary = '';
+  const bytes = combined;
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
   }
+  return btoa(binary);
 }
 
 /**
@@ -245,13 +244,29 @@ export async function saveHistoryWithFingerprint(sessions: ChatSession[], finger
       await sessionStore.setMeta('device_fingerprint', fingerprint);
     }
 
-    // 2. Save encrypted backup to localStorage under device-scoped key
+    // 2. Save encrypted backup to localStorage under device-scoped key.
+    //    Fail closed: if encryption is unavailable, skip the localStorage backup
+    //    entirely rather than writing message content in plaintext.
     const scopedKey = `${SESSIONS_KEY}_${fingerprint.slice(0, 12)}`;
-    const encrypted = await encryptLocalPayload(sessions, fingerprint);
-    localStorage.setItem(scopedKey, encrypted);
+    try {
+      const encrypted = await encryptLocalPayload(sessions, fingerprint);
+      localStorage.setItem(scopedKey, encrypted);
+    } catch (encErr) {
+      console.warn('[DeviceFP] Skipping encrypted history backup (encryption unavailable):', encErr);
+      localStorage.removeItem(scopedKey);
+    }
 
-    // 3. Keep clean JSON in standard SESSIONS_KEY for synchronous initialization
-    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+    // 3. Store a redacted index (metadata only, no message content) under the
+    //    standard SESSIONS_KEY so boot can render the session list synchronously.
+    //    Full messages are restored asynchronously from IndexedDB / the encrypted backup.
+    const redactedIndex = sessions.map(s => ({
+      id: s.id,
+      title: s.title,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+      messages: [] as ChatSession['messages'],
+    }));
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(redactedIndex));
   } catch (e) {
     console.error('[DeviceFP] Failed to save history with fingerprint:', e);
   }
@@ -303,12 +318,27 @@ export async function loadHistoryWithFingerprint(fingerprint: string): Promise<C
  */
 export async function saveSettingsWithFingerprint(settings: AppSettings, fingerprint: string): Promise<void> {
   try {
+    // 1. Encrypted, device-scoped copy holds the full settings (including secrets).
+    //    Fail closed: skip the backup if encryption is unavailable rather than
+    //    persisting API keys in plaintext.
     const scopedKey = `${SETTINGS_KEY}_${fingerprint.slice(0, 12)}`;
-    const encrypted = await encryptLocalPayload(settings, fingerprint);
-    localStorage.setItem(scopedKey, encrypted);
+    try {
+      const encrypted = await encryptLocalPayload(settings, fingerprint);
+      localStorage.setItem(scopedKey, encrypted);
+    } catch (encErr) {
+      console.warn('[DeviceFP] Skipping encrypted settings backup (encryption unavailable):', encErr);
+      localStorage.removeItem(scopedKey);
+    }
 
-    // Keep clean JSON in standard SETTINGS_KEY for synchronous initialization
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    // 2. Standard SETTINGS_KEY is plaintext for synchronous boot, so persist only
+    //    the non-secret subset. Any *ApiKey* field is stripped and restored later
+    //    from the encrypted device-scoped copy.
+    const publicSettings: Record<string, any> = {};
+    for (const [k, v] of Object.entries(settings)) {
+      if (/apikey/i.test(k)) continue;
+      publicSettings[k] = v;
+    }
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(publicSettings));
   } catch (e) {
     console.error('[DeviceFP] Failed to save settings with fingerprint:', e);
   }
