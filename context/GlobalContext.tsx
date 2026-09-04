@@ -33,7 +33,8 @@ interface WormGPTContextType {
   activeSession: ChatSession;
   settings: AppSettings;
   setSettings: React.Dispatch<React.SetStateAction<AppSettings>>;
-  isStreaming: React.MutableRefObject<boolean>;
+  isStreaming: boolean;
+  activeToolCalling: string | null;
   setIsStreaming: (val: boolean) => void;
   input: string;
   setInput: (val: string) => void;
@@ -148,7 +149,9 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
 
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<string[]>([]);
-  const isStreaming = useRef(false);
+  const [isStreaming, setIsStreamingState] = useState(false);
+  const isStreamingRef = useRef(false);
+  const [activeToolCalling, setActiveToolCalling] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [autocomplete, setAutocomplete] = useState<{ visible: boolean; type: 'model' | 'tool' | null; query: string; index: number; startIndex?: number }>({ visible: false, type: null, query: '', index: 0, startIndex: 0 });
@@ -157,9 +160,10 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
     sessions.find(s => s.id === activeSessionId) || sessions[0] || { id: '', messages: [], title: '' }, 
   [sessions, activeSessionId]);
 
-  const setIsStreaming = (val: boolean) => {
-    isStreaming.current = val;
-  };
+  const setIsStreaming = useCallback((val: boolean) => {
+    isStreamingRef.current = val;
+    setIsStreamingState(val);
+  }, []);
 
   // Map 100 Remote MCP Catalog to Selectable Arsenal Tools
   const [arsenalTools, setArsenalTools] = useState<SelectableArsenalTool[]>(() => {
@@ -295,8 +299,24 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
       abortControllerRef.current = null;
     }
     setIsStreaming(false);
+    setActiveToolCalling(null);
     sendLockRef.current = false;
-  }, []);
+
+    // Immediately sanitize any empty or in-progress model placeholder
+    setSessions(prev => prev.map(s => {
+      if (s.id !== activeSessionId) return s;
+      const msgs = [...s.messages];
+      const lastMsg = msgs[msgs.length - 1];
+      if (lastMsg && lastMsg.role === 'model') {
+        const text = lastMsg.content 
+          ? `${lastMsg.content}\n\n*[Generation stopped by user]*` 
+          : '*[Generation stopped by user]*';
+        msgs[msgs.length - 1] = { ...lastMsg, content: text };
+        return { ...s, messages: msgs };
+      }
+      return s;
+    }));
+  }, [activeSessionId, setIsStreaming]);
 
   const clearSessionBuffer = useCallback((targetSessionId?: string) => {
     handleAbort();
@@ -406,7 +426,7 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
 
   const handleSend = useCallback(async (overrideInput?: string) => {
     const forcedText = overrideInput !== undefined ? overrideInput : input;
-    if ((!forcedText.trim() && attachments.length === 0) || isStreaming.current) return;
+    if ((!forcedText.trim() && attachments.length === 0) || isStreamingRef.current) return;
     
     const now = Date.now();
     if (sendLockRef.current || now - lastSentAt.current < 500) return;
@@ -432,6 +452,7 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
       setInput('');
       setAttachments([]);
       setIsStreaming(true);
+      setActiveToolCalling(null);
 
       const modelPlaceholder: Message = {
         role: 'model',
@@ -475,10 +496,22 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
             }
             responseChunk = { text: lastText, images: lastImages };
           } else {
-            responseChunk = await chatService.generateChatResponse(effectiveExecutionSettings, updatedMessages, controller.signal);
+            responseChunk = await chatService.generateChatResponse(
+              effectiveExecutionSettings, 
+              updatedMessages, 
+              controller.signal,
+              (toolName) => setActiveToolCalling(toolName),
+              () => setActiveToolCalling(null)
+            );
           }
         } else {
-          responseChunk = await chatService.generateChatResponse(effectiveExecutionSettings, updatedMessages, controller.signal);
+          responseChunk = await chatService.generateChatResponse(
+            effectiveExecutionSettings, 
+            updatedMessages, 
+            controller.signal,
+            (toolName) => setActiveToolCalling(toolName),
+            () => setActiveToolCalling(null)
+          );
         }
 
         if (controller.signal.aborted) return;
@@ -510,14 +543,16 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
         } : s));
       } finally {
         setIsStreaming(false);
+        setActiveToolCalling(null);
         sendLockRef.current = false;
         abortControllerRef.current = null;
       }
     } catch (e: any) {
       setIsStreaming(false);
+      setActiveToolCalling(null);
       sendLockRef.current = false;
     }
-  }, [input, attachments, activeSession, activeSessionId, settings, setSessions]);
+  }, [input, attachments, activeSession, activeSessionId, settings, setSessions, setIsStreaming]);
 
   // 5. Global Keyboard Shortcuts
   useEffect(() => {
@@ -525,7 +560,7 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
       if (e.ctrlKey && e.key === 'Enter') {
         handleSend();
       }
-      if (e.key === 'Escape' && isStreaming.current) {
+      if (e.key === 'Escape' && isStreamingRef.current) {
         handleAbort();
       }
       if (e.ctrlKey && e.key.toLowerCase() === 'k') {
@@ -552,6 +587,7 @@ export const WormGPTProvider: React.FC<{ children: React.ReactNode; onSend?: (in
     activeSession,
     settings, setSettings,
     isStreaming, setIsStreaming,
+    activeToolCalling,
     input, setInput,
     attachments, setAttachments,
     isSidebarOpen, setIsSidebarOpen,

@@ -785,7 +785,13 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                           <div className="space-y-1.5 pt-3">
                             <div className="flex items-center justify-between text-[11px] font-mono">
                               <span className="text-zinc-400 flex items-center gap-2">
-                                <span>API Key ({keyField})</span>
+                                <span>
+                                  {provider.id === 'pollinations'
+                                    ? 'Pollinations Bearer Token (Optional for dedicated limits)'
+                                    : provider.id === 'puter'
+                                    ? 'Puter Auth Token (Optional User-Pays key)'
+                                    : `API Key (${keyField})`}
+                                </span>
                                 {verifyStatus?.status === 'valid' && (
                                   <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 font-semibold flex items-center gap-1">
                                     <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Valid ({verifyStatus.latencyMs}ms)
@@ -823,7 +829,11 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                                   onChange={e => handleKeyChange(keyField, provider.id, e.target.value)}
                                   onBlur={() => runAutoVerify(provider.id, currentValue, isLocal ? conf?.baseUrl : undefined)}
                                   placeholder={
-                                    isLocal
+                                    provider.id === 'pollinations'
+                                      ? 'Bearer token for dedicated tier / rate limits (free gateway works without token)...'
+                                      : provider.id === 'puter'
+                                      ? 'Optional Puter user auth token (keyless free tier works by default)...'
+                                      : isLocal
                                       ? `Optional key for ${provider.name} (e.g. ${conf?.baseUrl})`
                                       : `Enter ${provider.name} API key...`
                                   }

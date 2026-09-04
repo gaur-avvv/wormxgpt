@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { 
-  Send, Square, Paperclip, X, Eye, ShieldAlert, Mic, Zap
+  Send, Square, Paperclip, X, Eye, ShieldAlert, Mic, Zap, Loader2
 } from 'lucide-react';
 import { useWormGPT } from '../context/GlobalContext';
 import { AutocompleteDropdown } from './AutocompleteDropdown';
@@ -19,6 +19,7 @@ export const InputBar: React.FC<{
     handleSend, 
     handleAbort, 
     isStreaming, 
+    activeToolCalling,
     attachments, 
     setAttachments, 
     removeAttachment,
@@ -477,14 +478,15 @@ export const InputBar: React.FC<{
             </button>
 
             {/* Send / Stop Button */}
-            {isStreaming.current ? (
+            {isStreaming ? (
               <button
                 type="button"
                 onClick={handleAbort}
-                className="p-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-950/40 transition-all"
+                className="px-2.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-950/40 ring-1 ring-rose-400/50 flex items-center gap-1.5 transition-all animate-pulse"
                 title="Stop generation"
               >
                 <Square className="w-4 h-4 fill-current" />
+                <span className="text-xs font-semibold uppercase tracking-wider">Stop</span>
               </button>
             ) : (
               <button

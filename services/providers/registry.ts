@@ -7,6 +7,7 @@ import { mistralProvider } from './mistral';
 import { geminiProvider } from './gemini';
 import { deepseekProvider } from './deepseek';
 import { pollinationsProvider } from './pollinations';
+import { puterProvider } from './puter';
 import { openrouterService } from '../openrouter';
 import { ollamaService } from '../ollama';
 import { perplexityService } from '../perplexity';
@@ -929,6 +930,7 @@ class ProviderRegistry {
     this.register(geminiProvider);
     this.register(deepseekProvider);
     this.register(pollinationsProvider);
+    this.register(puterProvider);
 
     // Register expanded matrix providers
     this.register(openrouterProvider);
@@ -1020,5 +1022,6 @@ export {
   mistralProvider, 
   geminiProvider, 
   deepseekProvider, 
-  pollinationsProvider 
+  pollinationsProvider,
+  puterProvider 
 };

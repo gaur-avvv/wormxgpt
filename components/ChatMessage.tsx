@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { Copy, Check, Terminal, Brain, User, Sparkles, Wrench, ChevronDown, ChevronRight, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Copy, Check, Terminal, Brain, User, Sparkles, Wrench, ChevronDown, ChevronRight, CheckCircle2, AlertCircle, Clock, Loader2 } from 'lucide-react';
 import { Message, AppSettings, ToolInvocation } from '../types';
 import { InlineCode } from './CodeBlock';
 
@@ -12,6 +12,8 @@ const CodeBlock = lazy(() => import('./CodeBlock'));
 interface ChatMessageProps {
   message: Message;
   settings: AppSettings;
+  isGenerating?: boolean;
+  activeToolCalling?: string | null;
 }
 
 const ToolInvocationCard: React.FC<{ invocation: ToolInvocation }> = ({ invocation }) => {
@@ -109,7 +111,7 @@ const ToolInvocationCard: React.FC<{ invocation: ToolInvocation }> = ({ invocati
   );
 };
 
-export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message, settings }) => {
+export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message, settings, isGenerating, activeToolCalling }) => {
   const isModel = message.role === 'model';
   const [isHovered, setIsHovered] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -220,35 +222,65 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ message, se
           </div>
         )}
 
-        {/* Markdown Content */}
-        <div className="markdown-content text-sm leading-relaxed selection:bg-indigo-600 selection:text-white">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-            components={{
-              code({ node, className, children, ...props }: any) {
-                if (className?.includes('language-math')) {
-                  return <code className={className} {...props}>{children}</code>;
+        {/* Active Tool Calling Status Indicator */}
+        {isModel && isGenerating && activeToolCalling && (
+          <div className="mb-3 px-3 py-2 rounded-xl bg-indigo-950/80 border border-indigo-500/40 text-indigo-200 text-xs font-mono flex items-center justify-between shadow-sm animate-pulse">
+            <div className="flex items-center gap-2 min-w-0">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400 shrink-0" />
+              <span className="truncate">
+                Calling tool: <strong className="text-indigo-300 font-semibold">{activeToolCalling}</strong>...
+              </span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono shrink-0">
+              ACTIVE_CALL
+            </span>
+          </div>
+        )}
+
+        {/* Markdown Content or Generating Indicator */}
+        {isModel && isGenerating && !message.content ? (
+          <div className="flex items-center gap-2.5 text-xs font-mono text-indigo-400 py-1">
+            <Loader2 className="w-4 h-4 animate-spin text-indigo-400 shrink-0" />
+            <span className="font-semibold tracking-wide animate-pulse">Generating...</span>
+          </div>
+        ) : (
+          <div className="markdown-content text-sm leading-relaxed selection:bg-indigo-600 selection:text-white">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+              components={{
+                code({ node, className, children, ...props }: any) {
+                  if (className?.includes('language-math')) {
+                    return <code className={className} {...props}>{children}</code>;
+                  }
+                  const inline = (props as any).inline;
+                  const isInline = inline || (!className && !String(children).includes('\n'));
+                  if (isInline) {
+                    return <InlineCode>{children}</InlineCode>;
+                  }
+                  return (
+                    <Suspense fallback={<div className="p-3 bg-slate-950 text-slate-400 font-mono text-xs animate-pulse">Loading syntax highlighter...</div>}>
+                      <CodeBlock className={className} settings={settings}>{children}</CodeBlock>
+                    </Suspense>
+                  );
+                },
+                pre({ children }) { 
+                  return <>{children}</>; 
                 }
-                const inline = (props as any).inline;
-                const isInline = inline || (!className && !String(children).includes('\n'));
-                if (isInline) {
-                  return <InlineCode>{children}</InlineCode>;
-                }
-                return (
-                  <Suspense fallback={<div className="p-3 bg-slate-950 text-slate-400 font-mono text-xs animate-pulse">Loading syntax highlighter...</div>}>
-                    <CodeBlock className={className} settings={settings}>{children}</CodeBlock>
-                  </Suspense>
-                );
-              },
-              pre({ children }) { 
-                return <>{children}</>; 
-              }
-            }}
-          >
-            {message.content}
-          </ReactMarkdown>
-        </div>
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+
+            {/* In-progress indicator during active stream generation */}
+            {isModel && isGenerating && (
+              <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center gap-2 text-xs font-mono text-indigo-400 animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400 shrink-0" />
+                <span className="font-medium">Generating...</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
