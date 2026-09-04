@@ -143,6 +143,26 @@ export class ProviderRouter {
   }
 
   /**
+   * Collapse a streaming generator into a single StreamChunk for providers that
+   * only implement streamChat. Services in this codebase yield CUMULATIVE text
+   * (each chunk carries the full text so far), so text takes the latest value;
+   * optional fields (images/sources/video/audio/toolInvocations) are preserved
+   * from the most recent chunk that supplied them instead of being dropped.
+   */
+  private async collectStream(gen: AsyncGenerator<StreamChunk>): Promise<StreamChunk> {
+    const acc: StreamChunk = { text: '', images: [] };
+    for await (const chunk of gen) {
+      if (chunk.text) acc.text = chunk.text;
+      if (chunk.images && chunk.images.length) acc.images = chunk.images;
+      if (chunk.sources && chunk.sources.length) acc.sources = chunk.sources;
+      if (chunk.video) acc.video = chunk.video;
+      if (chunk.audio) acc.audio = chunk.audio;
+      if (chunk.toolInvocations && chunk.toolInvocations.length) acc.toolInvocations = chunk.toolInvocations;
+    }
+    return acc;
+  }
+
+  /**
    * Synchronous Request-Response with Fallback Handling
    */
   async generateWithFallback(
